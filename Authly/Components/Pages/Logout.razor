@@ -1,0 +1,50 @@
+﻿@page "/logout"
+@rendermode InteractiveServer
+@using Authly.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.JSInterop
+@inject IApplicationService ApplicationService
+@inject IApplicationLogger Logger
+@inject ILocalizationService LocalizationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime JSRuntime
+
+<div class="logout-container">
+    <div class="logout-card">
+        <div class="logout-content">
+            <svg class="logout-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M16 12l-4-4-4 4"/>
+            </svg>
+            <span class="logout-text">@LocalizationService.GetString("LoggingOut")</span>
+        </div>
+        
+        <!-- Clean HTML form for logout -->
+        <form method="post" action="@Authorization.Local.LocalAuth.LogoutUri" id="logoutForm" style="display: none;">
+            <!-- Empty form - automatically submitted -->
+        </form>
+    </div>
+</div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                Logger.Log("Logout", "Auto-submitting logout form");
+                
+                // Automatically submit logout form via JavaScript
+                await JSRuntime.InvokeVoidAsync("eval", "document.getElementById('logoutForm').submit();");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Logout", "Error auto-submitting form", ex);
+                
+                // Fallback - redirect directly to login
+                await JSRuntime.InvokeVoidAsync("eval", "window.location.replace('/login');");
+            }
+        }
+    }
+}

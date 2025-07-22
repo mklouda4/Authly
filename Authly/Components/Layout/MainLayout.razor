@@ -1,0 +1,72 @@
+﻿@using Authly.Components.Shared
+@using Authly.Services
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject IApplicationLogger Logger
+@inject ILocalizationService LocalizationService
+
+<ThemeProvider @ref="themeProvider">
+    <div class="app-container" data-theme="@currentTheme">
+        <!-- Global Controls - Bootstrap-style -->
+        <div class="controls-container">
+            <div class="controls-row">
+                <div class="controls-col">
+                    <LanguageSelector />
+                </div>
+                <div class="controls-col">
+                    <ThemeToggle />
+                </div>
+            </div>
+        </div>
+        
+        @Body
+    </div>
+</ThemeProvider>
+
+<div id="blazor-error-ui">
+    @LocalizationService.GetString("UnexpectedError")
+    <a href="" class="reload">@LocalizationService.GetString("Reload")</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+@code {
+    private ThemeProvider? themeProvider;
+    private string currentTheme = "dark";
+
+    protected override void OnInitialized()
+    {
+        // Subscribe to theme changes when ThemeProvider is ready
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && themeProvider != null)
+        {
+            // Subscribe to theme change notifications
+            themeProvider.OnThemeChanged += HandleThemeChanged;
+
+            // Load initial theme
+            currentTheme = themeProvider.CurrentTheme;
+            StateHasChanged();
+            await Task.CompletedTask;
+        }
+    }
+
+    private void HandleThemeChanged()
+    {
+        if (themeProvider != null)
+        {
+            currentTheme = themeProvider.CurrentTheme;
+            Logger.Log("MainLayout", $"Theme changed to: {currentTheme}");
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose()
+    {
+        if (themeProvider != null)
+        {
+            themeProvider.OnThemeChanged -= HandleThemeChanged;
+        }
+    }
+}

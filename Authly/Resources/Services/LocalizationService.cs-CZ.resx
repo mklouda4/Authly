@@ -1,0 +1,507 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Login" xml:space="preserve">
+    <value>Přihlášení</value>
+  </data>
+  <data name="Logout" xml:space="preserve">
+    <value>Odhlásit se</value>
+  </data>
+  <data name="Dashboard" xml:space="preserve">
+    <value>Nástěnka</value>
+  </data>
+  <data name="Home" xml:space="preserve">
+    <value>Domů</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Chyba</value>
+  </data>
+  <data name="Username" xml:space="preserve">
+    <value>Uživatelské jméno</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Heslo</value>
+  </data>
+  <data name="Email" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="FullName" xml:space="preserve">
+    <value>Celé jméno</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Uložit</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Zrušit</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Upravit</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Smazat</value>
+  </data>
+  <data name="Loading" xml:space="preserve">
+    <value>Načítání...</value>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>Akce</value>
+  </data>
+  <data name="LoginTitle" xml:space="preserve">
+    <value>Přihlášení</value>
+  </data>
+  <data name="LoginSubtitle" xml:space="preserve">
+    <value>Přihlaste se do svého účtu</value>
+  </data>
+  <data name="EnterUsername" xml:space="preserve">
+    <value>Zadejte uživatelské jméno</value>
+  </data>
+  <data name="EnterPassword" xml:space="preserve">
+    <value>Zadejte heslo</value>
+  </data>
+  <data name="RememberMe" xml:space="preserve">
+    <value>Zůstat přihlášen</value>
+  </data>
+  <data name="SignIn" xml:space="preserve">
+    <value>Přihlásit se</value>
+  </data>
+  <data name="SignInWithGoogle" xml:space="preserve">
+    <value>Přihlásit se přes Google</value>
+  </data>
+  <data name="DemoCredentials" xml:space="preserve">
+    <value>Demo přihlašovací údaje:</value>
+  </data>
+  <data name="AdminWithTotp" xml:space="preserve">
+    <value>Admin (s TOTP):</value>
+  </data>
+  <data name="UserWithoutTotp" xml:space="preserve">
+    <value>Uživatel (bez TOTP):</value>
+  </data>
+  <data name="ForAdminUseTotp" xml:space="preserve">
+    <value>Pro admin účet použijte TOTP secret:</value>
+  </data>
+  <data name="UserProfile" xml:space="preserve">
+    <value>Uživatelský profil</value>
+  </data>
+  <data name="TotpVerification" xml:space="preserve">
+    <value>TOTP ověření</value>
+  </data>
+  <data name="Active" xml:space="preserve">
+    <value>Aktivní</value>
+  </data>
+  <data name="Inactive" xml:space="preserve">
+    <value>Neaktivní</value>
+  </data>
+  <data name="TotpSecretKey" xml:space="preserve">
+    <value>TOTP tajný klíč</value>
+  </data>
+  <data name="TotpSetupInstructions" xml:space="preserve">
+    <value>Použijte tento klíč pro nastavení TOTP v Google Authenticator nebo jiné TOTP aplikaci.</value>
+  </data>
+  <data name="NewPassword" xml:space="preserve">
+    <value>Nové heslo (volitelné)</value>
+  </data>
+  <data name="PasswordPlaceholder" xml:space="preserve">
+    <value>Ponechte prázdné pro zachování současného hesla</value>
+  </data>
+  <data name="TotpActive" xml:space="preserve">
+    <value>TOTP aktivní</value>
+  </data>
+  <data name="TotpInactive" xml:space="preserve">
+    <value>TOTP neaktivní</value>
+  </data>
+  <data name="TotpWillBeActive" xml:space="preserve">
+    <value>TOTP bude aktivní po uložení</value>
+  </data>
+  <data name="TotpWillBeActiveDescription" xml:space="preserve">
+    <value>Po uložení se vygeneruje nový TOTP tajný klíč, který budete muset nastavit ve vaší autentizační aplikaci.</value>
+  </data>
+  <data name="TotpWillBeDeactivated" xml:space="preserve">
+    <value>TOTP bude deaktivován</value>
+  </data>
+  <data name="TotpWillBeDeactivatedDescription" xml:space="preserve">
+    <value>Vaše přihlášení bude zabezpečeno pouze heslem. Doporučujeme ponechat TOTP aktivní pro vyšší bezpečnost.</value>
+  </data>
+  <data name="SaveChanges" xml:space="preserve">
+    <value>Uložit změny</value>
+  </data>
+  <data name="DebugInformation" xml:space="preserve">
+    <value>Ladicí informace</value>
+  </data>
+  <data name="DebugFailedToLoad" xml:space="preserve">
+    <value>Uživatelské údaje se nepodařilo načíst. Zkontrolujte console pro debug informace.</value>
+  </data>
+  <data name="DebugRefreshPage" xml:space="preserve">
+    <value>Pokud jste se právě přihlásili, zkuste obnovit stránku.</value>
+  </data>
+  <data name="DebugLogging" xml:space="preserve">
+    <value>Debug logování:</value>
+  </data>
+  <data name="DebugEnabled" xml:space="preserve">
+    <value>ZAPNUTO</value>
+  </data>
+  <data name="Application" xml:space="preserve">
+    <value>Aplikace:</value>
+  </data>
+  <data name="Redirecting" xml:space="preserve">
+    <value>Přesměrování...</value>
+  </data>
+  <data name="RedirectingToLogin" xml:space="preserve">
+    <value>Přesměrování na přihlášení...</value>
+  </data>
+  <data name="LoggingOut" xml:space="preserve">
+    <value>Odhlašování...</value>
+  </data>
+  <data name="InvalidCredentials" xml:space="preserve">
+    <value>Neplatné přihlašovací údaje.</value>
+  </data>
+  <data name="ServerError" xml:space="preserve">
+    <value>Došlo k chybě serveru.</value>
+  </data>
+  <data name="UnknownError" xml:space="preserve">
+    <value>Neznámá chyba.</value>
+  </data>
+  <data name="UnexpectedError" xml:space="preserve">
+    <value>Došlo k neočekávané chybě.</value>
+  </data>
+  <data name="Reload" xml:space="preserve">
+    <value>Obnovit</value>
+  </data>
+  <data name="DataSavedSuccessfully" xml:space="preserve">
+    <value>Údaje byly úspěšně uloženy!</value>
+  </data>
+  <data name="FailedToSaveChanges" xml:space="preserve">
+    <value>Nepodařilo se uložit změny. Zkuste to prosím znovu.</value>
+  </data>
+  <data name="ErrorSavingChanges" xml:space="preserve">
+    <value>Došlo k chybě při ukládání změn.</value>
+  </data>
+  <data name="DebugMode" xml:space="preserve">
+    <value>Debug mód:</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>Verze:</value>
+  </data>
+  <data name="MetricsEnabled" xml:space="preserve">
+    <value>Metriky zapnuty:</value>
+  </data>
+  <data name="TotpCode" xml:space="preserve">
+    <value>TOTP kód</value>
+  </data>
+  <data name="EnterTotpCode" xml:space="preserve">
+    <value>Zadejte 6místný kód</value>
+  </data>
+  <data name="TotpRequired" xml:space="preserve">
+    <value>Prosím zadejte 6místný kód z vaší autentizační aplikace</value>
+  </data>
+  <data name="InvalidTotpCode" xml:space="preserve">
+    <value>Neplatný TOTP kód. Zkuste to prosím znovu.</value>
+  </data>
+  <data name="PasswordConfirmed" xml:space="preserve">
+    <value>Heslo potvrzeno</value>
+  </data>
+  <data name="TotpQRCode" xml:space="preserve">
+    <value>QR kód pro nastavení</value>
+  </data>
+  <data name="TotpQRCodeInstructions" xml:space="preserve">
+    <value>Naskenujte tento QR kód pomocí vaší autentizační aplikace (Google Authenticator, Microsoft Authenticator, atd.)</value>
+  </data>
+  <data name="TotpManualEntry" xml:space="preserve">
+    <value>Ruční zadání</value>
+  </data>
+  <data name="TotpCurrentCode" xml:space="preserve">
+    <value>Aktuální TOTP kód</value>
+  </data>
+  <data name="TotpCurrentCodeHint" xml:space="preserve">
+    <value>Tento kód se mění každých 30 sekund. Použijte ho pro přihlášení do svého účtu.</value>
+  </data>
+  <data name="TotpAuthenticator" xml:space="preserve">
+    <value>Autentizátor</value>
+  </data>
+  <data name="UserLocked" xml:space="preserve">
+    <value>Váš účet byl dočasně zablokován kvůli příliš mnoha neúspěšným pokusům o přihlášení.</value>
+  </data>
+  <data name="IpBanned" xml:space="preserve">
+    <value>Vaše IP adresa byla dočasně zablokována kvůli příliš mnoha neúspěšným pokusům o přihlášení.</value>
+  </data>
+  <data name="AttemptsRemaining" xml:space="preserve">
+    <value>Zbývající pokusy</value>
+  </data>
+  <data name="LockoutUntil" xml:space="preserve">
+    <value>Účet zablokován do</value>
+  </data>
+  <data name="BannedUntil" xml:space="preserve">
+    <value>IP zablokována do</value>
+  </data>
+  <data name="AdminPanel" xml:space="preserve">
+    <value>Administrační panel</value>
+  </data>
+  <data name="UserManagement" xml:space="preserve">
+    <value>Správa uživatelů</value>
+  </data>
+  <data name="IpManagement" xml:space="preserve">
+    <value>Správa IP adres</value>
+  </data>
+  <data name="AllUsers" xml:space="preserve">
+    <value>Všichni uživatelé</value>
+  </data>
+  <data name="BannedIPs" xml:space="preserve">
+    <value>Zablokované IP adresy</value>
+  </data>
+  <data name="Administrator" xml:space="preserve">
+    <value>Administrátor</value>
+  </data>
+  <data name="StandardUser" xml:space="preserve">
+    <value>Standardní uživatel</value>
+  </data>
+  <data name="FailedAttempts" xml:space="preserve">
+    <value>Neúspěšné pokusy</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Stav</value>
+  </data>
+  <data name="Locked" xml:space="preserve">
+    <value>Zablokován</value>
+  </data>
+  <data name="NotLocked" xml:space="preserve">
+    <value>Nezablokován</value>
+  </data>
+  <data name="Unlock" xml:space="preserve">
+    <value>Odblokovat</value>
+  </data>
+  <data name="PromoteToAdmin" xml:space="preserve">
+    <value>Povýšit na administrátora</value>
+  </data>
+  <data name="DemoteFromAdmin" xml:space="preserve">
+    <value>Odebrat administrátorská práva</value>
+  </data>
+  <data name="IPAddress" xml:space="preserve">
+    <value>IP adresa</value>
+  </data>
+  <data name="FirstAttempt" xml:space="preserve">
+    <value>První pokus</value>
+  </data>
+  <data name="LastAttempt" xml:space="preserve">
+    <value>Poslední pokus</value>
+  </data>
+  <data name="Banned" xml:space="preserve">
+    <value>Zablokován</value>
+  </data>
+  <data name="NotBanned" xml:space="preserve">
+    <value>Nezablokován</value>
+  </data>
+  <data name="BanExpires" xml:space="preserve">
+    <value>Blokace vyprší</value>
+  </data>
+  <data name="Unban" xml:space="preserve">
+    <value>Odblokovat</value>
+  </data>
+  <data name="NoUsersFound" xml:space="preserve">
+    <value>Nebyli nalezeni žádní uživatelé</value>
+  </data>
+  <data name="NoIPBansFound" xml:space="preserve">
+    <value>Nebyla nalezena žádná IP blokace</value>
+  </data>
+  <data name="AccessDenied" xml:space="preserve">
+    <value>Přístup odmítnut</value>
+  </data>
+  <data name="UserUnlockedSuccessfully" xml:space="preserve">
+    <value>Uživatel byl úspěšně odblokován</value>
+  </data>
+  <data name="FailedToUnlockUser" xml:space="preserve">
+    <value>Nepodařilo se odblokovat uživatele</value>
+  </data>
+  <data name="UserUpdatedSuccessfully" xml:space="preserve">
+    <value>Uživatel byl úspěšně aktualizován</value>
+  </data>
+  <data name="FailedToUpdateUser" xml:space="preserve">
+    <value>Nepodařilo se aktualizovat uživatele</value>
+  </data>
+  <data name="IPUnbannedSuccessfully" xml:space="preserve">
+    <value>IP adresa byla úspěšně odblokována</value>
+  </data>
+  <data name="FailedToUnbanIP" xml:space="preserve">
+    <value>Nepodařilo se odblokovat IP adresu</value>
+  </data>
+  <data name="Lock" xml:space="preserve">
+    <value>Zablokovat</value>
+  </data>
+  <data name="LockPermanently" xml:space="preserve">
+    <value>Zablokovat trvale</value>
+  </data>
+  <data name="Ban" xml:space="preserve">
+    <value>Zablokovat</value>
+  </data>
+  <data name="BanPermanently" xml:space="preserve">
+    <value>Zablokovat trvale</value>
+  </data>
+  <data name="UserLockedSuccessfully" xml:space="preserve">
+    <value>Uživatel byl úspěšně zablokován</value>
+  </data>
+  <data name="FailedToLockUser" xml:space="preserve">
+    <value>Nepodařilo se zablokovat uživatele</value>
+  </data>
+  <data name="IPBannedSuccessfully" xml:space="preserve">
+    <value>IP adresa byla úspěšně zablokována</value>
+  </data>
+  <data name="FailedToBanIP" xml:space="preserve">
+    <value>Nepodařilo se zablokovat IP adresu</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>Resetovat</value>
+  </data>
+  <data name="NoActionNeeded" xml:space="preserve">
+    <value>Není potřeba žádná akce</value>
+  </data>
+  <data name="Promote" xml:space="preserve">
+    <value>Povýšit</value>
+  </data>
+  <data name="Demote" xml:space="preserve">
+    <value>Degradovat</value>
+  </data>
+  <data name="AdminPrivilegesRequired" xml:space="preserve">
+    <value>Vyžadují se administrátorská oprávnění</value>
+  </data>
+  <data name="OrContinueWith" xml:space="preserve">
+    <value>Nebo pokračujte pomocí</value>
+  </data>
+  <data name="SignInWithFacebook" xml:space="preserve">
+    <value>Přihlásit se přes Facebook</value>
+  </data>
+  <data name="ExternalAuthFailed" xml:space="preserve">
+    <value>Externí ověření selhalo. Zkuste to prosím znovu.</value>
+  </data>
+  <data name="MissingUserInfo" xml:space="preserve">
+    <value>Chybí požadované uživatelské informace od externího poskytovatele.</value>
+  </data>
+  <data name="UserCreationFailed" xml:space="preserve">
+    <value>Nepodařilo se vytvořit uživatelský účet. Zkuste to prosím znovu.</value>
+  </data>
+  <data name="InvalidProvider" xml:space="preserve">
+    <value>Zadán neplatný poskytovatel ověření.</value>
+  </data>
+  <data name="SignInWithMicrosoft" xml:space="preserve">
+    <value>Přihlásit se přes Microsoft</value>
+  </data>
+  <data name="SignInWithGitHub" xml:space="preserve">
+    <value>Přihlásit se přes GitHub</value>
+  </data>
+  <data name="ExternalUser" xml:space="preserve">
+    <value>Externí uživatelé se nemohou přihlásit pomocí místního ověření. Prosím použijte externí autentizační metodu nakonfigurovanou pro váš účet.</value>
+  </data>
+</root>

@@ -1,0 +1,591 @@
+@page "/admin"
+@rendermode InteractiveServer
+@using Authly.Services
+@using Authly.Models
+@using Authly.Authorization.UserStorage
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IUserStorage UserStorage
+@inject ISecurityService SecurityService
+@inject IAuthService AuthService
+@inject IApplicationLogger Logger
+@inject ILocalizationService LocalizationService
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@if (isAuthenticated && isAdmin)
+{
+    <div class="dashboard-container">
+        <div class="dashboard-content">
+            <div class="admin-header">
+                <h1 class="admin-title">
+                    <svg class="admin-icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                    @LocalizationService.GetString("AdminPanel")
+                </h1>
+                <div class="admin-actions">
+                    <a href="/dashboard" class="btn btn-outline btn-sm">
+                        <svg class="btn-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                            <polyline points="9,22 9,12 15,12 15,22"/>
+                        </svg>
+                        @LocalizationService.GetString("Dashboard")
+                    </a>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="admin-tabs">
+                <button class="tab-button @(activeTab == "users" ? "active" : "")" @onclick="@(() => SetActiveTab("users"))">
+                    <svg class="tab-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    @LocalizationService.GetString("UserManagement")
+                </button>
+                
+                <button class="tab-button @(activeTab == "ips" ? "active" : "")" @onclick="@(() => SetActiveTab("ips"))">
+                    <svg class="tab-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                        <line x1="8" y1="21" x2="16" y2="21"/>
+                        <line x1="12" y1="17" x2="12" y2="21"/>
+                    </svg>
+                    @LocalizationService.GetString("IpManagement")
+                </button>
+            </div>
+
+            <!-- Users Tab -->
+            @if (activeTab == "users")
+            {
+                <div class="admin-section">
+                    <h2 class="section-title">@LocalizationService.GetString("AllUsers")</h2>
+                    
+                    @if (users.Any())
+                    {
+                        <div class="admin-table">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>@LocalizationService.GetString("Username")</th>
+                                        <th>@LocalizationService.GetString("FullName")</th>
+                                        <th>@LocalizationService.GetString("Email")</th>
+                                        <th>@LocalizationService.GetString("Administrator")</th>
+                                        <th>@LocalizationService.GetString("TotpVerification")</th>
+                                        <th>@LocalizationService.GetString("FailedAttempts")</th>
+                                        <th>@LocalizationService.GetString("Status")</th>
+                                        <th>@LocalizationService.GetString("Actions")</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var user in users)
+                                    {
+                                        <tr class="@(user.IsLockedOut ? "locked-row" : "")">
+                                            <td class="username-cell" data-label="@LocalizationService.GetString("Username")">@user.UserName</td>
+                                            <td data-label="@LocalizationService.GetString("FullName")">@user.FullName</td>
+                                            <td data-label="@LocalizationService.GetString("Email")">@user.Email</td>
+                                            <td data-label="@LocalizationService.GetString("Administrator")">
+                                                @if (user.Administrator)
+                                                {
+                                                    <span class="status-badge admin">@LocalizationService.GetString("Administrator")</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="status-badge user">@LocalizationService.GetString("StandardUser")</span>
+                                                }
+                                            </td>
+                                            <td data-label="@LocalizationService.GetString("TotpVerification")">
+                                                @if (user.HasTotp)
+                                                {
+                                                    <span class="status-badge totp-active">@LocalizationService.GetString("Active")</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="status-badge totp-inactive">@LocalizationService.GetString("Inactive")</span>
+                                                }
+                                            </td>
+                                            <td data-label="@LocalizationService.GetString("FailedAttempts")">@user.FailedLoginAttempts</td>
+                                            <td data-label="@LocalizationService.GetString("Status")">
+                                                @if (user.IsLockedOut)
+                                                {
+                                                    <span class="status-badge locked">@LocalizationService.GetString("Locked")</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="status-badge unlocked">@LocalizationService.GetString("NotLocked")</span>
+                                                }
+                                            </td>
+                                            <td data-label="@LocalizationService.GetString("Actions")">
+                                                <div class="action-buttons">
+                                                    @if (user.IsLockedOut)
+                                                    {
+                                                        <button class="btn btn-admin-action btn-success" @onclick="() => UnlockUser(user)" disabled="@isLoading" title="@LocalizationService.GetString("Unlock")">
+                                                            <svg class="btn-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                                                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                                            </svg>
+                                                            @LocalizationService.GetString("Unlock")
+                                                        </button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button class="btn btn-admin-action btn-danger" @onclick="() => LockUserPermanently(user)" disabled="@isLoading" title="@LocalizationService.GetString("LockPermanently")">
+                                                            <svg class="btn-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                                                <path d="M7 11V7a5 5 0 0 1 10 0"/>
+                                                            </svg>
+                                                            @LocalizationService.GetString("Lock")
+                                                        </button>
+                                                    }
+                                                    
+                                                    @if (user.Administrator && currentUser?.Id != user.Id)
+                                                    {
+                                                        <button class="btn btn-admin-action btn-warning" @onclick="() => ToggleAdminStatus(user)" disabled="@isLoading" title="@LocalizationService.GetString("DemoteFromAdmin")">
+                                                            <svg class="btn-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <circle cx="12" cy="12" r="10"/>
+                                                                <line x1="15" y1="9" x2="9" y2="15"/>
+                                                                <line x1="9" y1="9" x2="15" y2="15"/>
+                                                            </svg>
+                                                            @LocalizationService.GetString("Demote")
+                                                        </button>
+                                                    }
+                                                    else if (!user.Administrator && currentUser?.Id != user.Id)
+                                                    {
+                                                        <button class="btn btn-admin-action btn-info" @onclick="() => ToggleAdminStatus(user)" disabled="@isLoading" title="@LocalizationService.GetString("PromoteToAdmin")">
+                                                            <svg class="btn-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <circle cx="12" cy="12" r="10"/>
+                                                                <line x1="12" y1="8" x2="12" y2="16"/>
+                                                                <line x1="8" y1="12" x2="16" y2="12"/>
+                                                            </svg>
+                                                            @LocalizationService.GetString("Promote")
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="empty-state">
+                            <p>@LocalizationService.GetString("NoUsersFound")</p>
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- IPs Tab -->
+            @if (activeTab == "ips")
+            {
+                <div class="admin-section">
+                    <h2 class="section-title">@LocalizationService.GetString("BannedIPs")</h2>
+                    
+                    @if (ipBans.Any())
+                    {
+                        <div class="admin-table">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>@LocalizationService.GetString("IPAddress")</th>
+                                        <th>@LocalizationService.GetString("FailedAttempts")</th>
+                                        <th>@LocalizationService.GetString("FirstAttempt")</th>
+                                        <th>@LocalizationService.GetString("LastAttempt")</th>
+                                        <th>@LocalizationService.GetString("Status")</th>
+                                        <th>@LocalizationService.GetString("BanExpires")</th>
+                                        <th>@LocalizationService.GetString("Actions")</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ipBan in ipBans)
+                                    {
+                                        <tr class="@(ipBan.IsCurrentlyBanned ? "banned-row" : "")">
+                                            <td class="ip-cell" data-label="@LocalizationService.GetString("IPAddress")">@ipBan.IpAddress</td>
+                                            <td data-label="@LocalizationService.GetString("FailedAttempts")">@ipBan.FailedAttempts</td>
+                                            <td data-label="@LocalizationService.GetString("FirstAttempt")">@ipBan.FirstAttemptUtc.ToString("dd.MM.yyyy HH:mm")</td>
+                                            <td data-label="@LocalizationService.GetString("LastAttempt")">@ipBan.LastAttemptUtc.ToString("dd.MM.yyyy HH:mm")</td>
+                                            <td data-label="@LocalizationService.GetString("Status")">
+                                                @if (ipBan.IsCurrentlyBanned)
+                                                {
+                                                    <span class="status-badge banned">@LocalizationService.GetString("Banned")</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="status-badge not-banned">@LocalizationService.GetString("NotBanned")</span>
+                                                }
+                                            </td>
+                                            <td data-label="@LocalizationService.GetString("BanExpires")">
+                                                @if (ipBan.BanEndUtc.HasValue)
+                                                {
+                                                    @ipBan.BanEndUtc.Value.ToString("dd.MM.yyyy HH:mm")
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                            <td data-label="@LocalizationService.GetString("Actions")">
+                                                <div class="action-buttons">
+                                                    @if (ipBan.IsCurrentlyBanned)
+                                                    {
+                                                        <button class="btn btn-admin-action btn-success" @onclick="() => UnbanIp(ipBan.IpAddress)" disabled="@isLoading" title="@LocalizationService.GetString("Unban")">
+                                                            <svg class="btn-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <path d="M9 12l2 2 4-4"/>
+                                                                <circle cx="12" cy="12" r="10"/>
+                                                            </svg>
+                                                            @LocalizationService.GetString("Unban")
+                                                        </button>
+                                                    }
+                                                    else if (ipBan.FailedAttempts > 0)
+                                                    {
+                                                        <button class="btn btn-admin-action btn-outline" @onclick="() => UnbanIp(ipBan.IpAddress)" disabled="@isLoading" title="@LocalizationService.GetString("Reset")">
+                                                            <svg class="btn-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <path d="M1 4h22m-2 13v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2"/>
+                                                                <path d="M7 8v8"/>
+                                                                <path d="M17 8v8"/>
+                                                            </svg>
+                                                            @LocalizationService.GetString("Reset")
+                                                        </button>
+                                                        
+                                                        <button class="btn btn-admin-action btn-danger" @onclick="() => BanIpPermanently(ipBan.IpAddress)" disabled="@isLoading" title="@LocalizationService.GetString("BanPermanently")">
+                                                            <svg class="btn-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <circle cx="12" cy="12" r="10"/>
+                                                                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                                                            </svg>
+                                                            @LocalizationService.GetString("Ban")
+                                                        </button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button class="btn btn-admin-action btn-danger" @onclick="() => BanIpPermanently(ipBan.IpAddress)" disabled="@isLoading" title="@LocalizationService.GetString("BanPermanently")">
+                                                            <svg class="btn-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <circle cx="12" cy="12" r="10"/>
+                                                                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                                                            </svg>
+                                                            @LocalizationService.GetString("Ban")
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="empty-state">
+                            <p>@LocalizationService.GetString("NoIPBansFound")</p>
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(successMessage))
+            {
+                <div class="message success-message">
+                    <svg class="message-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20,6 9,17 4,12"/>
+                    </svg>
+                    @successMessage
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="message error-message">
+                    <svg class="message-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    @errorMessage
+                </div>
+            }
+        </div>
+    </div>
+}
+else if (isAuthenticated && !isAdmin)
+{
+    <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh;">
+        <div class="access-denied">
+            <h2>@LocalizationService.GetString("AccessDenied")</h2>
+            <p>@LocalizationService.GetString("AdminPrivilegesRequired")</p>
+            <a href="/dashboard" class="btn btn-primary">@LocalizationService.GetString("Dashboard")</a>
+        </div>
+    </div>
+}
+else if (isLoading)
+{
+    <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh;">
+        <div style="color: #6b7280;">@LocalizationService.GetString("Loading")</div>
+    </div>
+}
+else
+{
+    <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh;">
+        <div style="color: #6b7280;">@LocalizationService.GetString("RedirectingToLogin")</div>
+    </div>
+}
+
+@code {
+    private bool isLoading = true;
+    private bool isAuthenticated = false;
+    private bool isAdmin = false;
+    private string activeTab = "users";
+    private string successMessage = string.Empty;
+    private string errorMessage = string.Empty;
+    
+    private User? currentUser;
+    private List<User> users = new();
+    private List<IpLoginAttempt> ipBans = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Logger.Log("AdminPanel", "Starting initialization");
+
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            isAuthenticated = authState.User?.Identity?.IsAuthenticated == true;
+
+            if (!isAuthenticated)
+            {
+                Logger.LogWarning("AdminPanel", "User not authenticated, redirecting to login");
+                Navigation.NavigateTo("/login");
+                return;
+            }
+
+            currentUser = await AuthService.GetCurrentUserAsync();
+            isAdmin = currentUser?.Administrator == true;
+
+            if (!isAdmin)
+            {
+                Logger.LogWarning("AdminPanel", $"User {currentUser?.UserName} is not an administrator");
+                isLoading = false;
+                return;
+            }
+
+            await LoadData();
+            isLoading = false;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("AdminPanel", "Error during initialization", ex);
+            isLoading = false;
+            errorMessage = LocalizationService.GetString("UnexpectedError");
+        }
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            // Load all users
+            users = await UserStorage.GetAllUsers();
+            
+            // Load IP bans
+            ipBans = SecurityService.GetAllIpBans();
+            
+            Logger.Log("AdminPanel", $"Loaded {users.Count} users and {ipBans.Count} IP bans");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("AdminPanel", "Error loading data", ex);
+            errorMessage = LocalizationService.GetString("UnexpectedError");
+        }
+    }
+
+    private void SetActiveTab(string tab)
+    {
+        activeTab = tab;
+        ClearMessages();
+    }
+
+    private async Task UnlockUser(User user)
+    {
+        try
+        {
+            isLoading = true;
+            ClearMessages();
+
+            // Unlock the user using SecurityService
+            var unlockSuccess = SecurityService.UnlockUser(user);
+            
+            if (unlockSuccess)
+            {
+                // Update user in storage
+                var updateSuccess = await UserStorage.UpdateUser(user);
+                
+                if (updateSuccess)
+                {
+                    successMessage = LocalizationService.GetString("UserUnlockedSuccessfully");
+                    await LoadData(); // Refresh data
+                }
+                else
+                {
+                    errorMessage = LocalizationService.GetString("FailedToUnlockUser");
+                }
+            }
+            else
+            {
+                errorMessage = LocalizationService.GetString("FailedToUnlockUser");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("AdminPanel", $"Error unlocking user {user.UserName}", ex);
+            errorMessage = LocalizationService.GetString("FailedToUnlockUser");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ToggleAdminStatus(User user)
+    {
+        try
+        {
+            isLoading = true;
+            ClearMessages();
+
+            user.Administrator = !user.Administrator;
+            var success = await UserStorage.UpdateUser(user);
+            
+            if (success)
+            {
+                successMessage = LocalizationService.GetString("UserUpdatedSuccessfully");
+                await LoadData(); // Refresh data
+            }
+            else
+            {
+                // Revert the change
+                user.Administrator = !user.Administrator;
+                errorMessage = LocalizationService.GetString("FailedToUpdateUser");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("AdminPanel", $"Error toggling admin status for user {user.UserName}", ex);
+            user.Administrator = !user.Administrator; // Revert the change
+            errorMessage = LocalizationService.GetString("FailedToUpdateUser");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task UnbanIp(string ipAddress)
+    {
+        try
+        {
+            isLoading = true;
+            ClearMessages();
+
+            var success = SecurityService.UnbanIpAddress(ipAddress);
+            
+            if (success)
+            {
+                successMessage = LocalizationService.GetString("IPUnbannedSuccessfully");
+                await LoadData(); // Refresh data
+            }
+            else
+            {
+                errorMessage = LocalizationService.GetString("FailedToUnbanIP");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("AdminPanel", $"Error unbanning IP {ipAddress}", ex);
+            errorMessage = LocalizationService.GetString("FailedToUnbanIP");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LockUserPermanently(User user)
+    {
+        try
+        {
+            isLoading = true;
+            ClearMessages();
+
+            // Use SecurityService to manually lock the user permanently
+            var lockSuccess = SecurityService.ManualLockUser(user);
+            
+            if (lockSuccess)
+            {
+                // Update user in storage
+                var updateSuccess = await UserStorage.UpdateUser(user);
+                
+                if (updateSuccess)
+                {
+                    successMessage = LocalizationService.GetString("UserLockedSuccessfully");
+                    await LoadData(); // Refresh data
+                }
+                else
+                {
+                    errorMessage = LocalizationService.GetString("FailedToLockUser");
+                }
+            }
+            else
+            {
+                errorMessage = LocalizationService.GetString("FailedToLockUser");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("AdminPanel", $"Error locking user {user.UserName}", ex);
+            errorMessage = LocalizationService.GetString("FailedToLockUser");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task BanIpPermanently(string ipAddress)
+    {
+        try
+        {
+            isLoading = true;
+            ClearMessages();
+
+            var success = SecurityService.ManualBanIpAddress(ipAddress);
+            
+            if (success)
+            {
+                successMessage = LocalizationService.GetString("IPBannedSuccessfully");
+                await LoadData(); // Refresh data
+            }
+            else
+            {
+                errorMessage = LocalizationService.GetString("FailedToBanIP");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("AdminPanel", $"Error banning IP {ipAddress}", ex);
+            errorMessage = LocalizationService.GetString("FailedToBanIP");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ClearMessages()
+    {
+        successMessage = string.Empty;
+        errorMessage = string.Empty;
+    }
+}

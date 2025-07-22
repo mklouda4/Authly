@@ -1,0 +1,32 @@
+[
+  {
+    "UserName": "admin",
+    "Email": "admin@authly.com",
+    "FullName": "Administrator",
+    "HasTotp": false,
+    "TotpSecret": null,
+    "Password": "admin123",
+    "FailedLoginAttempts": 0,
+    "LastFailedLoginAttempt": null,
+    "LockoutStart": null,
+    "LockoutEnd": null,
+    "IsLockedOut": false,
+    "Administrator": true,
+    "IsExternal": false
+  },
+  {
+    "UserName": "user",
+    "Email": "user@authly.com",
+    "FullName": "Test User",
+    "HasTotp": false,
+    "TotpSecret": null,
+    "Password": "user123",
+    "FailedLoginAttempts": 0,
+    "LastFailedLoginAttempt": null,
+    "LockoutStart": null,
+    "LockoutEnd": null,
+    "IsLockedOut": false,
+    "Administrator": false,
+    "IsExternal": false
+  }
+]

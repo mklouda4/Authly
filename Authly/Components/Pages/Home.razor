@@ -1,0 +1,56 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using Authly.Services
+@inject IApplicationService ApplicationService
+@inject IApplicationLogger Logger
+@inject ILocalizationService LocalizationService
+@inject NavigationManager Navigation
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@code {
+    private bool hasRedirected = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (hasRedirected) return;
+        
+        try
+        {
+            Logger.Log("Home", "Starting authentication check");
+            
+            // Wait a bit for authentication state to stabilize
+            await Task.Delay(100);
+            
+            // Verify authentication state using AuthenticationStateProvider
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var isAuthenticated = authState.User?.Identity?.IsAuthenticated == true;
+            
+            Logger.Log("Home", $"Authentication result: {isAuthenticated}, User: {authState.User?.Identity?.Name}");
+            
+            hasRedirected = true;
+            
+            // If user is authenticated, redirect to dashboard
+            if (isAuthenticated)
+            {
+                Logger.Log("Home", "Redirecting to dashboard");
+                Navigation.NavigateTo("/dashboard");
+            }
+            else
+            {
+                // If not authenticated, redirect to login
+                Logger.Log("Home", "Redirecting to login");
+                Navigation.NavigateTo("/login");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("Home", "Error during authentication check", ex);
+            if (!hasRedirected)
+            {
+                hasRedirected = true;
+                Navigation.NavigateTo("/login");
+            }
+        }
+    }
+}

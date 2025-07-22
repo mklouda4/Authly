@@ -1,0 +1,84 @@
+@using Authly.Services
+@using Microsoft.JSInterop
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@inject IApplicationService ApplicationService
+@inject ILocalizationService LocalizationService
+@rendermode InteractiveServer
+@implements IDisposable
+
+@code {
+    private string currentPath = string.Empty;
+    private bool hasRendered = false;
+
+    protected override void OnInitialized()
+    {
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            hasRendered = true;
+            await UpdateTitle();
+        }
+    }
+
+    private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        if (hasRendered)
+        {
+            await UpdateTitle();
+        }
+    }
+
+    private async Task UpdateTitle()
+    {
+        if (!hasRendered) return;
+        
+        try
+        {
+            var currentUri = Navigation.Uri;
+            var path = Navigation.ToBaseRelativePath(currentUri);
+            
+            if (path == currentPath) return;
+            currentPath = path;
+
+            string pageTitle = GetPageTitleFromPath(path);
+            string fullTitle = ApplicationService.GetPageTitle(pageTitle);
+            
+            await JSRuntime.InvokeVoidAsync("eval", $"document.title = '{fullTitle.Replace("'", "\\'")}';");
+        }
+        catch (Exception)
+        {
+            // Fallback title if something goes wrong
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("eval", $"document.title = '{ApplicationService.ApplicationName.Replace("'", "\\'")}';");
+            }
+            catch
+            {
+                // If even this fails, just ignore it
+            }
+        }
+    }
+
+    private string GetPageTitleFromPath(string path)
+    {
+        return path.ToLower() switch
+        {
+            "" or "/" => LocalizationService.GetString("Home"),
+            "login" => LocalizationService.GetString("LoginTitle"),
+            "dashboard" => LocalizationService.GetString("Dashboard"),
+            "logout" => LocalizationService.GetString("Logout"),
+            "error" => LocalizationService.GetString("Error"),
+            _ => LocalizationService.GetString("Home")
+        };
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+}

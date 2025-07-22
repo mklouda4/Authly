@@ -1,0 +1,23 @@
+﻿@inject IApplicationService ApplicationService
+<!DOCTYPE html>
+<html lang="cs">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <title>@ApplicationService.ApplicationName</title>
+    <link rel="stylesheet" href="styles.css" />
+    <HeadOutlet />
+</head>
+
+<body>
+    <CascadingAuthenticationState>
+        <TitleManager />
+        <Routes @rendermode="@(new InteractiveServerRenderMode(prerender: false))" />
+    </CascadingAuthenticationState>
+    <script src="_framework/blazor.web.js"></script>
+    <script src="language-selector.js"></script>
+</body>
+
+</html>

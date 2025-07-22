@@ -1,0 +1,20 @@
+{
+  "HealthChecksUI": {
+    "HealthChecks": [
+      {
+        "Name": "Authly Application",
+        "Uri": "http://authly:80/health"
+      },
+      {
+        "Name": "Authly Readiness",
+        "Uri": "http://authly:80/health/ready"
+      },
+      {
+        "Name": "Authly Liveness",
+        "Uri": "http://authly:80/health/live"
+      }
+    ],
+    "EvaluationTimeInSeconds": 30,
+    "MinimumSecondsBetweenFailureNotifications": 300
+  }
+}

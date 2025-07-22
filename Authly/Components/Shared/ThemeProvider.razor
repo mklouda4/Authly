@@ -1,0 +1,67 @@
+﻿@using Authly.Services
+@using Microsoft.JSInterop
+@inject IThemeService ThemeService
+@inject IApplicationLogger Logger
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<CascadingValue Value="this">
+    @ChildContent
+</CascadingValue>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    
+    public string CurrentTheme { get; private set; } = "dark";
+    public bool HasRendered { get; private set; } = false;
+    
+    public event Action? OnThemeChanged;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            HasRendered = true;
+            
+            try
+            {
+                CurrentTheme = await ThemeService.GetThemeAsync();
+                Logger.Log("ThemeProvider", $"Loaded global theme: {CurrentTheme}");
+                
+                // Notify all components about theme change
+                OnThemeChanged?.Invoke();
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("ThemeProvider", "Error loading theme", ex);
+            }
+        }
+    }
+
+    public async Task ToggleThemeAsync()
+    {
+        if (!HasRendered) return;
+        
+        CurrentTheme = CurrentTheme == "light" ? "dark" : "light";
+        
+        try
+        {
+            await ThemeService.SetThemeAsync(CurrentTheme);
+            Logger.Log("ThemeProvider", $"Global theme changed to: {CurrentTheme}");
+            
+            // Notify all components about theme change
+            OnThemeChanged?.Invoke();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("ThemeProvider", "Error setting theme", ex);
+        }
+    }
+
+    public void Dispose()
+    {
+        // Cleanup if needed
+    }
+}

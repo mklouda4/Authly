@@ -1,0 +1,107 @@
+﻿@using Authly.Services
+@using Microsoft.AspNetCore.Components.Web
+@using System.Globalization
+@using Microsoft.AspNetCore.Localization
+@using Microsoft.JSInterop
+
+@inject ILocalizationService LocalizationService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@inject IHttpContextAccessor HttpContextAccessor
+
+<div class="language-selector" @onclick:stopPropagation="true">
+    <button class="language-btn" @onclick="ToggleDropdown">
+        <span class="language-code">@GetCurrentLanguageCode()</span>
+    </button>
+    
+    @if (isOpen)
+    {
+        <div class="language-dropdown" @onclick:stopPropagation="true">
+            @foreach (var culture in LocalizationService.GetAvailableCultures())
+            {
+                <button class="language-option @(culture.Code == LocalizationService.GetCurrentCulture().Name ? "active" : "")"
+                        @onclick="() => SelectLanguage(culture.Code)"
+                        @onclick:preventDefault="true"
+                        @onclick:stopPropagation="true">
+                    <span class="language-code">@GetLanguageCode(culture.DisplayName)</span>
+                </button>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private bool isOpen = false;
+    private bool isChangingLanguage = false;
+    private DotNetObjectReference<LanguageSelector>? dotNetRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            dotNetRef = DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("window.addLanguageSelectorHandler", dotNetRef);
+        }
+    }
+
+    private void ToggleDropdown()
+        => isOpen = !isOpen;
+
+    [JSInvokable]
+    public void CloseDropdown()
+    {
+        if (isOpen)
+        {
+            isOpen = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SelectLanguage(string culture)
+    {
+        if (isChangingLanguage) return; // Prevent multiple calls
+        isChangingLanguage = true;
+
+        try
+        {
+            isOpen = false;
+
+            // Don't change if it's already the current culture
+            if (culture == LocalizationService.GetCurrentCulture().Name)
+            {
+                return;
+            }
+
+            // Store in localStorage for persistence
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "selectedLanguage", culture);
+
+            // Use ASP.NET Core localization approach - set cookie via JavaScript
+            var cookieValue = $"c={culture}|uic={culture}";
+            await JSRuntime.InvokeVoidAsync("eval", $"document.cookie = '{CookieRequestCultureProvider.DefaultCookieName}={cookieValue}; path=/; expires=' + new Date(Date.now() + 365*24*60*60*1000).toUTCString();");
+
+            // Force reload to apply culture change
+            await JSRuntime.InvokeVoidAsync("location.reload");
+        }
+        catch (Exception ex)
+        {
+            // Log error and fallback to reload
+            Console.WriteLine($"Language selection error: {ex.Message}");
+            await JSRuntime.InvokeVoidAsync("location.reload");
+        }
+        finally
+        {
+            isChangingLanguage = false;
+        }
+    }
+
+    private string GetCurrentLanguageCode()
+        => GetLanguageCode(LocalizationService.GetCurrentCulture().Name);
+
+    private string GetLanguageCode(string culture)
+        => new Culture(culture).DisplayName;
+
+    public void Dispose()
+    {
+        dotNetRef?.Dispose();
+    }
+}

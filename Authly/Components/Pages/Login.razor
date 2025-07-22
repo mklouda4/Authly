@@ -1,0 +1,341 @@
+﻿@page "/login"
+@rendermode InteractiveServer
+@using Authly.Services
+@using Authly.Models
+@using Authly.Components
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IApplicationService ApplicationService
+@inject IApplicationLogger AppLogger
+@inject ILocalizationService LocalizationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager Navigation
+@inject IAuthService AuthService
+
+@if (isUserAuthenticated)
+{
+    <!-- Pokud je uživatel už přihlášený, přesměrovj na dashboard -->
+    <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh;">
+        <div style="color: #6b7280;">@LocalizationService.GetString("Redirecting")</div>
+    </div>
+}
+else
+{
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1 class="login-title">@ApplicationService.ApplicationName</h1>
+                <p class="login-subtitle">@LocalizationService.GetString("LoginSubtitle")</p>
+            </div>
+            
+            <div class="login-form">
+                <!-- ČISTÝ HTML FORM - ŽÁDNÉ BLAZOR BINDING -->
+                <form method="post" action="@Authorization.Local.LocalAuth.LoginUri">
+                    <div class="input-group">
+                        <label for="username">@LocalizationService.GetString("Username")</label>
+                        <div class="input-wrapper">
+                            <input id="username" 
+                                   name="username"
+                                   value="@Username"
+                                   placeholder="@LocalizationService.GetString("EnterUsername")" 
+                                   class="form-input" 
+                                   autocomplete="username"
+                                   readonly="@(requiresTotp || isLocked)"
+                                   style="@(requiresTotp ? "display: none;" : "")"
+                                   required />
+                        </div>
+                        @if (requiresTotp)
+                        {
+                            <div class="field-value" style="padding: 0.75rem; background: var(--bg-input); border: 1px solid var(--border-input); border-radius: 8px; color: var(--text-primary); font-weight: 500;">
+                                @Username
+                            </div>
+                        }
+                    </div>
+
+                    <div class="input-group">
+                        <label for="password">@LocalizationService.GetString("Password")</label>
+                        <div class="input-wrapper">
+                            <input id="password" 
+                                   name="password"
+                                   type="password" 
+                                   placeholder="@LocalizationService.GetString("EnterPassword")" 
+                                   class="form-input"
+                                   autocomplete="current-password"
+                                   readonly="@(requiresTotp || isLocked)"
+                                   style="@(requiresTotp ? "display: none;" : "")"
+                                   required />
+                        </div>
+                        @if (requiresTotp)
+                        {
+                            <div class="field-value" style="padding: 0.75rem; background: var(--bg-input); border: 1px solid var(--border-input); border-radius: 8px; color: var(--text-muted); font-size: 0.875rem;">
+                                @LocalizationService.GetString("PasswordConfirmed")
+                            </div>
+                        }
+                    </div>
+
+                    @if (requiresTotp)
+                    {
+                        <div class="input-group">
+                            <label for="totpCode">@LocalizationService.GetString("TotpCode")</label>
+                            <div class="input-wrapper">
+                                <input id="totpCode" 
+                                       name="totpCode"
+                                       type="text" 
+                                       placeholder="@LocalizationService.GetString("EnterTotpCode")" 
+                                       class="form-input totp-input"
+                                       autocomplete="one-time-code"
+                                       maxlength="6"
+                                       pattern="[0-9]*"
+                                       inputmode="numeric"
+                                       readonly="@isLocked"
+                                       required />
+                            </div>
+                        </div>
+                        
+                        <div class="totp-notice">
+                            <svg class="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="8" x2="12" y2="12"/>
+                                <line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            @LocalizationService.GetString("TotpRequired")
+                        </div>
+                    }
+
+                    <div class="input-group" style="margin-bottom: 1.5rem;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 500;">
+                            <input type="checkbox" name="rememberMe" value="true" checked style="width: 16px; height: 16px;" disabled="@isLocked" />
+                            <span>@LocalizationService.GetString("RememberMe")</span>
+                        </label>
+                    </div>
+
+                    <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+
+                    <button type="submit" class="btn btn-primary" disabled="@isLocked">
+                        <span>@LocalizationService.GetString("SignIn")</span>
+                    </button>
+                </form>
+
+                <!-- Social Login Section -->
+                @if (!requiresTotp && !isLocked && ApplicationService.IsExternalAuthEnabled)
+                {
+                    <div class="social-login-divider">
+                        <span class="divider-text">@LocalizationService.GetString("OrContinueWith")</span>
+                    </div>
+
+                    <div class="social-login-buttons">
+                        @if (ApplicationService.IsGoogleAuthEnabled)
+                        {
+                            <a href=@($"{Authorization.Google.GoogleOAuth.LoginUri}?returnUrl={Uri.EscapeDataString(ReturnUrl ?? "/dashboard")}")
+                               class="btn-social btn-google"
+                               title="@LocalizationService.GetString("SignInWithGoogle")">
+                                <svg class="social-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                                </svg>
+                            </a>
+                        }
+
+                        @if (ApplicationService.IsMicrosoftAuthEnabled)
+                        {
+                            <a href="@($"{Authorization.Microsoft.MicrosoftOAuth.LoginUri}?returnUrl={Uri.EscapeDataString(ReturnUrl ?? "/dashboard")}")"
+                               class="btn-social btn-microsoft"
+                               title="@LocalizationService.GetString("SignInWithMicrosoft")">
+                                <svg class="social-icon" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill="#F25022" d="M1 1h10v10H1z" />
+                                    <path fill="#7FBA00" d="M12 1h10v10H12z" />
+                                    <path fill="#00A4EF" d="M1 12h10v10H1z" />
+                                    <path fill="#FFB900" d="M12 12h10v10H12z" />
+                                </svg>
+                            </a>
+                        }
+
+                        @if (ApplicationService.IsGitHubAuthEnabled)
+                        {
+                            <a href="@($"{Authorization.GitHub.GitHubOAuth.LoginUri}?returnUrl={Uri.EscapeDataString(ReturnUrl ?? "/dashboard")}")"
+                               class="btn-social btn-github"
+                               title="@LocalizationService.GetString("SignInWithGitHub")">
+                                <svg class="social-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.387.6.11.82-.26.82-.577v-2.23c-3.338.726-4.043-1.61-4.043-1.61-.546-1.387-1.333-1.757-1.333-1.757-1.09-.744.083-.729.083-.729 1.205.084 1.84 1.237 1.84 1.237 1.07 1.835 2.807 1.304 3.492.997.108-.776.418-1.304.762-1.604-2.665-.305-5.467-1.332-5.467-5.932 0-1.31.47-2.38 1.236-3.22-.124-.304-.536-1.527.117-3.176 0 0 1.008-.322 3.3 1.23a11.5 11.5 0 0 1 6 0c2.29-1.552 3.296-1.23 3.296-1.23.656 1.65.244 2.872.12 3.176.77.84 1.236 1.91 1.236 3.22 0 4.61-2.807 5.624-5.48 5.92.43.37.823 1.1.823 2.22v3.293c0 .32.217.693.825.576C20.565 21.796 24 17.3 24 12c0-6.63-5.373-12-12-12z" />
+                                </svg>
+                            </a>
+                        }
+
+                        @if (ApplicationService.IsFacebookAuthEnabled)
+                        {
+                            <a href="@($"{Authorization.Facebook.FacebookOAuth.LoginUri}?returnUrl={Uri.EscapeDataString(ReturnUrl ?? "/dashboard")}")"
+                               class="btn-social btn-facebook"
+                               title="@LocalizationService.GetString("SignInWithFacebook")">
+                                <svg class="social-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill="#1877F2" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                                </svg>
+                            </a>
+                        }
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(Error))
+                {
+                    <div class="@(GetErrorClass())">
+                        <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            @if (Error == "user_locked" || Error == "ip_banned")
+                            {
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                <path d="M9 12h6v7H9z"/>
+                                <circle cx="12" cy="9" r="1"/>
+                            }
+                            else
+                            {
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                <line x1="12" y1="9" x2="12" y2="13"/>
+                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                            }
+                        </svg>
+                        <div>
+                            @(GetErrorMessage())
+                            @if (Error == "user_locked" || Error == "ip_banned")
+                            {
+                                <div class="lockout-info">
+                                    @GetLockoutInfo()
+                                </div>
+                            }
+                            @if (Error == "invalid" && remainingAttempts > 0 && remainingAttempts < 10)
+                            {
+                                <div class="attempts-warning">
+                                    @LocalizationService.GetString("AttemptsRemaining"): @remainingAttempts
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <div class="demo-credentials">                    
+                    @if (ApplicationService.IsDebugLoggingEnabled)
+                    {
+                        <div style="margin-top: 1rem; padding: 0.75rem; background: var(--bg-accent); border-radius: 8px; font-size: 0.8rem;">
+                            <strong>@LocalizationService.GetString("DebugMode")</strong> @LocalizationService.GetString("DebugEnabled")<br />
+                            <strong>@LocalizationService.GetString("Version")</strong> @ApplicationService.ApplicationVersion<br />
+                            <strong>@LocalizationService.GetString("MetricsEnabled")</strong> @ApplicationService.IsMetricsEnabled.ToString().ToUpperInvariant()<br />
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, SupplyParameterFromQuery] 
+    public string? ReturnUrl { get; set; }
+    
+    [Parameter, SupplyParameterFromQuery] 
+    public string? Error { get; set; }
+    
+    [Parameter, SupplyParameterFromQuery] 
+    public string? Username { get; set; }
+
+    [Parameter, SupplyParameterFromQuery] 
+    public string? LockoutEnd { get; set; }
+
+    [Parameter, SupplyParameterFromQuery] 
+    public string? BanEnd { get; set; }
+
+    [Parameter, SupplyParameterFromQuery] 
+    public int Remaining { get; set; }
+
+    private bool isUserAuthenticated = false;
+    private bool requiresTotp = false;
+    private bool isLocked = false;
+    private int remainingAttempts = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        AppLogger.Log("Login", "Starting OnInitializedAsync");
+        
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        isUserAuthenticated = authState.User?.Identity?.IsAuthenticated == true;
+        
+        AppLogger.Log("Login", $"isUserAuthenticated: {isUserAuthenticated}");
+        if (authState.User?.Identity?.IsAuthenticated == true)
+        {
+            AppLogger.Log("Login", $"User identity name: {authState.User.Identity.Name}");
+            AppLogger.Log("Login", $"User identity type: {authState.User.Identity.AuthenticationType}");
+        }
+        
+        if (isUserAuthenticated)
+        {
+            AppLogger.Log("Login", "User is authenticated, redirecting...");
+            Navigation.NavigateTo(string.IsNullOrEmpty(ReturnUrl) ? "/dashboard" : ReturnUrl);
+        }
+        else
+        {
+            AppLogger.Log("Login", "User is not authenticated, showing login form");
+            
+            // Check if TOTP is required (when redirected from failed login)
+            if (Error == "totp_required" || Error == "invalid_totp")
+            {
+                requiresTotp = true;
+                AppLogger.Log("Login", "TOTP is required for this user");
+            }
+
+            // Check if account is locked or IP banned
+            if (Error == "user_locked" || Error == "ip_banned")
+            {
+                isLocked = true;
+                AppLogger.Log("Login", $"Account is locked due to: {Error}");
+            }
+
+            // Get remaining attempts
+            remainingAttempts = Remaining;
+        }
+    }
+
+    private string GetErrorClass()
+    {
+        return Error switch
+        {
+            "user_locked" or "ip_banned" => "error-message lockout-message",
+            _ => "error-message"
+        };
+    }
+
+    private string GetErrorMessage()
+    {
+        return Error switch 
+        {
+            "invalid" => LocalizationService.GetString("InvalidCredentials"),
+            "totp_required" => LocalizationService.GetString("TotpRequired"),
+            "invalid_totp" => LocalizationService.GetString("InvalidTotpCode"),
+            "user_locked" => LocalizationService.GetString("UserLocked"),
+            "ip_banned" => LocalizationService.GetString("IpBanned"),
+            "server" => LocalizationService.GetString("ServerError"),
+            "external_auth_failed" => LocalizationService.GetString("ExternalAuthFailed"),
+            "external_user" => LocalizationService.GetString("ExternalUser"),
+            "missing_user_info" => LocalizationService.GetString("MissingUserInfo"),
+            "user_creation_failed" => LocalizationService.GetString("UserCreationFailed"),
+            "invalid_provider" => LocalizationService.GetString("InvalidProvider"),
+            _ => LocalizationService.GetString("UnknownError")
+        };
+    }
+
+    private string GetLockoutInfo()
+    {
+        if (Error == "user_locked" && !string.IsNullOrEmpty(LockoutEnd))
+        {
+            if (DateTime.TryParse(LockoutEnd, out var lockoutTime))
+            {
+                return $"{LocalizationService.GetString("LockoutUntil")}: {lockoutTime.ToLocalTime().ToString("F", LocalizationService.GetCurrentCulture())}";
+            }
+        }
+        else if (Error == "ip_banned" && !string.IsNullOrEmpty(BanEnd))
+        {
+            if (DateTime.TryParse(BanEnd, out var banTime))
+            {
+                return $"{LocalizationService.GetString("BannedUntil")}: {banTime.ToLocalTime().ToString("F", LocalizationService.GetCurrentCulture())}";
+            }
+        }
+
+        return string.Empty;
+    }
+}

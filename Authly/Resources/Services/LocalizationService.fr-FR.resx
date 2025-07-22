@@ -1,0 +1,507 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Login" xml:space="preserve">
+    <value>Connexion</value>
+  </data>
+  <data name="Logout" xml:space="preserve">
+    <value>Se déconnecter</value>
+  </data>
+  <data name="Dashboard" xml:space="preserve">
+    <value>Tableau de bord</value>
+  </data>
+  <data name="Home" xml:space="preserve">
+    <value>Accueil</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Erreur</value>
+  </data>
+  <data name="Username" xml:space="preserve">
+    <value>Nom d'utilisateur</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Mot de passe</value>
+  </data>
+  <data name="Email" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="FullName" xml:space="preserve">
+    <value>Nom complet</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Enregistrer</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Modifier</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="Loading" xml:space="preserve">
+    <value>Chargement...</value>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>Actions</value>
+  </data>
+  <data name="LoginTitle" xml:space="preserve">
+    <value>Connexion</value>
+  </data>
+  <data name="LoginSubtitle" xml:space="preserve">
+    <value>Connectez-vous à votre compte</value>
+  </data>
+  <data name="EnterUsername" xml:space="preserve">
+    <value>Entrez le nom d'utilisateur</value>
+  </data>
+  <data name="EnterPassword" xml:space="preserve">
+    <value>Entrez le mot de passe</value>
+  </data>
+  <data name="RememberMe" xml:space="preserve">
+    <value>Rester connecté</value>
+  </data>
+  <data name="SignIn" xml:space="preserve">
+    <value>Se connecter</value>
+  </data>
+  <data name="SignInWithGoogle" xml:space="preserve">
+    <value>Se connecter avec Google</value>
+  </data>
+  <data name="DemoCredentials" xml:space="preserve">
+    <value>Identifiants de démonstration :</value>
+  </data>
+  <data name="AdminWithTotp" xml:space="preserve">
+    <value>Admin (avec TOTP) :</value>
+  </data>
+  <data name="UserWithoutTotp" xml:space="preserve">
+    <value>Utilisateur (sans TOTP) :</value>
+  </data>
+  <data name="ForAdminUseTotp" xml:space="preserve">
+    <value>Pour le compte admin, utilisez la clé TOTP :</value>
+  </data>
+  <data name="UserProfile" xml:space="preserve">
+    <value>Profil utilisateur</value>
+  </data>
+  <data name="TotpVerification" xml:space="preserve">
+    <value>Vérification TOTP</value>
+  </data>
+  <data name="Active" xml:space="preserve">
+    <value>Actif</value>
+  </data>
+  <data name="Inactive" xml:space="preserve">
+    <value>Inactif</value>
+  </data>
+  <data name="TotpSecretKey" xml:space="preserve">
+    <value>Clé secrète TOTP</value>
+  </data>
+  <data name="TotpSetupInstructions" xml:space="preserve">
+    <value>Utilisez cette clé pour configurer TOTP dans Google Authenticator ou une autre application TOTP.</value>
+  </data>
+  <data name="NewPassword" xml:space="preserve">
+    <value>Nouveau mot de passe (optionnel)</value>
+  </data>
+  <data name="PasswordPlaceholder" xml:space="preserve">
+    <value>Laissez vide pour conserver le mot de passe actuel</value>
+  </data>
+  <data name="TotpActive" xml:space="preserve">
+    <value>TOTP actif</value>
+  </data>
+  <data name="TotpInactive" xml:space="preserve">
+    <value>TOTP inactif</value>
+  </data>
+  <data name="TotpWillBeActive" xml:space="preserve">
+    <value>TOTP sera actif après sauvegarde</value>
+  </data>
+  <data name="TotpWillBeActiveDescription" xml:space="preserve">
+    <value>Après sauvegarde, une nouvelle clé secrète TOTP sera générée, que vous devrez configurer dans votre application d'authentification.</value>
+  </data>
+  <data name="TotpWillBeDeactivated" xml:space="preserve">
+    <value>TOTP sera désactivé</value>
+  </data>
+  <data name="TotpWillBeDeactivatedDescription" xml:space="preserve">
+    <value>Votre connexion sera sécurisée uniquement par mot de passe. Nous recommandons de laisser TOTP activé pour une sécurité accrue.</value>
+  </data>
+  <data name="SaveChanges" xml:space="preserve">
+    <value>Enregistrer les modifications</value>
+  </data>
+  <data name="DebugInformation" xml:space="preserve">
+    <value>Informations de débogage</value>
+  </data>
+  <data name="DebugFailedToLoad" xml:space="preserve">
+    <value>Échec du chargement des données utilisateur. Vérifiez la console pour les informations de débogage.</value>
+  </data>
+  <data name="DebugRefreshPage" xml:space="preserve">
+    <value>Si vous venez de vous connecter, essayez de rafraîchir la page.</value>
+  </data>
+  <data name="DebugLogging" xml:space="preserve">
+    <value>Journalisation de débogage :</value>
+  </data>
+  <data name="DebugEnabled" xml:space="preserve">
+    <value>ACTIVÉ</value>
+  </data>
+  <data name="Application" xml:space="preserve">
+    <value>Application :</value>
+  </data>
+  <data name="Redirecting" xml:space="preserve">
+    <value>Redirection...</value>
+  </data>
+  <data name="RedirectingToLogin" xml:space="preserve">
+    <value>Redirection vers la connexion...</value>
+  </data>
+  <data name="LoggingOut" xml:space="preserve">
+    <value>Déconnexion...</value>
+  </data>
+  <data name="InvalidCredentials" xml:space="preserve">
+    <value>Identifiants de connexion invalides.</value>
+  </data>
+  <data name="ServerError" xml:space="preserve">
+    <value>Erreur serveur survenue.</value>
+  </data>
+  <data name="UnknownError" xml:space="preserve">
+    <value>Erreur inconnue.</value>
+  </data>
+  <data name="UnexpectedError" xml:space="preserve">
+    <value>Une erreur inattendue s'est produite.</value>
+  </data>
+  <data name="Reload" xml:space="preserve">
+    <value>Recharger</value>
+  </data>
+  <data name="DataSavedSuccessfully" xml:space="preserve">
+    <value>Données enregistrées avec succès !</value>
+  </data>
+  <data name="FailedToSaveChanges" xml:space="preserve">
+    <value>Échec de l'enregistrement des modifications. Veuillez réessayer.</value>
+  </data>
+  <data name="ErrorSavingChanges" xml:space="preserve">
+    <value>Erreur lors de l'enregistrement des modifications.</value>
+  </data>
+  <data name="DebugMode" xml:space="preserve">
+    <value>Mode débogage :</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>Version :</value>
+  </data>
+  <data name="MetricsEnabled" xml:space="preserve">
+    <value>Métriques activées :</value>
+  </data>
+  <data name="TotpCode" xml:space="preserve">
+    <value>Code TOTP</value>
+  </data>
+  <data name="EnterTotpCode" xml:space="preserve">
+    <value>Entrez le code à 6 chiffres</value>
+  </data>
+  <data name="TotpRequired" xml:space="preserve">
+    <value>Veuillez entrer le code à 6 chiffres de votre application d'authentification</value>
+  </data>
+  <data name="InvalidTotpCode" xml:space="preserve">
+    <value>Code TOTP invalide. Veuillez réessayer.</value>
+  </data>
+  <data name="PasswordConfirmed" xml:space="preserve">
+    <value>Mot de passe confirmé</value>
+  </data>
+  <data name="TotpQRCode" xml:space="preserve">
+    <value>Code QR pour la configuration</value>
+  </data>
+  <data name="TotpQRCodeInstructions" xml:space="preserve">
+    <value>Scannez ce code QR avec votre application d'authentification (Google Authenticator, Microsoft Authenticator, etc.)</value>
+  </data>
+  <data name="TotpManualEntry" xml:space="preserve">
+    <value>Saisie manuelle</value>
+  </data>
+  <data name="TotpCurrentCode" xml:space="preserve">
+    <value>Code TOTP actuel</value>
+  </data>
+  <data name="TotpCurrentCodeHint" xml:space="preserve">
+    <value>Ce code change toutes les 30 secondes. Utilisez-le pour vous connecter à votre compte.</value>
+  </data>
+  <data name="TotpAuthenticator" xml:space="preserve">
+    <value>Authenticateur</value>
+  </data>
+  <data name="UserLocked" xml:space="preserve">
+    <value>Votre compte a été temporairement verrouillé en raison de trop nombreuses tentatives de connexion échouées.</value>
+  </data>
+  <data name="IpBanned" xml:space="preserve">
+    <value>Votre adresse IP a été temporairement bannie en raison de trop nombreuses tentatives de connexion échouées.</value>
+  </data>
+  <data name="AttemptsRemaining" xml:space="preserve">
+    <value>Tentatives restantes</value>
+  </data>
+  <data name="LockoutUntil" xml:space="preserve">
+    <value>Compte verrouillé jusqu'à</value>
+  </data>
+  <data name="BannedUntil" xml:space="preserve">
+    <value>IP bannie jusqu'à</value>
+  </data>
+  <data name="AdminPanel" xml:space="preserve">
+    <value>Panneau d'administration</value>
+  </data>
+  <data name="UserManagement" xml:space="preserve">
+    <value>Gestion des utilisateurs</value>
+  </data>
+  <data name="IpManagement" xml:space="preserve">
+    <value>Gestion des IP</value>
+  </data>
+  <data name="AllUsers" xml:space="preserve">
+    <value>Tous les utilisateurs</value>
+  </data>
+  <data name="BannedIPs" xml:space="preserve">
+    <value>Adresses IP bannies</value>
+  </data>
+  <data name="Administrator" xml:space="preserve">
+    <value>Administrateur</value>
+  </data>
+  <data name="StandardUser" xml:space="preserve">
+    <value>Utilisateur standard</value>
+  </data>
+  <data name="FailedAttempts" xml:space="preserve">
+    <value>Tentatives échouées</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Statut</value>
+  </data>
+  <data name="Locked" xml:space="preserve">
+    <value>Verrouillé</value>
+  </data>
+  <data name="NotLocked" xml:space="preserve">
+    <value>Non verrouillé</value>
+  </data>
+  <data name="Unlock" xml:space="preserve">
+    <value>Déverrouiller</value>
+  </data>
+  <data name="PromoteToAdmin" xml:space="preserve">
+    <value>Promouvoir administrateur</value>
+  </data>
+  <data name="DemoteFromAdmin" xml:space="preserve">
+    <value>Rétrograder administrateur</value>
+  </data>
+  <data name="IPAddress" xml:space="preserve">
+    <value>Adresse IP</value>
+  </data>
+  <data name="FirstAttempt" xml:space="preserve">
+    <value>Première tentative</value>
+  </data>
+  <data name="LastAttempt" xml:space="preserve">
+    <value>Dernière tentative</value>
+  </data>
+  <data name="Banned" xml:space="preserve">
+    <value>Banni</value>
+  </data>
+  <data name="NotBanned" xml:space="preserve">
+    <value>Non banni</value>
+  </data>
+  <data name="BanExpires" xml:space="preserve">
+    <value>Bannissement expire</value>
+  </data>
+  <data name="Unban" xml:space="preserve">
+    <value>Débannir</value>
+  </data>
+  <data name="NoUsersFound" xml:space="preserve">
+    <value>Aucun utilisateur trouvé</value>
+  </data>
+  <data name="NoIPBansFound" xml:space="preserve">
+    <value>Aucun bannissement IP trouvé</value>
+  </data>
+  <data name="AccessDenied" xml:space="preserve">
+    <value>Accès refusé</value>
+  </data>
+  <data name="UserUnlockedSuccessfully" xml:space="preserve">
+    <value>Utilisateur déverrouillé avec succès</value>
+  </data>
+  <data name="FailedToUnlockUser" xml:space="preserve">
+    <value>Échec du déverrouillage de l'utilisateur</value>
+  </data>
+  <data name="UserUpdatedSuccessfully" xml:space="preserve">
+    <value>Utilisateur mis à jour avec succès</value>
+  </data>
+  <data name="FailedToUpdateUser" xml:space="preserve">
+    <value>Échec de la mise à jour de l'utilisateur</value>
+  </data>
+  <data name="IPUnbannedSuccessfully" xml:space="preserve">
+    <value>IP débannie avec succès</value>
+  </data>
+  <data name="FailedToUnbanIP" xml:space="preserve">
+    <value>Échec du débannissement de l'IP</value>
+  </data>
+  <data name="Lock" xml:space="preserve">
+    <value>Verrouiller</value>
+  </data>
+  <data name="LockPermanently" xml:space="preserve">
+    <value>Verrouiller définitivement</value>
+  </data>
+  <data name="Ban" xml:space="preserve">
+    <value>Bannir</value>
+  </data>
+  <data name="BanPermanently" xml:space="preserve">
+    <value>Bannir définitivement</value>
+  </data>
+  <data name="UserLockedSuccessfully" xml:space="preserve">
+    <value>Utilisateur verrouillé avec succès</value>
+  </data>
+  <data name="FailedToLockUser" xml:space="preserve">
+    <value>Échec du verrouillage de l'utilisateur</value>
+  </data>
+  <data name="IPBannedSuccessfully" xml:space="preserve">
+    <value>IP bannie avec succès</value>
+  </data>
+  <data name="FailedToBanIP" xml:space="preserve">
+    <value>Échec du bannissement de l'IP</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>Réinitialiser</value>
+  </data>
+  <data name="NoActionNeeded" xml:space="preserve">
+    <value>Aucune action nécessaire</value>
+  </data>
+  <data name="Promote" xml:space="preserve">
+    <value>Promouvoir</value>
+  </data>
+  <data name="Demote" xml:space="preserve">
+    <value>Rétrograder</value>
+  </data>
+  <data name="AdminPrivilegesRequired" xml:space="preserve">
+    <value>Privilèges d'administrateur requis</value>
+  </data>
+  <data name="OrContinueWith" xml:space="preserve">
+    <value>Ou continuer avec</value>
+  </data>
+  <data name="SignInWithFacebook" xml:space="preserve">
+    <value>Se connecter avec Facebook</value>
+  </data>
+  <data name="ExternalAuthFailed" xml:space="preserve">
+    <value>L'authentification externe a échoué. Veuillez réessayer.</value>
+  </data>
+  <data name="MissingUserInfo" xml:space="preserve">
+    <value>Informations utilisateur requises manquantes du fournisseur externe.</value>
+  </data>
+  <data name="UserCreationFailed" xml:space="preserve">
+    <value>Échec de la création du compte utilisateur. Veuillez réessayer.</value>
+  </data>
+  <data name="InvalidProvider" xml:space="preserve">
+    <value>Fournisseur d'authentification invalide spécifié.</value>
+  </data>
+  <data name="SignInWithMicrosoft" xml:space="preserve">
+    <value>Se connecter avec Microsoft</value>
+  </data>
+  <data name="SignInWithGitHub" xml:space="preserve">
+    <value>Se connecter avec GitHub</value>
+  </data>
+  <data name="ExternalUser" xml:space="preserve">
+    <value>Les utilisateurs externes ne peuvent pas se connecter avec l'authentification locale. Veuillez utiliser la méthode d'authentification externe configurée pour votre compte.</value>
+  </data>
+</root>
