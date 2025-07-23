@@ -28,20 +28,5 @@
     "IsLockedOut": false,
     "Administrator": false,
     "IsExternal": false
-  },
-  {
-    "UserName": "Google:koudak4@gmail.com",
-    "Email": "koudak4@gmail.com",
-    "FullName": "Mirek Klouda",
-    "HasTotp": false,
-    "TotpSecret": null,
-    "Password": "koudak4@gmail.com",
-    "FailedLoginAttempts": 0,
-    "LastFailedLoginAttempt": null,
-    "LockoutStart": null,
-    "LockoutEnd": null,
-    "IsLockedOut": false,
-    "Administrator": false,
-    "IsExternal": true
   }
 ]

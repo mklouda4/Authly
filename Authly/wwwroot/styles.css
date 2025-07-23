@@ -3626,3 +3626,26 @@ h1:focus {
         padding: 0.75rem 0.75rem 0.75rem 2.25rem !important;
     }
 }
+
+
+/* FORCE VERTICAL LAYOUT FOR LOGIN FORM LABELS AND INPUTS */
+.login-container .input-group {
+    display: flex !important;
+    flex-direction: column !important;
+    margin-bottom: 1.5rem !important;
+}
+
+    .login-container .input-group label {
+        display: block !important;
+        margin-bottom: 0.75rem !important;
+        font-weight: 600 !important;
+        color: var(--text-primary) !important;
+        font-size: 0.9rem !important;
+        transition: color 0.3s ease !important;
+        order: 1 !important; /* Ensure label comes first */
+    }
+
+.login-container .input-wrapper {
+    order: 2 !important; /* Ensure input comes after label */
+    width: 100% !important;
+}
