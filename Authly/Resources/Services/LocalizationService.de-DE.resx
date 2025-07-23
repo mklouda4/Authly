@@ -903,11 +903,8 @@
   <data name="Enabled" xml:space="preserve">
     <value>Aktiviert</value>
   </data>
-  <data name="Disabled" xml:space="preserve">
-    <value>Deaktiviert</value>
-  </data>
-  <data name="Enable" xml:space="preserve">
-    <value>Aktivieren</value>
+  <data name="AllowPlainTextPkce" xml:space="preserve">
+    <value>Klartext-PKCE erlauben</value>
   </data>
   <data name="Disable" xml:space="preserve">
     <value>Deaktivieren</value>

@@ -237,6 +237,16 @@
                                 </div>
 
                                 <div class="field">
+                                    <label class="field-label" for="allowPlainTextPkce">@LocalizationService.GetString("AllowPlainTextPkce")</label>
+                                    <div class="field-value">
+                                        <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: normal; cursor: pointer; padding: 0.75rem; background: var(--bg-input); border: 1px solid var(--border-input); border-radius: 8px;">
+                                            <input type="checkbox" @bind="newClientRequest.AllowPlainTextPkce" style="width: 16px; height: 16px;" />
+                                            <span style="font-size: 0.875rem; color: var(--text-primary);">@LocalizationService.GetString("AllowPlainTextPkce")</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="field">
                                     <label class="field-label">@LocalizationService.GetString("RequirePKCE")</label>
                                     <div class="field-value">
                                         <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: normal; cursor: pointer; padding: 0.75rem; background: var(--bg-input); border: 1px solid var(--border-input); border-radius: 8px;">
@@ -465,33 +475,55 @@
                 </div>
 
                 <!-- OAuth Endpoints Information -->
-                <div class="oauth-endpoints-info">
-                    <h4 class="oauth-endpoints-title">
-                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"/>
-                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"/>
-                        </svg>
-                        @LocalizationService.GetString("OAuthEndpoints")
-                    </h4>
-                    
-                    <div class="oauth-endpoint-item">
-                        <div class="oauth-endpoint-label">@LocalizationService.GetString("AuthorizationEndpoint"):</div>
-                        <div class="oauth-endpoint-url">@(GetBaseUrl())/oauth/authorize</div>
+                <div class="detail-section">
+                    <h4 class="section-subtitle">@LocalizationService.GetString("OAuthEndpoints")</h4>
+                    <div class="field">
+                        <label class="field-label">@LocalizationService.GetString("AuthorizationEndpoint")</label>
+                        <div class="field-value">
+                            <code>@(GetBaseUrl())/oauth/authorize</code>
+                            <button class="btn btn-outline btn-sm" @onclick="@(() => CopyToClipboard($"{GetBaseUrl()}/oauth/authorize"))" title="@LocalizationService.GetString("CopyToClipboard")">
+                                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
-                    
-                    <div class="oauth-endpoint-item">
-                        <div class="oauth-endpoint-label">@LocalizationService.GetString("TokenEndpoint"):</div>
-                        <div class="oauth-endpoint-url">@(GetBaseUrl())/oauth/token</div>
+                    <div class="field">
+                        <label class="field-label">@LocalizationService.GetString("TokenEndpoint")</label>
+                        <div class="field-value">
+                            <code>@(GetBaseUrl())/oauth/token</code>
+                            <button class="btn btn-outline btn-sm" @onclick="@(() => CopyToClipboard($"{GetBaseUrl()}/oauth/token"))" title="@LocalizationService.GetString("CopyToClipboard")">
+                                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
-                    
-                    <div class="oauth-endpoint-item">
-                        <div class="oauth-endpoint-label">@LocalizationService.GetString("UserInfoEndpoint"):</div>
-                        <div class="oauth-endpoint-url">@(GetBaseUrl())/oauth/userinfo</div>
+                    <div class="field">
+                        <label class="field-label">@LocalizationService.GetString("UserInfoEndpoint")</label>
+                        <div class="field-value">
+                            <code>@(GetBaseUrl())/oauth/userinfo</code>
+                            <button class="btn btn-outline btn-sm" @onclick="@(() => CopyToClipboard($"{GetBaseUrl()}/oauth/userinfo"))" title="@LocalizationService.GetString("CopyToClipboard")">
+                                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
-                    
-                    <div class="oauth-endpoint-item">
-                        <div class="oauth-endpoint-label">@LocalizationService.GetString("DiscoveryEndpoint"):</div>
-                        <div class="oauth-endpoint-url">@(GetBaseUrl())/oauth/.well-known/oauth-authorization-server</div>
+                    <div class="field">
+                        <label class="field-label">@LocalizationService.GetString("DiscoveryEndpoint")</label>
+                        <div class="field-value">
+                            <code>@(GetBaseUrl())/oauth/.well-known/oauth-authorization-server</code>
+                            <button class="btn btn-outline btn-sm" @onclick="@(() => CopyToClipboard($"{GetBaseUrl()}/oauth/.well-known/oauth-authorization-server"))" title="@LocalizationService.GetString("CopyToClipboard")">
+                                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -634,6 +666,16 @@
                                 </div>
 
                                 <div class="field">
+                                    <label class="field-label" for="editAllowPlainTextPkce">@LocalizationService.GetString("AllowPlainTextPkce")</label>
+                                    <div class="field-value">
+                                        <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: normal; cursor: pointer; padding: 0.75rem; background: var(--bg-input); border: 1px solid var(--border-input); border-radius: 8px;">
+                                            <input type="checkbox" @bind="updateClientRequest.AllowPlainTextPkce" style="width: 16px; height: 16px;" />
+                                            <span style="font-size: 0.875rem; color: var(--text-primary);">@LocalizationService.GetString("AllowPlainTextPkce")</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="field">
                                     <label class="field-label">@LocalizationService.GetString("RequirePKCE")</label>
                                     <div class="field-value">
                                         <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: normal; cursor: pointer; padding: 0.75rem; background: var(--bg-input); border: 1px solid var(--border-input); border-radius: 8px;">
@@ -706,15 +748,20 @@
                         <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
                         </svg>
-                        @LocalizationService.GetString("NewSecretWarning")
+                        @LocalizationService.GetString("ClientSecretRegenerated")
                     </div>
 
-                    <div class="input-group">
+                    <div class="field">
+                        <label class="field-label">@LocalizationService.GetString("ClientId")</label>
+                        <div class="field-value">@clientForSecretRegeneration.ClientId</div>
+                    </div>
+
+                    <div class="field">
                         <label class="field-label">@LocalizationService.GetString("ClientSecret")</label>
                         <div class="token-value-container">
-                            <input class="token-value-input" readonly type="@(showNewSecret ? "text" : "password")" value="@newGeneratedSecret" />
-                            <button class="btn btn-outline btn-sm" @onclick="ToggleNewSecretVisibility" title="@(showNewSecret ? LocalizationService.GetString("HideSecret") : LocalizationService.GetString("ShowSecret"))">
-                                @if (showNewSecret)
+                            <input class="token-value-input" readonly type="@(showClientSecret ? "text" : "password")" value="@newGeneratedSecret" />
+                            <button class="btn btn-outline btn-sm" @onclick="ToggleSecretVisibility" title="@(showClientSecret ? LocalizationService.GetString("HideSecret") : LocalizationService.GetString("ShowSecret"))">
+                                @if (showClientSecret)
                                 {
                                     <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
@@ -728,7 +775,7 @@
                                     </svg>
                                 }
                             </button>
-                            <button class="btn btn-outline btn-sm" @onclick="CopyNewSecretToClipboard" title="@LocalizationService.GetString("CopyToClipboard")">
+                            <button class="btn btn-outline btn-sm" @onclick="() => CopyToClipboard(newGeneratedSecret)" title="@LocalizationService.GetString("CopyToClipboard")">
                                 <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
@@ -737,10 +784,22 @@
                         </div>
                     </div>
                 }
+                else
+                {
+                    <div class="alert alert-danger">
+                        <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="8" y1="5" x2="8" y2="19"/>
+                            <line x1="16" y1="5" x2="16" y2="19"/>
+                            <line x1="5" y1="8" x2="19" y2="8"/>
+                            <line x1="5" y1="16" x2="19" y2="16"/>
+                        </svg>
+                        @LocalizationService.GetString("SecretRegenerationFailed")
+                    </div>
+                }
             </div>
             
             <div class="modal-footer">
-                <button class="btn btn-primary" @onclick="HideRegenerateSecretModal">
+                <button class="btn btn-outline" @onclick="HideRegenerateSecretModal">
                     @LocalizationService.GetString("Close")
                 </button>
             </div>

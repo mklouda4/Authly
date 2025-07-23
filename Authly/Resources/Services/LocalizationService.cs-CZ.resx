@@ -911,4 +911,7 @@
   <data name="ClientTypeCannotBeChanged" xml:space="preserve">
     <value>Typ klienta nelze po vytvoření změnit</value>
   </data>
+  <data name="AllowPlainTextPkce" xml:space="preserve">
+    <value>Povolit prostý text PKCE</value>
+  </data>
 </root>

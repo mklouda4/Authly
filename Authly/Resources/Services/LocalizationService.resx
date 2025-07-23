@@ -911,4 +911,7 @@
   <data name="ClientTypeCannotBeChanged" xml:space="preserve">
     <value>Client type cannot be changed after creation</value>
   </data>
+  <data name="AllowPlainTextPkce" xml:space="preserve">
+    <value>Allow Plain Text PKCE</value>
+  </data>
 </root>

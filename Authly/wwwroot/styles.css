@@ -3699,3 +3699,63 @@ h1:focus {
     width: 100% !important;
 }
 
+/* OAuth endpoint URL styling - make it consistent with field values */
+.field-value code {
+    font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    background: color-mix(in srgb, var(--accent-info) 8%, var(--bg-input));
+    border: 1px solid color-mix(in srgb, var(--accent-info) 15%, transparent);
+    border-radius: 6px;
+    color: var(--accent-info);
+    font-weight: 500;
+    word-break: break-all;
+    display: inline-block;
+    margin-right: 0.5rem;
+}
+
+/* Make the field value container for endpoints flex for better button alignment */
+.field-value:has(code) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .field-value code {
+    background: color-mix(in srgb, var(--accent-info) 12%, var(--bg-input));
+    border-color: color-mix(in srgb, var(--accent-info) 20%, transparent);
+    color: #60a5fa;
+}
+
+/* Mobile responsive code elements */
+@media (max-width: 768px) {
+    .field-value code {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.6rem;
+        margin-right: 0;
+        margin-bottom: 0.5rem;
+        width: 100%;
+        word-break: break-all;
+        text-align: center;
+    }
+
+    .field-value:has(code) {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+        .field-value:has(code) .btn {
+            width: 100%;
+            justify-content: center;
+        }
+}
+
+@media (max-width: 480px) {
+    .field-value code {
+        font-size: 0.7rem;
+        padding: 0.5rem;
+        line-height: 1.3;
+    }
+}

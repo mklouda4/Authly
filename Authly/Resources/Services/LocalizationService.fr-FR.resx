@@ -912,4 +912,7 @@
   <data name="Disable" xml:space="preserve">
     <value>Désactiver</value>
   </data>
+  <data name="AllowPlainTextPkce" xml:space="preserve">
+    <value>Autoriser PKCE en texte brut</value>
+  </data>
 </root>
