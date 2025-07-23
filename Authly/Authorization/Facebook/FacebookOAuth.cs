@@ -79,6 +79,7 @@ namespace Authly.Authorization.Facebook
         private readonly string? _appSecret;
         private readonly IApplicationLogger _appLogger;
         private readonly IApplicationService _applicationService;
+        private readonly ITemporaryRegistrationService _temporaryRegistrationService;
         private readonly IUserStorage _userStorage;
         private readonly SignInManager<User> _signInManager;
         private readonly ISecurityService _securityService;
@@ -92,6 +93,7 @@ namespace Authly.Authorization.Facebook
         /// <param name="configuration">Application configuration for reading Facebook OAuth settings</param>
         /// <param name="appLogger">Logger for recording authentication events</param>
         /// <param name="applicationService">Service for application-level operations, such as retrieving configuration settings</param>
+        /// <param name="temporaryRegistrationService">Service for managing temporary registration settings</param>"
         /// <param name="userStorage">Service for user data operations</param>
         /// <param name="signInManager">ASP.NET Core Identity sign-in manager</param>
         /// <param name="securityService">Service for security checks, rate limiting, and lockout management</param>
@@ -102,6 +104,7 @@ namespace Authly.Authorization.Facebook
             IConfiguration configuration, 
             IApplicationLogger appLogger,
             IApplicationService applicationService,
+            ITemporaryRegistrationService temporaryRegistrationService,
             IUserStorage userStorage, 
             SignInManager<User> signInManager,
             ISecurityService securityService,
@@ -111,6 +114,7 @@ namespace Authly.Authorization.Facebook
         {
             _appLogger = appLogger;
             _applicationService = applicationService;
+            _temporaryRegistrationService = temporaryRegistrationService;
             _userStorage = userStorage;
             _signInManager = signInManager;
             _securityService = securityService;
@@ -394,7 +398,7 @@ namespace Authly.Authorization.Facebook
                     user = existingUser;
                     _appLogger.Log("FacebookOAuth", $"Existing user found for email: {email}");
                 }
-                else if (!_applicationService.AllowRegistration)
+                else if (!_temporaryRegistrationService.IsRegistrationAllowed)
                 {
                     _appLogger.LogError("FacebookOAuth", $"User registration is disabled: {email}");
                     context.Response.Redirect("/login?error=user_creation_failed");
@@ -405,7 +409,6 @@ namespace Authly.Authorization.Facebook
                     // Create new user account for Facebook OAuth user
                     user = new User
                     {
-                        Id = Guid.NewGuid().ToString(),
                         UserName = $"{ProviderName}:{email}",
                         Email = email,
                         FullName = name ?? email,

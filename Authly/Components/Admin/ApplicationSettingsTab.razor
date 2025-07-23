@@ -1,0 +1,318 @@
+@using Authly.Services
+@using Authly.Models
+@using Authly.Configuration
+@using Microsoft.Extensions.Options
+@inherits BaseAdminTab
+@implements IDisposable
+@inject ITemporaryRegistrationService TemporaryRegistrationService
+@inject IOptions<ApplicationOptions> ApplicationOptions
+@inject IApplicationLogger Logger
+@inject IJSRuntime JSRuntime
+
+<div class="admin-tab-content">
+    <div class="tab-header">
+        <h2 class="tab-title">
+            <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            @LocalizationService.GetString("ApplicationSettings")
+        </h2>
+    </div>
+
+    @if (isLocalLoading)
+    {
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <span>@LocalizationService.GetString("Loading")</span>
+        </div>
+    }
+    else
+    {
+        <div class="settings-sections">
+            <!-- Registration Settings Section -->
+            <div class="settings-section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="8.5" cy="7" r="4"/>
+                            <line x1="20" y1="8" x2="20" y2="14"/>
+                            <line x1="23" y1="11" x2="17" y2="11"/>
+                        </svg>
+                        @LocalizationService.GetString("RegistrationSettings")
+                    </h3>
+                    <p class="section-description">@LocalizationService.GetString("RegistrationSettingsDescription")</p>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <label class="setting-label">@LocalizationService.GetString("PermanentRegistration")</label>
+                        <p class="setting-description">@LocalizationService.GetString("PermanentRegistrationDescription")</p>
+                    </div>
+                    <div class="setting-control">
+                        <div class="status-badge @(ApplicationOptions.Value.AllowRegistration ? "status-enabled" : "status-disabled")">
+                            @if (ApplicationOptions.Value.AllowRegistration)
+                            {
+                                <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20,6 9,17 4,12"/>
+                                </svg>
+                                @LocalizationService.GetString("Enabled")
+                            }
+                            else
+                            {
+                                <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="6" x2="6" y2="18"/>
+                                    <line x1="6" y1="6" x2="18" y2="18"/>
+                                </svg>
+                                @LocalizationService.GetString("Disabled")
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <label class="setting-label">@LocalizationService.GetString("TemporaryRegistration")</label>
+                        <p class="setting-description">@LocalizationService.GetString("TemporaryRegistrationDescription")</p>
+                    </div>
+                    <div class="setting-control">
+                        @if (TemporaryRegistrationService.IsTemporaryRegistrationEnabled)
+                        {
+                            <div class="temp-registration-active">
+                                <div class="status-badge status-enabled">
+                                    <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12,6 12,12 16,14"/>
+                                    </svg>
+                                    @LocalizationService.GetString("Active")
+                                </div>
+                                <div class="countdown-display">
+                                    <span class="countdown-label">@LocalizationService.GetString("RemainingTime"):</span>
+                                    <span class="countdown-time">@GetFormattedRemainingTime()</span>
+                                </div>
+                                <button class="btn btn-danger btn-sm" @onclick="DisableTemporaryRegistration" disabled="@isProcessing">
+                                    @if (isProcessing)
+                                    {
+                                        <div class="btn-spinner"></div>
+                                    }
+                                    else
+                                    {
+                                        <svg class="btn-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="18" y1="6" x2="6" y2="18"/>
+                                            <line x1="6" y1="6" x2="18" y2="18"/>
+                                        </svg>
+                                    }
+                                    @LocalizationService.GetString("Disable")
+                                </button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="temp-registration-controls">
+                                <div class="duration-control">
+                                    <label for="duration">@LocalizationService.GetString("Duration"):</label>
+                                    <div class="input-group">
+                                        <input id="duration" 
+                                               type="number" 
+                                               @bind="selectedDurationMinutes" 
+                                               min="1" 
+                                               max="1440" 
+                                               class="form-input-sm" 
+                                               disabled="@isProcessing" />
+                                        <span class="input-suffix">@LocalizationService.GetString("Minutes")</span>
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary btn-sm" @onclick="EnableTemporaryRegistration" disabled="@(isProcessing || selectedDurationMinutes <= 0)">
+                                    @if (isProcessing)
+                                    {
+                                        <div class="btn-spinner"></div>
+                                    }
+                                    else
+                                    {
+                                        <svg class="btn-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <polyline points="12,6 12,12 16,14"/>
+                                        </svg>
+                                    }
+                                    @LocalizationService.GetString("Enable")
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <label class="setting-label">@LocalizationService.GetString("CurrentRegistrationStatus")</label>
+                        <p class="setting-description">@LocalizationService.GetString("CurrentRegistrationStatusDescription")</p>
+                    </div>
+                    <div class="setting-control">
+                        <div class="status-badge @(TemporaryRegistrationService.IsRegistrationAllowed ? "status-enabled" : "status-disabled")">
+                            @if (TemporaryRegistrationService.IsRegistrationAllowed)
+                            {
+                                <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="8.5" cy="7" r="4"/>
+                                    <line x1="20" y1="8" x2="20" y2="14"/>
+                                    <line x1="23" y1="11" x2="17" y2="11"/>
+                                </svg>
+                                @LocalizationService.GetString("RegistrationAllowed")
+                            }
+                            else
+                            {
+                                <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="8.5" cy="7" r="4"/>
+                                    <line x1="23" y1="11" x2="17" y2="11"/>
+                                </svg>
+                                @LocalizationService.GetString("RegistrationDisabled")
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private int selectedDurationMinutes = 30;
+    private bool isProcessing = false;
+    private System.Timers.Timer? countdownTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        
+        // Subscribe to changes in temporary registration status
+        TemporaryRegistrationService.TemporaryRegistrationChanged += OnTemporaryRegistrationChanged;
+        
+        // Start countdown timer if temporary registration is active
+        StartCountdownTimer();
+    }
+
+    protected override async Task LoadDataAsync()
+    {
+        // No specific data loading needed for this tab
+        await Task.CompletedTask;
+    }
+
+    private async Task EnableTemporaryRegistration()
+    {
+        if (selectedDurationMinutes <= 0 || isProcessing)
+            return;
+
+        isProcessing = true;
+        StateHasChanged();
+
+        try
+        {
+            await TemporaryRegistrationService.EnableTemporaryRegistrationAsync(selectedDurationMinutes);
+            
+            Logger.Log("ApplicationSettings", $"Enabled temporary registration for {selectedDurationMinutes} minutes");
+            
+            await JSRuntime.InvokeVoidAsync("toastHelper.success", 
+                LocalizationService.GetString("TemporaryRegistrationEnabled"));
+            
+            StartCountdownTimer();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("ApplicationSettings", "Error enabling temporary registration", ex);
+            await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                LocalizationService.GetString("ErrorEnablingTemporaryRegistration"));
+        }
+        finally
+        {
+            isProcessing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DisableTemporaryRegistration()
+    {
+        if (isProcessing)
+            return;
+
+        isProcessing = true;
+        StateHasChanged();
+
+        try
+        {
+            await TemporaryRegistrationService.DisableTemporaryRegistrationAsync();
+            
+            Logger.Log("ApplicationSettings", "Disabled temporary registration");
+            
+            await JSRuntime.InvokeVoidAsync("toastHelper.success", 
+                LocalizationService.GetString("TemporaryRegistrationDisabled"));
+            
+            StopCountdownTimer();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("ApplicationSettings", "Error disabling temporary registration", ex);
+            await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                LocalizationService.GetString("ErrorDisablingTemporaryRegistration"));
+        }
+        finally
+        {
+            isProcessing = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OnTemporaryRegistrationChanged()
+    {
+        InvokeAsync(() =>
+        {
+            StateHasChanged();
+            if (TemporaryRegistrationService.IsTemporaryRegistrationEnabled)
+            {
+                StartCountdownTimer();
+            }
+            else
+            {
+                StopCountdownTimer();
+            }
+        });
+    }
+
+    private void StartCountdownTimer()
+    {
+        StopCountdownTimer();
+        
+        if (TemporaryRegistrationService.IsTemporaryRegistrationEnabled)
+        {
+            countdownTimer = new System.Timers.Timer(1000); // Update every second
+            countdownTimer.Elapsed += (_, _) => InvokeAsync(() => StateHasChanged());
+            countdownTimer.Start();
+        }
+    }
+
+    private void StopCountdownTimer()
+    {
+        countdownTimer?.Stop();
+        countdownTimer?.Dispose();
+        countdownTimer = null;
+    }
+
+    private string GetFormattedRemainingTime()
+    {
+        var remaining = TemporaryRegistrationService.RemainingTime;
+        if (remaining == null)
+            return "--:--:--";
+
+        var time = remaining.Value;
+        if (time.TotalSeconds <= 0)
+            return "00:00:00";
+
+        return $"{time.Hours:D2}:{time.Minutes:D2}:{time.Seconds:D2}";
+    }
+
+    public void Dispose()
+    {
+        TemporaryRegistrationService.TemporaryRegistrationChanged -= OnTemporaryRegistrationChanged;
+        StopCountdownTimer();
+    }
+}

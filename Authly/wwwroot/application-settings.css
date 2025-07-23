@@ -1,0 +1,496 @@
+/* ========================================
+   APPLICATION SETTINGS PANEL - DEDICATED CSS
+   ======================================== */
+
+/* Application Settings Panel */
+.settings-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.settings-section {
+    background: var(--bg-surface, #ffffff);
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+    transition: all 0.3s ease;
+}
+
+.section-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary, #111827);
+    margin: 0 0 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.section-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: var(--text-secondary, #6b7280);
+    stroke: currentColor;
+    stroke-width: 2;
+    fill: none;
+}
+
+.section-description {
+    font-size: 0.875rem;
+    color: var(--text-secondary, #6b7280);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.setting-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.setting-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.setting-info {
+    flex: 1;
+}
+
+.setting-label {
+    font-weight: 500;
+    color: var(--text-primary, #111827);
+    margin-bottom: 0.25rem;
+    display: block;
+    font-size: 0.9rem;
+}
+
+.setting-description {
+    font-size: 0.8rem;
+    color: var(--text-secondary, #6b7280);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.setting-control {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.status-badge.status-enabled {
+    background: rgba(34, 197, 94, 0.1);
+    color: rgb(34, 197, 94);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.status-badge.status-disabled {
+    background: rgba(239, 68, 68, 0.1);
+    color: rgb(239, 68, 68);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.status-icon {
+    width: 0.875rem;
+    height: 0.875rem;
+    stroke: currentColor;
+    stroke-width: 2;
+    fill: none;
+}
+
+/* Temporary registration controls */
+.temp-registration-active {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+.temp-registration-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+.duration-control {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    align-items: flex-end;
+}
+
+.duration-control label {
+    font-size: 0.8rem;
+    color: var(--text-secondary, #6b7280);
+    font-weight: 500;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.form-input-sm {
+    width: 80px;
+    padding: 0.375rem 0.5rem;
+    border: 1px solid var(--border-input, #d1d5db);
+    border-radius: 6px;
+    background: var(--bg-input, #ffffff);
+    color: var(--text-primary, #111827);
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.form-input-sm:focus {
+    border-color: var(--accent-primary, #2563eb);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.input-suffix {
+    font-size: 0.8rem;
+    color: var(--text-secondary, #6b7280);
+    white-space: nowrap;
+}
+
+/* Countdown display */
+.countdown-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+}
+
+.countdown-label {
+    color: var(--text-secondary, #6b7280);
+}
+
+.countdown-time {
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-weight: 600;
+    color: var(--text-primary, #111827);
+    background: var(--bg-accent, #f8fafc);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--border-color, #e5e7eb);
+}
+
+/* Tab description */
+.tab-description {
+    color: var(--text-secondary, #6b7280);
+    font-size: 0.9rem;
+    margin: 0.5rem 0 0 0;
+    line-height: 1.4;
+}
+
+/* Tab icon */
+.tab-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    color: var(--text-secondary, #6b7280);
+    stroke: currentColor;
+    stroke-width: 2;
+    fill: none;
+}
+
+/* Loading container for settings tab */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    gap: 1rem;
+    min-height: 200px;
+    text-align: center;
+}
+
+.loading-container .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--border-color, #e5e7eb);
+    border-radius: 50%;
+    border-top-color: var(--accent-primary, #2563eb);
+    animation: spin 1s ease-in-out infinite;
+}
+
+.loading-container span {
+    color: var(--text-secondary, #6b7280);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* ========================================
+   BUTTON OVERRIDES FOR APPLICATION SETTINGS - FIXED CONTRAST
+   ======================================== */
+
+/* Fix button styles to match main application with proper contrast */
+.settings-section .btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.4rem !important;
+    padding: 0.5rem 1rem !important;
+    border: 1px solid transparent !important;
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    font-size: 0.8rem !important;
+    line-height: 1.25rem !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    min-height: 36px !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+    position: relative !important;
+}
+
+/* Primary button (Povolit) - FIXED for better contrast */
+.settings-section .btn.btn-primary {
+    background: #2563eb !important; /* Solid blue instead of gradient */
+    color: #ffffff !important; /* Force white text */
+    border-color: #2563eb !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.settings-section .btn.btn-primary:hover {
+    background: #1d4ed8 !important; /* Darker blue on hover */
+    border-color: #1d4ed8 !important;
+    color: #ffffff !important; /* Keep white text on hover */
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3) !important;
+}
+
+.settings-section .btn.btn-primary:disabled {
+    background: #9ca3af !important;
+    border-color: #9ca3af !important;
+    color: #ffffff !important; /* White text even when disabled */
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Danger button (Zakázat) - Enhanced contrast */
+.settings-section .btn.btn-danger {
+    background: #dc2626 !important;
+    color: #ffffff !important; /* Force white text */
+    border-color: #dc2626 !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.settings-section .btn.btn-danger:hover {
+    background: #b91c1c !important;
+    border-color: #b91c1c !important;
+    color: #ffffff !important; /* Keep white text on hover */
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3) !important;
+}
+
+.settings-section .btn.btn-danger:disabled {
+    background: #9ca3af !important;
+    border-color: #9ca3af !important;
+    color: #ffffff !important; /* White text even when disabled */
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Small button modifier */
+.settings-section .btn.btn-sm {
+    padding: 0.375rem 0.75rem !important;
+    font-size: 0.75rem !important;
+    min-height: 32px !important;
+    gap: 0.3rem !important;
+}
+
+/* Button icons */
+.settings-section .btn .btn-icon,
+.settings-section .btn .btn-icon-sm {
+    width: 14px !important;
+    height: 14px !important;
+    stroke: currentColor !important;
+    stroke-width: 2 !important;
+    fill: none !important;
+    flex-shrink: 0 !important;
+}
+
+/* Button spinner for loading states */
+.settings-section .btn .btn-spinner {
+    width: 14px !important;
+    height: 14px !important;
+    border: 2px solid transparent !important;
+    border-top-color: currentColor !important;
+    border-radius: 50% !important;
+    animation: spin 1s linear infinite !important;
+}
+
+/* Responsive design for settings */
+@media (max-width: 768px) {
+    .setting-item {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .setting-control {
+        justify-content: flex-start;
+    }
+    
+    .temp-registration-active,
+    .temp-registration-controls {
+        align-items: stretch;
+    }
+    
+    .duration-control {
+        align-items: stretch;
+    }
+    
+    .input-group {
+        justify-content: flex-start;
+    }
+    
+    .form-input-sm {
+        width: 100px;
+    }
+    
+    .settings-section {
+        padding: 1rem;
+    }
+    
+    .section-header {
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+    }
+    
+    .section-title {
+        font-size: 1rem;
+    }
+
+    /* Mobile button adjustments */
+    .settings-section .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 0.625rem 1rem !important;
+        font-size: 0.8rem !important;
+        min-height: 40px !important;
+    }
+
+    .temp-registration-controls .btn,
+    .temp-registration-active .btn {
+        width: auto !important;
+        min-width: 120px !important;
+    }
+}
+
+/* Dark theme support for application settings */
+[data-theme="dark"] .settings-section {
+    background: var(--bg-surface, #1f2937);
+    border-color: var(--border-color, #374151);
+}
+
+[data-theme="dark"] .section-header {
+    border-bottom-color: var(--border-color, #374151);
+}
+
+[data-theme="dark"] .setting-item {
+    border-bottom-color: var(--border-color, #374151);
+}
+
+[data-theme="dark"] .status-badge.status-enabled {
+    background: rgba(34, 197, 94, 0.15);
+    color: rgb(52, 211, 153);
+    border-color: rgba(34, 197, 94, 0.3);
+}
+
+[data-theme="dark"] .status-badge.status-disabled {
+    background: rgba(239, 68, 68, 0.15);
+    color: rgb(248, 113, 113);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+[data-theme="dark"] .countdown-time {
+    background: var(--bg-accent, #374151);
+    border-color: var(--border-color, #4b5563);
+    color: var(--text-primary, #f9fafb);
+}
+
+[data-theme="dark"] .form-input-sm {
+    background: var(--bg-input, #374151);
+    border-color: var(--border-input, #4b5563);
+    color: var(--text-primary, #f9fafb);
+}
+
+[data-theme="dark"] .form-input-sm:focus {
+    border-color: var(--accent-primary, #3b82f6);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* Dark theme button adjustments - FIXED contrast */
+[data-theme="dark"] .settings-section .btn.btn-primary {
+    background: #3b82f6 !important; /* Lighter blue for dark theme */
+    border-color: #3b82f6 !important;
+    color: #ffffff !important; /* Force white text */
+}
+
+[data-theme="dark"] .settings-section .btn.btn-primary:hover {
+    background: #2563eb !important;
+    border-color: #2563eb !important;
+    color: #ffffff !important; /* Keep white text on hover */
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3) !important;
+}
+
+[data-theme="dark"] .settings-section .btn.btn-danger {
+    background: #ef4444 !important; /* Slightly lighter red for dark theme */
+    border-color: #ef4444 !important;
+    color: #ffffff !important; /* Force white text */
+}
+
+[data-theme="dark"] .settings-section .btn.btn-danger:hover {
+    background: #dc2626 !important;
+    border-color: #dc2626 !important;
+    color: #ffffff !important; /* Keep white text on hover */
+}
+
+/* Force text colors for better accessibility */
+.settings-section .btn.btn-primary,
+.settings-section .btn.btn-danger {
+    text-shadow: none !important;
+}
+
+.settings-section .btn.btn-primary *,
+.settings-section .btn.btn-danger * {
+    color: inherit !important;
+}

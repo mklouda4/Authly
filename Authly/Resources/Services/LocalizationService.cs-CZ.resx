@@ -612,4 +612,73 @@
   <data name="DateTimeFormatExample" xml:space="preserve">
     <value>Příklad formátu</value>
   </data>
+  <data name="ApplicationSettings" xml:space="preserve">
+    <value>Nastavení aplikace</value>
+  </data>
+  <data name="ApplicationSettingsDescription" xml:space="preserve">
+    <value>Správa konfigurace aplikace a bezpečnostních nastavení</value>
+  </data>
+  <data name="RegistrationSettings" xml:space="preserve">
+    <value>Nastavení registrace</value>
+  </data>
+  <data name="RegistrationSettingsDescription" xml:space="preserve">
+    <value>Kontrola dostupnosti registrace uživatelů a dočasného přístupu</value>
+  </data>
+  <data name="PermanentRegistration" xml:space="preserve">
+    <value>Trvalá registrace</value>
+  </data>
+  <data name="PermanentRegistrationDescription" xml:space="preserve">
+    <value>Nastavení registrace konfigurované v aplikační konfiguraci</value>
+  </data>
+  <data name="TemporaryRegistration" xml:space="preserve">
+    <value>Dočasná registrace</value>
+  </data>
+  <data name="TemporaryRegistrationDescription" xml:space="preserve">
+    <value>Dočasně povolit registraci na zadanou dobu</value>
+  </data>
+  <data name="CurrentRegistrationStatus" xml:space="preserve">
+    <value>Aktuální stav registrace</value>
+  </data>
+  <data name="CurrentRegistrationStatusDescription" xml:space="preserve">
+    <value>Celková dostupnost registrace s ohledem na trvalá i dočasná nastavení</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>Povoleno</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Zakázáno</value>
+  </data>
+  <data name="Enable" xml:space="preserve">
+    <value>Povolit</value>
+  </data>
+  <data name="Disable" xml:space="preserve">
+    <value>Zakázat</value>
+  </data>
+  <data name="Duration" xml:space="preserve">
+    <value>Doba trvání</value>
+  </data>
+  <data name="Minutes" xml:space="preserve">
+    <value>minut</value>
+  </data>
+  <data name="RemainingTime" xml:space="preserve">
+    <value>Zbývající čas</value>
+  </data>
+  <data name="RegistrationAllowed" xml:space="preserve">
+    <value>Registrace povolena</value>
+  </data>
+  <data name="RegistrationDisabled" xml:space="preserve">
+    <value>Registrace zakázána</value>
+  </data>
+  <data name="TemporaryRegistrationEnabled" xml:space="preserve">
+    <value>Dočasná registrace byla úspěšně povolena</value>
+  </data>
+  <data name="TemporaryRegistrationDisabled" xml:space="preserve">
+    <value>Dočasná registrace byla úspěšně zakázána</value>
+  </data>
+  <data name="ErrorEnablingTemporaryRegistration" xml:space="preserve">
+    <value>Došlo k chybě při povolování dočasné registrace</value>
+  </data>
+  <data name="ErrorDisablingTemporaryRegistration" xml:space="preserve">
+    <value>Došlo k chybě při zakazování dočasné registrace</value>
+  </data>
 </root>

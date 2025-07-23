@@ -253,6 +253,9 @@ namespace Authly
             // Register Token service
             _ = builder.Services.AddScoped<ITokenService, TokenService>();
 
+            // Register Temporary Registration service
+            _ = builder.Services.AddSingleton<ITemporaryRegistrationService, TemporaryRegistrationService>();
+
             var app = builder.Build();
 
             // Configure Prometheus metrics if enabled

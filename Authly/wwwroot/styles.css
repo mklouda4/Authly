@@ -3585,3 +3585,44 @@ h1:focus {
         padding: 0.75rem 1rem;
     }
 }
+/* ========================================
+   LOGIN FORM INPUT FIXES - CONSISTENT PADDING
+   ======================================== */
+
+/* Fix form input padding for login page when no icons are present */
+.login-container .form-input {
+    padding: 1rem !important; /* Reset to consistent padding without left space for icon */
+}
+
+/* Ensure consistent input styling in login */
+.login-container .input-wrapper {
+    position: relative;
+}
+
+    /* Only apply left padding if there's actually an icon */
+    .login-container .input-wrapper:has(.input-icon) .form-input {
+        padding: 1rem 1rem 1rem 3rem !important; /* Only when icon is present */
+    }
+
+/* Responsive login form fixes */
+@media (max-width: 768px) {
+    .login-container .form-input {
+        padding: 0.875rem !important;
+        font-size: 0.95rem;
+    }
+
+    .login-container .input-wrapper:has(.input-icon) .form-input {
+        padding: 0.875rem 0.875rem 0.875rem 2.5rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .login-container .form-input {
+        padding: 0.75rem !important;
+        font-size: 0.9rem;
+    }
+
+    .login-container .input-wrapper:has(.input-icon) .form-input {
+        padding: 0.75rem 0.75rem 0.75rem 2.25rem !important;
+    }
+}

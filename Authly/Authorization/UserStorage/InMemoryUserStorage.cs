@@ -358,9 +358,9 @@ namespace Authly.Authorization.UserStorage
                     _appLogger.LogWarning("InMemoryUserStorage", $"User with username {user.UserName} or email {user.Email} already exists");
                     return false;
                 }
-                
+
                 // Generate new ID
-                user.Id = (_users.Count + 1).ToString();
+                user.Id = user.UserName.GetDeterministicStringFromString();
                 user.NormalizedUserName = user.UserName?.ToUpper();
                 user.NormalizedEmail = user.Email?.ToUpper();
                 user.SecurityStamp = $"{user.UserName}-security-stamp".ToLower();
