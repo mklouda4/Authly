@@ -250,6 +250,9 @@ namespace Authly
             // Register TOTP service
             _ = builder.Services.AddScoped<ITotpService, TotpService>();
 
+            // Register Token service
+            _ = builder.Services.AddScoped<ITokenService, TokenService>();
+
             var app = builder.Build();
 
             // Configure Prometheus metrics if enabled

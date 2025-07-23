@@ -504,4 +504,112 @@
   <data name="ExternalUser" xml:space="preserve">
     <value>Externí uživatelé se nemohou přihlásit pomocí místního ověření. Prosím použijte externí autentizační metodu nakonfigurovanou pro váš účet.</value>
   </data>
+  <data name="TokenManagement" xml:space="preserve">
+    <value>Správa tokenů</value>
+  </data>
+  <data name="CreateToken" xml:space="preserve">
+    <value>Vytvořit token</value>
+  </data>
+  <data name="TokenName" xml:space="preserve">
+    <value>Název tokenu</value>
+  </data>
+  <data name="TokenExpiration" xml:space="preserve">
+    <value>Vypršení tokenu</value>
+  </data>
+  <data name="TokenCreated" xml:space="preserve">
+    <value>Vytvořen</value>
+  </data>
+  <data name="TokenLastUsed" xml:space="preserve">
+    <value>Naposledy použit</value>
+  </data>
+  <data name="TokenExpires" xml:space="preserve">
+    <value>Vyprší</value>
+  </data>
+  <data name="TokenActive" xml:space="preserve">
+    <value>Aktivní</value>
+  </data>
+  <data name="TokenRevoked" xml:space="preserve">
+    <value>Odvolán</value>
+  </data>
+  <data name="RevokeToken" xml:space="preserve">
+    <value>Odvolat token</value>
+  </data>
+  <data name="RevokeAllTokens" xml:space="preserve">
+    <value>Odvolat všechny tokeny</value>
+  </data>
+  <data name="NoTokensFound" xml:space="preserve">
+    <value>Nebyly nalezeny žádné tokeny</value>
+  </data>
+  <data name="TokenCreatedSuccessfully" xml:space="preserve">
+    <value>Token byl úspěšně vytvořen</value>
+  </data>
+  <data name="TokenRevokedSuccessfully" xml:space="preserve">
+    <value>Token byl úspěšně odvolán</value>
+  </data>
+  <data name="FailedToCreateToken" xml:space="preserve">
+    <value>Nepodařilo se vytvořit token</value>
+  </data>
+  <data name="FailedToRevokeToken" xml:space="preserve">
+    <value>Nepodařilo se odvolat token</value>
+  </data>
+  <data name="TokenValue" xml:space="preserve">
+    <value>Hodnota tokenu</value>
+  </data>
+  <data name="TokenValueHint" xml:space="preserve">
+    <value>Tento token bude zobrazen pouze jednou. Prosím zkopírujte si ho nyní.</value>
+  </data>
+  <data name="CopyToken" xml:space="preserve">
+    <value>Kopírovat token</value>
+  </data>
+  <data name="TokenCopied" xml:space="preserve">
+    <value>Token zkopírován do schránky</value>
+  </data>
+  <data name="InfiniteExpiration" xml:space="preserve">
+    <value>Nikdy (nekonečně)</value>
+  </data>
+  <data name="Never" xml:space="preserve">
+    <value>Nikdy</value>
+  </data>
+  <data name="CreateNewToken" xml:space="preserve">
+    <value>Vytvořit nový token</value>
+  </data>
+  <data name="EnterTokenName" xml:space="preserve">
+    <value>Zadejte popisný název pro tento token</value>
+  </data>
+  <data name="SelectUser" xml:space="preserve">
+    <value>Vybrat uživatele</value>
+  </data>
+  <data name="UserTokens" xml:space="preserve">
+    <value>Uživatelské tokeny</value>
+  </data>
+  <data name="AllTokens" xml:space="preserve">
+    <value>Všechny tokeny</value>
+  </data>
+  <data name="TokenNameRequired" xml:space="preserve">
+    <value>Název tokenu je povinný</value>
+  </data>
+  <data name="TokenCreatedFor" xml:space="preserve">
+    <value>Token vytvořen pro uživatele</value>
+  </data>
+  <data name="ConfirmRevokeToken" xml:space="preserve">
+    <value>Jste si jisti, že chcete odvolat tento token? Tato akce nelze vrátit zpět.</value>
+  </data>
+  <data name="ConfirmRevokeAllTokens" xml:space="preserve">
+    <value>Jste si jisti, že chcete odvolat všechny tokeny pro tohoto uživatele? Tato akce nelze vrátit zpět.</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>Ano</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>Ne</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Zavřít</value>
+  </data>
+  <data name="InvalidDateFormat" xml:space="preserve">
+    <value>Neplatný formát data.</value>
+  </data>
+  <data name="DateTimeFormatExample" xml:space="preserve">
+    <value>Příklad formátu</value>
+  </data>
 </root>

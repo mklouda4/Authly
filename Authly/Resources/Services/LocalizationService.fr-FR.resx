@@ -504,4 +504,112 @@
   <data name="ExternalUser" xml:space="preserve">
     <value>Les utilisateurs externes ne peuvent pas se connecter avec l'authentification locale. Veuillez utiliser la méthode d'authentification externe configurée pour votre compte.</value>
   </data>
+  <data name="TokenManagement" xml:space="preserve">
+    <value>Gestion des tokens</value>
+  </data>
+  <data name="CreateToken" xml:space="preserve">
+    <value>Créer un token</value>
+  </data>
+  <data name="TokenName" xml:space="preserve">
+    <value>Nom du token</value>
+  </data>
+  <data name="TokenExpiration" xml:space="preserve">
+    <value>Expiration du token</value>
+  </data>
+  <data name="TokenCreated" xml:space="preserve">
+    <value>Créé</value>
+  </data>
+  <data name="TokenLastUsed" xml:space="preserve">
+    <value>Dernière utilisation</value>
+  </data>
+  <data name="TokenExpires" xml:space="preserve">
+    <value>Expire</value>
+  </data>
+  <data name="TokenActive" xml:space="preserve">
+    <value>Actif</value>
+  </data>
+  <data name="TokenRevoked" xml:space="preserve">
+    <value>Révoqué</value>
+  </data>
+  <data name="RevokeToken" xml:space="preserve">
+    <value>Révoquer le token</value>
+  </data>
+  <data name="RevokeAllTokens" xml:space="preserve">
+    <value>Révoquer tous les tokens</value>
+  </data>
+  <data name="NoTokensFound" xml:space="preserve">
+    <value>Aucun token trouvé</value>
+  </data>
+  <data name="TokenCreatedSuccessfully" xml:space="preserve">
+    <value>Token créé avec succès</value>
+  </data>
+  <data name="TokenRevokedSuccessfully" xml:space="preserve">
+    <value>Token révoqué avec succès</value>
+  </data>
+  <data name="FailedToCreateToken" xml:space="preserve">
+    <value>Échec de la création du token</value>
+  </data>
+  <data name="FailedToRevokeToken" xml:space="preserve">
+    <value>Échec de la révocation du token</value>
+  </data>
+  <data name="TokenValue" xml:space="preserve">
+    <value>Valeur du token</value>
+  </data>
+  <data name="TokenValueHint" xml:space="preserve">
+    <value>Ce token ne sera affiché qu'une seule fois. Veuillez le copier maintenant.</value>
+  </data>
+  <data name="CopyToken" xml:space="preserve">
+    <value>Copier le token</value>
+  </data>
+  <data name="TokenCopied" xml:space="preserve">
+    <value>Token copié dans le presse-papiers</value>
+  </data>
+  <data name="InfiniteExpiration" xml:space="preserve">
+    <value>Jamais (infini)</value>
+  </data>
+  <data name="Never" xml:space="preserve">
+    <value>Jamais</value>
+  </data>
+  <data name="CreateNewToken" xml:space="preserve">
+    <value>Créer un nouveau token</value>
+  </data>
+  <data name="EnterTokenName" xml:space="preserve">
+    <value>Entrez un nom descriptif pour ce token</value>
+  </data>
+  <data name="SelectUser" xml:space="preserve">
+    <value>Sélectionner un utilisateur</value>
+  </data>
+  <data name="UserTokens" xml:space="preserve">
+    <value>Tokens utilisateur</value>
+  </data>
+  <data name="AllTokens" xml:space="preserve">
+    <value>Tous les tokens</value>
+  </data>
+  <data name="TokenNameRequired" xml:space="preserve">
+    <value>Le nom du token est requis</value>
+  </data>
+  <data name="TokenCreatedFor" xml:space="preserve">
+    <value>Token créé pour l'utilisateur</value>
+  </data>
+  <data name="ConfirmRevokeToken" xml:space="preserve">
+    <value>Êtes-vous sûr de vouloir révoquer ce token ? Cette action ne peut pas être annulée.</value>
+  </data>
+  <data name="ConfirmRevokeAllTokens" xml:space="preserve">
+    <value>Êtes-vous sûr de vouloir révoquer tous les tokens pour cet utilisateur ? Cette action ne peut pas être annulée.</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>Oui</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>Non</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Fermer</value>
+  </data>
+  <data name="InvalidDateFormat" xml:space="preserve">
+    <value>Format de date invalide.</value>
+  </data>
+  <data name="DateTimeFormatExample" xml:space="preserve">
+    <value>Exemple de format</value>
+  </data>
 </root>

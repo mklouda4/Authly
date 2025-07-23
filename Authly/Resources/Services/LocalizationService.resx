@@ -504,4 +504,112 @@
   <data name="ExternalUser" xml:space="preserve">
     <value>External users cannot log in using local authentication. Please use the external authentication method configured for your account.</value>
   </data>
+  <data name="TokenManagement" xml:space="preserve">
+    <value>Token Management</value>
+  </data>
+  <data name="CreateToken" xml:space="preserve">
+    <value>Create Token</value>
+  </data>
+  <data name="TokenName" xml:space="preserve">
+    <value>Token Name</value>
+  </data>
+  <data name="TokenExpiration" xml:space="preserve">
+    <value>Token Expiration</value>
+  </data>
+  <data name="TokenCreated" xml:space="preserve">
+    <value>Created</value>
+  </data>
+  <data name="TokenLastUsed" xml:space="preserve">
+    <value>Last Used</value>
+  </data>
+  <data name="TokenExpires" xml:space="preserve">
+    <value>Expires</value>
+  </data>
+  <data name="TokenActive" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="TokenRevoked" xml:space="preserve">
+    <value>Revoked</value>
+  </data>
+  <data name="RevokeToken" xml:space="preserve">
+    <value>Revoke Token</value>
+  </data>
+  <data name="RevokeAllTokens" xml:space="preserve">
+    <value>Revoke All Tokens</value>
+  </data>
+  <data name="NoTokensFound" xml:space="preserve">
+    <value>No tokens found</value>
+  </data>
+  <data name="TokenCreatedSuccessfully" xml:space="preserve">
+    <value>Token created successfully</value>
+  </data>
+  <data name="TokenRevokedSuccessfully" xml:space="preserve">
+    <value>Token revoked successfully</value>
+  </data>
+  <data name="FailedToCreateToken" xml:space="preserve">
+    <value>Failed to create token</value>
+  </data>
+  <data name="FailedToRevokeToken" xml:space="preserve">
+    <value>Failed to revoke token</value>
+  </data>
+  <data name="TokenValue" xml:space="preserve">
+    <value>Token Value</value>
+  </data>
+  <data name="TokenValueHint" xml:space="preserve">
+    <value>This token will only be shown once. Please copy it now.</value>
+  </data>
+  <data name="CopyToken" xml:space="preserve">
+    <value>Copy Token</value>
+  </data>
+  <data name="TokenCopied" xml:space="preserve">
+    <value>Token copied to clipboard</value>
+  </data>
+  <data name="InfiniteExpiration" xml:space="preserve">
+    <value>Never (infinite)</value>
+  </data>
+  <data name="Never" xml:space="preserve">
+    <value>Never</value>
+  </data>
+  <data name="CreateNewToken" xml:space="preserve">
+    <value>Create New Token</value>
+  </data>
+  <data name="EnterTokenName" xml:space="preserve">
+    <value>Enter a descriptive name for this token</value>
+  </data>
+  <data name="SelectUser" xml:space="preserve">
+    <value>Select User</value>
+  </data>
+  <data name="UserTokens" xml:space="preserve">
+    <value>User Tokens</value>
+  </data>
+  <data name="AllTokens" xml:space="preserve">
+    <value>All Tokens</value>
+  </data>
+  <data name="TokenNameRequired" xml:space="preserve">
+    <value>Token name is required</value>
+  </data>
+  <data name="TokenCreatedFor" xml:space="preserve">
+    <value>Token created for user</value>
+  </data>
+  <data name="ConfirmRevokeToken" xml:space="preserve">
+    <value>Are you sure you want to revoke this token? This action cannot be undone.</value>
+  </data>
+  <data name="ConfirmRevokeAllTokens" xml:space="preserve">
+    <value>Are you sure you want to revoke all tokens for this user? This action cannot be undone.</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="InvalidDateFormat" xml:space="preserve">
+    <value>Invalid date format.</value>
+  </data>
+  <data name="DateTimeFormatExample" xml:space="preserve">
+    <value>Format example</value>
+  </data>
 </root>

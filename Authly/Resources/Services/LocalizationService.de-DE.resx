@@ -504,4 +504,112 @@
   <data name="ExternalUser" xml:space="preserve">
     <value>Externe Benutzer können sich nicht mit lokaler Authentifizierung anmelden. Bitte verwenden Sie die für Ihr Konto konfigurierte externe Authentifizierungsmethode.</value>
   </data>
+  <data name="TokenManagement" xml:space="preserve">
+    <value>Token-Verwaltung</value>
+  </data>
+  <data name="CreateToken" xml:space="preserve">
+    <value>Token erstellen</value>
+  </data>
+  <data name="TokenName" xml:space="preserve">
+    <value>Token-Name</value>
+  </data>
+  <data name="TokenExpiration" xml:space="preserve">
+    <value>Token-Ablauf</value>
+  </data>
+  <data name="TokenCreated" xml:space="preserve">
+    <value>Erstellt</value>
+  </data>
+  <data name="TokenLastUsed" xml:space="preserve">
+    <value>Zuletzt verwendet</value>
+  </data>
+  <data name="TokenExpires" xml:space="preserve">
+    <value>Läuft ab</value>
+  </data>
+  <data name="TokenActive" xml:space="preserve">
+    <value>Aktiv</value>
+  </data>
+  <data name="TokenRevoked" xml:space="preserve">
+    <value>Widerrufen</value>
+  </data>
+  <data name="RevokeToken" xml:space="preserve">
+    <value>Token widerrufen</value>
+  </data>
+  <data name="RevokeAllTokens" xml:space="preserve">
+    <value>Alle Token widerrufen</value>
+  </data>
+  <data name="NoTokensFound" xml:space="preserve">
+    <value>Keine Token gefunden</value>
+  </data>
+  <data name="TokenCreatedSuccessfully" xml:space="preserve">
+    <value>Token erfolgreich erstellt</value>
+  </data>
+  <data name="TokenRevokedSuccessfully" xml:space="preserve">
+    <value>Token erfolgreich widerrufen</value>
+  </data>
+  <data name="FailedToCreateToken" xml:space="preserve">
+    <value>Fehler beim Erstellen des Tokens</value>
+  </data>
+  <data name="FailedToRevokeToken" xml:space="preserve">
+    <value>Fehler beim Widerrufen des Tokens</value>
+  </data>
+  <data name="TokenValue" xml:space="preserve">
+    <value>Token-Wert</value>
+  </data>
+  <data name="TokenValueHint" xml:space="preserve">
+    <value>Dieser Token wird nur einmal angezeigt. Bitte kopieren Sie ihn jetzt.</value>
+  </data>
+  <data name="CopyToken" xml:space="preserve">
+    <value>Token kopieren</value>
+  </data>
+  <data name="TokenCopied" xml:space="preserve">
+    <value>Token in die Zwischenablage kopiert</value>
+  </data>
+  <data name="InfiniteExpiration" xml:space="preserve">
+    <value>Niemals (unendlich)</value>
+  </data>
+  <data name="Never" xml:space="preserve">
+    <value>Niemals</value>
+  </data>
+  <data name="CreateNewToken" xml:space="preserve">
+    <value>Neuen Token erstellen</value>
+  </data>
+  <data name="EnterTokenName" xml:space="preserve">
+    <value>Geben Sie einen beschreibenden Namen für diesen Token ein</value>
+  </data>
+  <data name="SelectUser" xml:space="preserve">
+    <value>Benutzer auswählen</value>
+  </data>
+  <data name="UserTokens" xml:space="preserve">
+    <value>Benutzer-Token</value>
+  </data>
+  <data name="AllTokens" xml:space="preserve">
+    <value>Alle Token</value>
+  </data>
+  <data name="TokenNameRequired" xml:space="preserve">
+    <value>Token-Name ist erforderlich</value>
+  </data>
+  <data name="TokenCreatedFor" xml:space="preserve">
+    <value>Token erstellt für Benutzer</value>
+  </data>
+  <data name="ConfirmRevokeToken" xml:space="preserve">
+    <value>Sind Sie sicher, dass Sie diesen Token widerrufen möchten? Diese Aktion kann nicht rückgängig gemacht werden.</value>
+  </data>
+  <data name="ConfirmRevokeAllTokens" xml:space="preserve">
+    <value>Sind Sie sicher, dass Sie alle Token für diesen Benutzer widerrufen möchten? Diese Aktion kann nicht rückgängig gemacht werden.</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>Ja</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>Nein</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Schließen</value>
+  </data>
+  <data name="InvalidDateFormat" xml:space="preserve">
+    <value>Ungültiges Datumsformat.</value>
+  </data>
+  <data name="DateTimeFormatExample" xml:space="preserve">
+    <value>Formatbeispiel</value>
+  </data>
 </root>
