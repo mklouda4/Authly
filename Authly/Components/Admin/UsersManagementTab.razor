@@ -1,0 +1,261 @@
+@page "/admin/users"
+@using Authly.Services
+@using Authly.Models
+@using Authly.Authorization.UserStorage
+@inject IUserStorage UserStorage
+@inject ISecurityService SecurityService
+@inject IApplicationLogger Logger
+@inject IJSRuntime JSRuntime
+
+@inherits BaseAdminTab
+
+<div class="admin-section">
+    <h2 class="section-title">@LocalizationService.GetString("AllUsers")</h2>
+    
+    @if (isLocalLoading)
+    {
+        <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>@LocalizationService.GetString("Loading")</p>
+        </div>
+    }
+    else if (Users.Any())
+    {
+        <div class="admin-table">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>@LocalizationService.GetString("Username")</th>
+                        <th>@LocalizationService.GetString("FullName")</th>
+                        <th>@LocalizationService.GetString("Email")</th>
+                        <th>@LocalizationService.GetString("Administrator")</th>
+                        <th>@LocalizationService.GetString("TotpVerification")</th>
+                        <th>@LocalizationService.GetString("FailedAttempts")</th>
+                        <th>@LocalizationService.GetString("Status")</th>
+                        <th>@LocalizationService.GetString("Actions")</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Users)
+                    {
+                        <tr class="@(user.IsLockedOut ? "locked-row" : "")">
+                            <td class="username-cell" data-label="@LocalizationService.GetString("Username")">@user.UserName</td>
+                            <td data-label="@LocalizationService.GetString("FullName")">@user.FullName</td>
+                            <td data-label="@LocalizationService.GetString("Email")">@user.Email</td>
+                            <td data-label="@LocalizationService.GetString("Administrator")">
+                                @if (user.Administrator)
+                                {
+                                    <span class="status-badge admin">@LocalizationService.GetString("Administrator")</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge user">@LocalizationService.GetString("StandardUser")</span>
+                                }
+                            </td>
+                            <td data-label="@LocalizationService.GetString("TotpVerification")">
+                                @if (user.HasTotp)
+                                {
+                                    <span class="status-badge totp-active">@LocalizationService.GetString("Active")</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge totp-inactive">@LocalizationService.GetString("Inactive")</span>
+                                }
+                            </td>
+                            <td data-label="@LocalizationService.GetString("FailedAttempts")">@user.FailedLoginAttempts</td>
+                            <td data-label="@LocalizationService.GetString("Status")">
+                                @if (user.IsLockedOut)
+                                {
+                                    <span class="status-badge locked">@LocalizationService.GetString("Locked")</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge unlocked">@LocalizationService.GetString("NotLocked")</span>
+                                }
+                            </td>
+                            <td data-label="@LocalizationService.GetString("Actions")">
+                                <div class="action-buttons">
+                                    @if (user.IsLockedOut)
+                                    {
+                                        <button class="btn btn-admin-action btn-success" @onclick="() => UnlockUser(user)" disabled="@(IsLoading || isLocalLoading)" title="@LocalizationService.GetString("Unlock")">
+                                            <svg class="btn-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                            </svg>
+                                            @LocalizationService.GetString("Unlock")
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-admin-action btn-danger" @onclick="() => LockUserPermanently(user)" disabled="@(IsLoading || isLocalLoading)" title="@LocalizationService.GetString("LockPermanently")">
+                                            <svg class="btn-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                                <path d="M7 11V7a5 5 0 0 1 10 0"/>
+                                            </svg>
+                                            @LocalizationService.GetString("Lock")
+                                        </button>
+                                    }
+                                    
+                                    @if (user.Administrator && CurrentUser?.Id != user.Id)
+                                    {
+                                        <button class="btn btn-admin-action btn-warning" @onclick="() => ToggleAdminStatus(user)" disabled="@(IsLoading || isLocalLoading)" title="@LocalizationService.GetString("DemoteFromAdmin")">
+                                            <svg class="btn-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"/>
+                                                <line x1="15" y1="9" x2="9" y2="15"/>
+                                                <line x1="9" y1="9" x2="15" y2="15"/>
+                                            </svg>
+                                            @LocalizationService.GetString("Demote")
+                                        </button>
+                                    }
+                                    else if (!user.Administrator && CurrentUser?.Id != user.Id)
+                                    {
+                                        <button class="btn btn-admin-action btn-info" @onclick="() => ToggleAdminStatus(user)" disabled="@(IsLoading || isLocalLoading)" title="@LocalizationService.GetString("PromoteToAdmin")">
+                                            <svg class="btn-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"/>
+                                                <line x1="12" y1="8" x2="12" y2="16"/>
+                                                <line x1="8" y1="12" x2="16" y2="12"/>
+                                            </svg>
+                                            @LocalizationService.GetString("Promote")
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else if (hasLoadedData)
+    {
+        <div class="empty-state">
+            <p>@LocalizationService.GetString("NoUsersFound")</p>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public User? CurrentUser { get; set; }
+    
+    private List<User> Users { get; set; } = new();
+
+    protected override async Task LoadDataAsync()
+    {
+        try
+        {
+            Logger.Log("UsersManagementTab", "Loading users data");
+            Users = await UserStorage.GetAllUsers();
+            Logger.Log("UsersManagementTab", $"Loaded {Users.Count} users");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("UsersManagementTab", "Error loading users", ex);
+            await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                LocalizationService.GetString("UnexpectedError"));
+        }
+    }
+
+    private async Task UnlockUser(User user)
+    {
+        try
+        {
+            var unlockSuccess = SecurityService.UnlockUser(user);
+
+            if (unlockSuccess)
+            {
+                var updateSuccess = await UserStorage.UpdateUser(user);
+
+                if (updateSuccess)
+                {
+                    await JSRuntime.InvokeVoidAsync("toastHelper.success", 
+                        LocalizationService.GetString("UserUnlockedSuccessfully"));
+                    await RefreshData();
+                    await OnDataChanged.InvokeAsync();
+                }
+                else
+                {
+                    await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                        LocalizationService.GetString("FailedToUnlockUser"));
+                }
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                    LocalizationService.GetString("FailedToUnlockUser"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("UsersManagementTab", $"Error unlocking user {user.UserName}", ex);
+            await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                LocalizationService.GetString("FailedToUnlockUser"));
+        }
+    }
+
+    private async Task ToggleAdminStatus(User user)
+    {
+        try
+        {
+            user.Administrator = !user.Administrator;
+            var success = await UserStorage.UpdateUser(user);
+
+            if (success)
+            {
+                await JSRuntime.InvokeVoidAsync("toastHelper.success", 
+                    LocalizationService.GetString("UserUpdatedSuccessfully"));
+                await RefreshData();
+                await OnDataChanged.InvokeAsync();
+            }
+            else
+            {
+                user.Administrator = !user.Administrator;
+                await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                    LocalizationService.GetString("FailedToUpdateUser"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("UsersManagementTab", $"Error toggling admin status for user {user.UserName}", ex);
+            user.Administrator = !user.Administrator;
+            await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                LocalizationService.GetString("FailedToUpdateUser"));
+        }
+    }
+
+    private async Task LockUserPermanently(User user)
+    {
+        try
+        {
+            var lockSuccess = SecurityService.ManualLockUser(user);
+
+            if (lockSuccess)
+            {
+                var updateSuccess = await UserStorage.UpdateUser(user);
+
+                if (updateSuccess)
+                {
+                    await JSRuntime.InvokeVoidAsync("toastHelper.success", 
+                        LocalizationService.GetString("UserLockedSuccessfully"));
+                    await RefreshData();
+                    await OnDataChanged.InvokeAsync();
+                }
+                else
+                {
+                    await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                        LocalizationService.GetString("FailedToLockUser"));
+                }
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                    LocalizationService.GetString("FailedToLockUser"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("UsersManagementTab", $"Error locking user {user.UserName}", ex);
+            await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                LocalizationService.GetString("FailedToLockUser"));
+        }
+    }
+}

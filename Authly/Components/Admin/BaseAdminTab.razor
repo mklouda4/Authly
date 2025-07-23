@@ -1,0 +1,61 @@
+@using Authly.Services
+@using Authly.Models
+@using Microsoft.AspNetCore.Components
+@inherits ComponentBase
+
+@code {
+    [Inject] protected ILocalizationService LocalizationService { get; set; } = default!;
+    
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public EventCallback OnDataChanged { get; set; }
+
+    // Lokální loading stav pro každou komponentu
+    protected bool isLocalLoading = false;
+    protected bool hasLoadedData = false;
+
+    protected string FormatDateTime(DateTime dateTime)
+    {
+        var culture = LocalizationService.GetCurrentCulture();
+        return dateTime.ToString("G", culture);
+    }
+
+    protected virtual async Task LoadDataAsync()
+    {
+        // P?epsáno v potomcích pro na?tení specifických dat
+        await Task.CompletedTask;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !hasLoadedData)
+        {
+            await LoadDataIfNeeded();
+        }
+    }
+
+    protected async Task LoadDataIfNeeded()
+    {
+        if (!hasLoadedData && !isLocalLoading)
+        {
+            isLocalLoading = true;
+            StateHasChanged();
+
+            try
+            {
+                await LoadDataAsync();
+                hasLoadedData = true;
+            }
+            finally
+            {
+                isLocalLoading = false;
+                StateHasChanged();
+            }
+        }
+    }
+
+    protected async Task RefreshData()
+    {
+        hasLoadedData = false;
+        await LoadDataIfNeeded();
+    }
+}

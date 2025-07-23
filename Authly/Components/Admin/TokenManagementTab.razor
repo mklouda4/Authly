@@ -1,0 +1,354 @@
+@using Authly.Services
+@using Authly.Models
+@inherits BaseAdminTab
+@inject ITokenService TokenService
+@inject IApplicationLogger Logger
+@inject IJSRuntime JSRuntime
+
+<div class="admin-section">
+    <div class="section-header">
+        <h2 class="section-title">@LocalizationService.GetString("AllTokens")</h2>
+        <button class="btn btn-primary" @onclick="ShowCreateTokenDialog" disabled="@(IsLoading || isLocalLoading)">
+            <svg class="btn-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            @LocalizationService.GetString("CreateNewToken")
+        </button>
+    </div>
+    
+    @if (isLocalLoading)
+    {
+        <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>@LocalizationService.GetString("Loading")</p>
+        </div>
+    }
+    else if (Tokens.Any())
+    {
+        <div class="admin-table">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>@LocalizationService.GetString("TokenName")</th>
+                        <th>@LocalizationService.GetString("Username")</th>
+                        <th>@LocalizationService.GetString("TokenCreated")</th>
+                        <th>@LocalizationService.GetString("TokenLastUsed")</th>
+                        <th>@LocalizationService.GetString("TokenExpires")</th>
+                        <th>@LocalizationService.GetString("Status")</th>
+                        <th>@LocalizationService.GetString("Actions")</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var token in Tokens)
+                    {
+                        var user = Users.FirstOrDefault(u => u.Id == token.UserId);
+                        <tr class="@(token.IsValid ? "" : "revoked-row")">
+                            <td class="token-name-cell" data-label="@LocalizationService.GetString("TokenName")">@token.Name</td>
+                            <td data-label="@LocalizationService.GetString("Username")">@(user?.UserName ?? "Unknown")</td>
+                            <td data-label="@LocalizationService.GetString("TokenCreated")">@FormatDateTime(token.CreatedUtc)</td>
+                            <td data-label="@LocalizationService.GetString("TokenLastUsed")">
+                                @if (token.LastUsedUtc.HasValue)
+                                {
+                                    @FormatDateTime(token.LastUsedUtc.Value)
+                                }
+                                else
+                                {
+                                    <span class="text-muted">@LocalizationService.GetString("Never")</span>
+                                }
+                            </td>
+                            <td data-label="@LocalizationService.GetString("TokenExpires")">
+                                @if (token.ExpiresUtc.HasValue)
+                                {
+                                    @FormatDateTime(token.ExpiresUtc.Value)
+                                }
+                                else
+                                {
+                                    <span class="text-muted">@LocalizationService.GetString("Never")</span>
+                                }
+                            </td>
+                            <td data-label="@LocalizationService.GetString("Status")">
+                                @if (token.IsValid)
+                                {
+                                    <span class="status-badge token-active">@LocalizationService.GetString("TokenActive")</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge token-revoked">@LocalizationService.GetString("TokenRevoked")</span>
+                                }
+                            </td>
+                            <td data-label="@LocalizationService.GetString("Actions")">
+                                <div class="action-buttons">
+                                    @if (token.IsValid)
+                                    {
+                                        <button class="btn btn-admin-action btn-danger" @onclick="() => RevokeToken(token.Id)" disabled="@(IsLoading || isLocalLoading)" title="@LocalizationService.GetString("RevokeToken")">
+                                            <svg class="btn-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"/>
+                                                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                                            </svg>
+                                            @LocalizationService.GetString("RevokeToken")
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else if (hasLoadedData)
+    {
+        <div class="empty-state">
+            <p>@LocalizationService.GetString("NoTokensFound")</p>
+        </div>
+    }
+</div>
+
+<!-- Create Token Modal -->
+@if (showCreateTokenDialog)
+{
+    <div class="modal-overlay" @onclick="HideCreateTokenDialog">
+        <div class="modal-dialog" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h3>@LocalizationService.GetString("CreateNewToken")</h3>
+                <button class="modal-close" @onclick="HideCreateTokenDialog">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                @if (createdToken != null)
+                {
+                    <div class="token-created-success">
+                        <div class="success-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20,6 9,17 4,12"/>
+                            </svg>
+                        </div>
+                        <h4>@LocalizationService.GetString("TokenCreatedSuccessfully")</h4>
+                        <p>@LocalizationService.GetString("TokenValueHint")</p>
+                        
+                        <div class="token-value-display">
+                            <label>@LocalizationService.GetString("TokenValue"):</label>
+                            <div class="token-value-container">
+                                <input type="text" readonly value="@createdToken.TokenValue" class="token-value-input" id="tokenValueInput" />
+                                <button class="btn btn-outline btn-sm @(tokenCopied ? "btn-success" : "")" @onclick="CopyTokenToClipboard" title="@LocalizationService.GetString("CopyToken")">
+                                    @if (tokenCopied)
+                                    {
+                                        <svg class="btn-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="20,6 9,17 4,12"/>
+                                        </svg>
+                                    }
+                                    else
+                                    {
+                                        <svg class="btn-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                        </svg>
+                                    }
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <form @onsubmit="CreateToken" @onsubmit:preventDefault="true">
+                        <div class="field">
+                            <label class="field-label">@LocalizationService.GetString("SelectUser")</label>
+                            <select @bind="createTokenRequest.UserId" class="form-select" required>
+                                <option value="">-- @LocalizationService.GetString("SelectUser") --</option>
+                                @foreach (var user in Users)
+                                {
+                                    <option value="@user.Id">@user.UserName (@user.FullName)</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label class="field-label">@LocalizationService.GetString("TokenName")</label>
+                            <input @bind="createTokenRequest.Name" type="text" class="form-input" placeholder="@LocalizationService.GetString("EnterTokenName")" required />
+                        </div>
+
+                        <div class="field">
+                            <label class="field-label">@LocalizationService.GetString("TokenExpiration")</label>
+                            <input @bind="createTokenRequest.ExpiresUtc" type="datetime-local" class="form-input"
+                                   @bind:format="G" />
+                            <small class="field-hint">@LocalizationService.GetString("InfiniteExpiration")</small>
+                        </div>
+
+                        <div class="modal-actions">
+                            <button type="submit" class="btn btn-primary" disabled="@(IsLoading || isLocalLoading)">
+                                @if (IsLoading || isLocalLoading)
+                                {
+                                    <span class="loading-spinner"></span>
+                                }
+                                @LocalizationService.GetString("CreateToken")
+                            </button>
+                            <button type="button" class="btn btn-outline" @onclick="HideCreateTokenDialog">
+                                @LocalizationService.GetString("Cancel")
+                            </button>
+                        </div>
+                    </form>
+                }
+            </div>
+            @if (createdToken != null)
+            {
+                <div class="modal-footer">
+                    <button class="btn btn-primary" @onclick="HideCreateTokenDialog">
+                        @LocalizationService.GetString("Close")
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public List<User> Users { get; set; } = new();
+
+    private List<Token> Tokens { get; set; } = new();
+    private bool showCreateTokenDialog = false;
+    private CreateTokenRequest createTokenRequest = new();
+    private CreateTokenResponse? createdToken;
+    private bool tokenCopied = false;
+
+    protected override async Task LoadDataAsync()
+    {
+        try
+        {
+            Logger.Log("TokenManagementTab", "Loading tokens data");
+            Tokens = await TokenService.GetAllTokensAsync();
+            Logger.Log("TokenManagementTab", $"Loaded {Tokens.Count} tokens");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("TokenManagementTab", "Error loading tokens", ex);
+            await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                LocalizationService.GetString("UnexpectedError"));
+        }
+    }
+
+    private void ShowCreateTokenDialog()
+    {
+        showCreateTokenDialog = true;
+        createTokenRequest = new CreateTokenRequest();
+        createdToken = null;
+    }
+
+    private void HideCreateTokenDialog()
+    {
+        showCreateTokenDialog = false;
+        createTokenRequest = new CreateTokenRequest();
+        createdToken = null;
+        tokenCopied = false;
+    }
+
+    private async Task CopyTokenToClipboard()
+    {
+        try
+        {
+            if (createdToken != null)
+            {
+                var success = await JSRuntime.InvokeAsync<bool>("clipboardHelper.copyText", createdToken.TokenValue);
+                if (success)
+                {
+                    tokenCopied = true;
+                    await JSRuntime.InvokeVoidAsync("toastHelper.success", 
+                        LocalizationService.GetString("TokenCopied"), 
+                        null, 3000);
+
+                    _ = Task.Delay(2000).ContinueWith(_ => 
+                    {
+                        tokenCopied = false;
+                        InvokeAsync(StateHasChanged);
+                    });
+                }
+                else
+                {
+                    await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                        "Failed to copy token to clipboard", 
+                        null, 4000);
+                }
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("TokenManagementTab", "Error copying token to clipboard", ex);
+            await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                "Failed to copy token to clipboard", 
+                null, 4000);
+            StateHasChanged();
+        }
+    }
+
+    private async Task CreateToken()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(createTokenRequest.UserId) || string.IsNullOrEmpty(createTokenRequest.Name))
+            {
+                await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                    LocalizationService.GetString("TokenNameRequired"));
+                return;
+            }
+
+            var result = await TokenService.CreateTokenAsync(createTokenRequest);
+
+            if (result != null)
+            {
+                createdToken = result;
+                await JSRuntime.InvokeVoidAsync("toastHelper.success", 
+                    LocalizationService.GetString("TokenCreatedSuccessfully"));
+                await RefreshData();
+                await OnDataChanged.InvokeAsync();
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                    LocalizationService.GetString("FailedToCreateToken"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("TokenManagementTab", $"Error creating token", ex);
+            await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                LocalizationService.GetString("FailedToCreateToken"));
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task RevokeToken(string tokenId)
+    {
+        try
+        {
+            var success = await TokenService.RevokeTokenAsync(tokenId);
+
+            if (success)
+            {
+                await JSRuntime.InvokeVoidAsync("toastHelper.success", 
+                    LocalizationService.GetString("TokenRevokedSuccessfully"));
+                await RefreshData();
+                await OnDataChanged.InvokeAsync();
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                    LocalizationService.GetString("FailedToRevokeToken"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("TokenManagementTab", $"Error revoking token {tokenId}", ex);
+            await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                LocalizationService.GetString("FailedToRevokeToken"));
+        }
+    }
+}
