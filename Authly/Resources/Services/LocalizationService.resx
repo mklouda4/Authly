@@ -914,4 +914,7 @@
   <data name="AllowPlainTextPkce" xml:space="preserve">
     <value>Allow Plain Text PKCE</value>
   </data>
+  <data name="TogglePasswordVisibility" xml:space="preserve">
+    <value>Toggle password visibility</value>
+  </data>
 </root>

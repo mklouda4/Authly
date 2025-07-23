@@ -1859,11 +1859,76 @@ h1:focus {
         border-color: var(--border-input-hover);
     }
 
+/* Password wrapper with special handling for toggle button */
+.password-wrapper {
+    position: relative;
+}
+
+/* Password toggle button styling */
+.password-toggle-btn {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    color: var(--text-muted);
+    transition: color 0.2s ease;
+    z-index: 3;
+    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+    .password-toggle-btn:hover {
+        color: var(--text-primary);
+        background: var(--bg-hover);
+    }
+
+    .password-toggle-btn:focus {
+        outline: 2px solid var(--accent-primary);
+        outline-offset: 2px;
+    }
+
+.eye-icon {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    stroke-width: 2;
+    fill: none;
+    transition: all 0.2s ease;
+}
+
+/* Password input with special padding for toggle button */
+.password-input {
+    padding-right: 3rem !important; /* Make room for the toggle button */
+}
+
 /* Mobile responsive form inputs */
 @media (max-width: 768px) {
     .form-input {
         padding: 0.875rem 0.875rem 0.875rem 2.5rem;
         font-size: 0.95rem;
+    }
+
+    .password-input {
+        padding-right: 2.75rem !important;
+    }
+
+    .password-toggle-btn {
+        right: 0.875rem;
+        width: 20px;
+        height: 20px;
+    }
+
+    .eye-icon {
+        width: 14px;
+        height: 14px;
     }
 
     .input-icon {
@@ -1879,6 +1944,26 @@ h1:focus {
     .form-input {
         padding: 0.75rem 0.75rem 0.75rem 2.25rem;
         font-size: 0.9rem;
+    }
+
+    .form-input {
+        padding: 0.75rem 0.75rem 0.75rem 2.25rem;
+        font-size: 0.9rem;
+    }
+
+    .password-input {
+        padding-right: 2.5rem !important;
+    }
+
+    .password-toggle-btn {
+        right: 0.75rem;
+        width: 18px;
+        height: 18px;
+    }
+
+    .eye-icon {
+        width: 12px;
+        height: 12px;
     }
 
     .input-icon {

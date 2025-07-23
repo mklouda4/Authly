@@ -612,7 +612,75 @@
   <data name="DateTimeFormatExample" xml:space="preserve">
     <value>Formatbeispiel</value>
   </data>
-  <!-- OAuth Client Management Translations -->
+  <data name="ApplicationSettings" xml:space="preserve">
+    <value>Anwendungseinstellungen</value>
+  </data>
+  <data name="ApplicationSettingsDescription" xml:space="preserve">
+    <value>Anwendungskonfiguration und Sicherheitseinstellungen verwalten</value>
+  </data>
+  <data name="RegistrationSettings" xml:space="preserve">
+    <value>Registrierungseinstellungen</value>
+  </data>
+  <data name="RegistrationSettingsDescription" xml:space="preserve">
+    <value>Verfügbarkeit der Benutzerregistrierung und temporären Zugang kontrollieren</value>
+  </data>
+  <data name="PermanentRegistration" xml:space="preserve">
+    <value>Dauerhafte Registrierung</value>
+  </data>
+  <data name="PermanentRegistrationDescription" xml:space="preserve">
+    <value>Registrierungseinstellung in der Anwendungskonfiguration konfiguriert</value>
+  </data>
+  <data name="TemporaryRegistration" xml:space="preserve">
+    <value>Temporäre Registrierung</value>
+  </data>
+  <data name="TemporaryRegistrationDescription" xml:space="preserve">
+    <value>Registrierung temporär für eine bestimmte Dauer aktivieren</value>
+  </data>
+  <data name="CurrentRegistrationStatus" xml:space="preserve">
+    <value>Aktueller Registrierungsstatus</value>
+  </data>
+  <data name="CurrentRegistrationStatusDescription" xml:space="preserve">
+    <value>Gesamtverfügbarkeit der Registrierung unter Berücksichtigung dauerhafter und temporärer Einstellungen</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>Aktiviert</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Deaktiviert</value>
+  </data>
+  <data name="Enable" xml:space="preserve">
+    <value>Aktivieren</value>
+  </data>
+  <data name="Disable" xml:space="preserve">
+    <value>Deaktivieren</value>
+  </data>
+  <data name="Duration" xml:space="preserve">
+    <value>Dauer</value>
+  </data>
+  <data name="Minutes" xml:space="preserve">
+    <value>Minuten</value>
+  </data>
+  <data name="RemainingTime" xml:space="preserve">
+    <value>Verbleibende Zeit</value>
+  </data>
+  <data name="RegistrationAllowed" xml:space="preserve">
+    <value>Registrierung erlaubt</value>
+  </data>
+  <data name="RegistrationDisabled" xml:space="preserve">
+    <value>Registrierung deaktiviert</value>
+  </data>
+  <data name="TemporaryRegistrationEnabled" xml:space="preserve">
+    <value>Temporäre Registrierung erfolgreich aktiviert</value>
+  </data>
+  <data name="TemporaryRegistrationDisabled" xml:space="preserve">
+    <value>Temporäre Registrierung erfolgreich deaktiviert</value>
+  </data>
+  <data name="ErrorEnablingTemporaryRegistration" xml:space="preserve">
+    <value>Fehler beim Aktivieren der temporären Registrierung</value>
+  </data>
+  <data name="ErrorDisablingTemporaryRegistration" xml:space="preserve">
+    <value>Fehler beim Deaktivieren der temporären Registrierung</value>
+  </data>
   <data name="OAuthClientManagement" xml:space="preserve">
     <value>OAuth-Client-Verwaltung</value>
   </data>
@@ -793,7 +861,6 @@
   <data name="FailedToCopyToClipboard" xml:space="preserve">
     <value>Kopieren in Zwischenablage fehlgeschlagen</value>
   </data>
-  <!-- Additional OAuth Client Management Translations -->
   <data name="EditOAuthClient" xml:space="preserve">
     <value>OAuth-Client bearbeiten</value>
   </data>
@@ -842,71 +909,10 @@
   <data name="ClientTypeCannotBeChanged" xml:space="preserve">
     <value>Client-Typ kann nach der Erstellung nicht geändert werden</value>
   </data>
-  <!-- Application Settings Translations -->
-  <data name="ApplicationSettings" xml:space="preserve">
-    <value>Anwendungseinstellungen</value>
-  </data>
-  <data name="ApplicationSettingsDescription" xml:space="preserve">
-    <value>Anwendungskonfiguration und Sicherheitseinstellungen verwalten</value>
-  </data>
-  <data name="RegistrationSettings" xml:space="preserve">
-    <value>Registrierungseinstellungen</value>
-  </data>
-  <data name="RegistrationSettingsDescription" xml:space="preserve">
-    <value>Verfügbarkeit der Benutzerregistrierung und temporären Zugang kontrollieren</value>
-  </data>
-  <data name="PermanentRegistration" xml:space="preserve">
-    <value>Dauerhafte Registrierung</value>
-  </data>
-  <data name="PermanentRegistrationDescription" xml:space="preserve">
-    <value>Registrierungseinstellung in der Anwendungskonfiguration konfiguriert</value>
-  </data>
-  <data name="TemporaryRegistration" xml:space="preserve">
-    <value>Temporäre Registrierung</value>
-  </data>
-  <data name="TemporaryRegistrationDescription" xml:space="preserve">
-    <value>Registrierung temporär für eine bestimmte Dauer aktivieren</value>
-  </data>
-  <data name="CurrentRegistrationStatus" xml:space="preserve">
-    <value>Aktueller Registrierungsstatus</value>
-  </data>
-  <data name="CurrentRegistrationStatusDescription" xml:space="preserve">
-    <value>Gesamtverfügbarkeit der Registrierung unter Berücksichtigung dauerhafter und temporärer Einstellungen</value>
-  </data>
-  <data name="Duration" xml:space="preserve">
-    <value>Dauer</value>
-  </data>
-  <data name="Minutes" xml:space="preserve">
-    <value>Minuten</value>
-  </data>
-  <data name="RemainingTime" xml:space="preserve">
-    <value>Verbleibende Zeit</value>
-  </data>
-  <data name="RegistrationAllowed" xml:space="preserve">
-    <value>Registrierung erlaubt</value>
-  </data>
-  <data name="RegistrationDisabled" xml:space="preserve">
-    <value>Registrierung deaktiviert</value>
-  </data>
-  <data name="TemporaryRegistrationEnabled" xml:space="preserve">
-    <value>Temporäre Registrierung erfolgreich aktiviert</value>
-  </data>
-  <data name="TemporaryRegistrationDisabled" xml:space="preserve">
-    <value>Temporäre Registrierung erfolgreich deaktiviert</value>
-  </data>
-  <data name="ErrorEnablingTemporaryRegistration" xml:space="preserve">
-    <value>Fehler beim Aktivieren der temporären Registrierung</value>
-  </data>
-  <data name="ErrorDisablingTemporaryRegistration" xml:space="preserve">
-    <value>Fehler beim Deaktivieren der temporären Registrierung</value>
-  </data>
-  <data name="Enabled" xml:space="preserve">
-    <value>Aktiviert</value>
-  </data>
   <data name="AllowPlainTextPkce" xml:space="preserve">
     <value>Klartext-PKCE erlauben</value>
   </data>
-  <data name="Disable" xml:space="preserve">
-    <value>Deaktivieren</value>
+  <data name="TogglePasswordVisibility" xml:space="preserve">
+    <value>Passwort-Sichtbarkeit umschalten</value>
   </data>
 </root>

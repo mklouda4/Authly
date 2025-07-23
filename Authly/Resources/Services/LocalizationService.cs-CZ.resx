@@ -914,4 +914,7 @@
   <data name="AllowPlainTextPkce" xml:space="preserve">
     <value>Povolit prostý text PKCE</value>
   </data>
+  <data name="TogglePasswordVisibility" xml:space="preserve">
+    <value>Přepnout viditelnost hesla</value>
+  </data>
 </root>

@@ -915,4 +915,7 @@
   <data name="AllowPlainTextPkce" xml:space="preserve">
     <value>Autoriser PKCE en texte brut</value>
   </data>
+  <data name="TogglePasswordVisibility" xml:space="preserve">
+    <value>Basculer la visibilité du mot de passe</value>
+  </data>
 </root>
