@@ -311,6 +311,54 @@ namespace Authly.Models
     }
 
     /// <summary>
+    /// Request model for updating OAuth client
+    /// </summary>
+    public class UpdateOAuthClientRequest
+    {
+        [Required]
+        public string ClientId { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(100, MinimumLength = 1)]
+        public string ClientName { get; set; } = string.Empty;
+
+        [StringLength(500)]
+        public string? Description { get; set; }
+
+        [Required]
+        [MinLength(1)]
+        public List<string> RedirectUris { get; set; } = new();
+
+        [Required]
+        [MinLength(1)]
+        public List<string> AllowedScopes { get; set; } = new();
+
+        [Range(300, 86400)] // 5 minutes to 24 hours
+        public int AccessTokenLifetime { get; set; } = 3600;
+
+        [Range(300, 2592000)] // 5 minutes to 30 days
+        public int? RefreshTokenLifetime { get; set; } = 86400;
+
+        public bool RequirePkce { get; set; } = true;
+
+        public bool AllowPlainTextPkce { get; set; } = false;
+
+        [Url]
+        public string? LogoUri { get; set; }
+
+        [Url]
+        public string? ClientUri { get; set; }
+
+        [Url]
+        public string? TosUri { get; set; }
+
+        [Url]
+        public string? PolicyUri { get; set; }
+
+        public bool Enabled { get; set; } = true;
+    }
+
+    /// <summary>
     /// OAuth scope definition
     /// </summary>
     public class OAuthScope

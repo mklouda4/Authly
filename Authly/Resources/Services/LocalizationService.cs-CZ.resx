@@ -862,4 +862,53 @@
   <data name="FailedToCopyToClipboard" xml:space="preserve">
     <value>Nepodařilo se zkopírovat do schránky</value>
   </data>
+  <!-- Additional OAuth Client Management Translations -->
+  <data name="EditOAuthClient" xml:space="preserve">
+    <value>Upravit OAuth klienta</value>
+  </data>
+  <data name="UpdateClient" xml:space="preserve">
+    <value>Aktualizovat klienta</value>
+  </data>
+  <data name="UpdatingClient" xml:space="preserve">
+    <value>Aktualizace klienta...</value>
+  </data>
+  <data name="OAuthClientUpdatedSuccessfully" xml:space="preserve">
+    <value>OAuth klient byl úspěšně aktualizován</value>
+  </data>
+  <data name="ErrorUpdatingOAuthClientDetails" xml:space="preserve">
+    <value>Chyba při aktualizaci podrobností OAuth klienta</value>
+  </data>
+  <data name="RegenerateClientSecret" xml:space="preserve">
+    <value>Regenerovat tajný klíč klienta</value>
+  </data>
+  <data name="ConfirmRegenerateSecret" xml:space="preserve">
+    <value>Jste si jisti, že chcete regenerovat tajný klíč klienta? Současný tajný klíč se okamžitě stane neplatným.</value>
+  </data>
+  <data name="RegeneratingSecret" xml:space="preserve">
+    <value>Regenerace tajného klíče...</value>
+  </data>
+  <data name="ClientSecretRegeneratedSuccessfully" xml:space="preserve">
+    <value>Tajný klíč klienta byl úspěšně regenerován</value>
+  </data>
+  <data name="ErrorRegeneratingSecret" xml:space="preserve">
+    <value>Chyba při regeneraci tajného klíče klienta</value>
+  </data>
+  <data name="NewSecretGenerated" xml:space="preserve">
+    <value>Nový tajný klíč byl vygenerován</value>
+  </data>
+  <data name="NewSecretWarning" xml:space="preserve">
+    <value>Toto je váš nový tajný klíč klienta. Prosím zkopírujte si ho nyní, protože se již nebude zobrazovat.</value>
+  </data>
+  <data name="RefreshTokenLifetimeOptional" xml:space="preserve">
+    <value>Životnost obnovovacího tokenu (volitelné)</value>
+  </data>
+  <data name="LeaveEmptyForNoRefreshTokens" xml:space="preserve">
+    <value>Ponechte prázdné pro zakázání obnovovacích tokenů</value>
+  </data>
+  <data name="ClientSecretCopiedToClipboard" xml:space="preserve">
+    <value>Tajný klíč klienta zkopírován do schránky</value>
+  </data>
+  <data name="ClientTypeCannotBeChanged" xml:space="preserve">
+    <value>Typ klienta nelze po vytvoření změnit</value>
+  </data>
 </root>

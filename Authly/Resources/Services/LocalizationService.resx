@@ -862,4 +862,53 @@
   <data name="FailedToCopyToClipboard" xml:space="preserve">
     <value>Failed to copy to clipboard</value>
   </data>
+  <!-- Additional OAuth Client Management Translations -->
+  <data name="EditOAuthClient" xml:space="preserve">
+    <value>Edit OAuth Client</value>
+  </data>
+  <data name="UpdateClient" xml:space="preserve">
+    <value>Update Client</value>
+  </data>
+  <data name="UpdatingClient" xml:space="preserve">
+    <value>Updating client...</value>
+  </data>
+  <data name="OAuthClientUpdatedSuccessfully" xml:space="preserve">
+    <value>OAuth client updated successfully</value>
+  </data>
+  <data name="ErrorUpdatingOAuthClientDetails" xml:space="preserve">
+    <value>Error updating OAuth client details</value>
+  </data>
+  <data name="RegenerateClientSecret" xml:space="preserve">
+    <value>Regenerate Client Secret</value>
+  </data>
+  <data name="ConfirmRegenerateSecret" xml:space="preserve">
+    <value>Are you sure you want to regenerate the client secret? The current secret will become invalid immediately.</value>
+  </data>
+  <data name="RegeneratingSecret" xml:space="preserve">
+    <value>Regenerating secret...</value>
+  </data>
+  <data name="ClientSecretRegeneratedSuccessfully" xml:space="preserve">
+    <value>Client secret regenerated successfully</value>
+  </data>
+  <data name="ErrorRegeneratingSecret" xml:space="preserve">
+    <value>Error regenerating client secret</value>
+  </data>
+  <data name="NewSecretGenerated" xml:space="preserve">
+    <value>New Secret Generated</value>
+  </data>
+  <data name="NewSecretWarning" xml:space="preserve">
+    <value>This is your new client secret. Please copy it now as it will not be shown again.</value>
+  </data>
+  <data name="RefreshTokenLifetimeOptional" xml:space="preserve">
+    <value>Refresh Token Lifetime (optional)</value>
+  </data>
+  <data name="LeaveEmptyForNoRefreshTokens" xml:space="preserve">
+    <value>Leave empty to disable refresh tokens</value>
+  </data>
+  <data name="ClientSecretCopiedToClipboard" xml:space="preserve">
+    <value>Client secret copied to clipboard</value>
+  </data>
+  <data name="ClientTypeCannotBeChanged" xml:space="preserve">
+    <value>Client type cannot be changed after creation</value>
+  </data>
 </root>

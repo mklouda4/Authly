@@ -495,7 +495,7 @@
                 <button class="btn btn-outline" @onclick="HideClientDetailsModal">
                     @LocalizationService.GetString("Close")
                 </button>
-                <button class="btn btn-primary" @onclick="() => ShowEditClientModal(selectedClient)" disabled>
+                <button class="btn btn-primary" @onclick="() => ShowEditClientModal(selectedClient)">
                     <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polygon points="14,2 18,6 7,17 3,17 3,13 14,2"/>
                         <line x1="11" y1="5" x2="16" y2="10"/>
@@ -504,13 +504,651 @@
                 </button>
                 @if (selectedClient.ClientType == OAuthClientType.Confidential)
                 {
-                    <button class="btn btn-warning" @onclick="() => ShowRegenerateSecretModal(selectedClient)" disabled>
+                    <button class="btn btn-warning" @onclick="() => ShowRegenerateSecretModal(selectedClient)">
                         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
                         </svg>
                         @LocalizationService.GetString("RegenerateSecret")
                     </button>
                 }
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Edit Client Modal -->
+@if (showEditClientModal && selectedClient != null)
+{
+    <div class="modal-overlay" @onclick="HideEditClientModal">
+        <div class="modal-dialog" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h3>@LocalizationService.GetString("EditOAuthClient"): @selectedClient.ClientName</h3>
+                <button class="modal-close" @onclick="HideEditClientModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form @onsubmit="UpdateClient" @onsubmit:preventDefault="true">
+                    <div class="input-group">
+                        <label for="editClientName">@LocalizationService.GetString("ClientName") *</label>
+                        <input id="editClientName" @bind="updateClientRequest.ClientName" class="form-input" type="text" required maxlength="100" />
+                    </div>
+
+                    <div class="input-group">
+                        <label for="editClientDescription">@LocalizationService.GetString("Description")</label>
+                        <textarea id="editClientDescription" @bind="updateClientRequest.Description" class="form-input" rows="3" maxlength="500"></textarea>
+                    </div>
+
+                    <div class="input-group">
+                        <label>@LocalizationService.GetString("ClientType")</label>
+                        <div class="field-value">
+                            <span class="client-type-badge @(selectedClient.ClientType == OAuthClientType.Confidential ? "client-type-confidential" : "client-type-public")">
+                                @selectedClient.ClientType.ToString()
+                            </span>
+                            <small style="color: var(--text-muted); font-size: 0.8rem; margin-left: 0.5rem;">
+                                @LocalizationService.GetString("ClientTypeCannotBeChanged")
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="editRedirectUris">@LocalizationService.GetString("RedirectURIs") *</label>
+                        <textarea id="editRedirectUris" @bind="editRedirectUrisText" class="form-input" rows="4" placeholder="https://example.com/callback&#10;https://app.example.com/auth/callback"></textarea>
+                        <small style="color: var(--text-muted); font-size: 0.8rem;">@LocalizationService.GetString("OneURIPerLine")</small>
+                    </div>
+
+                    <div class="input-group">
+                        <label>@LocalizationService.GetString("AllowedScopes") *</label>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.5rem; margin-top: 0.5rem;">
+                            @foreach (var scope in availableScopes)
+                            {
+                                <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: normal;">
+                                    <input type="checkbox" 
+                                           checked="@editSelectedScopes.Contains(scope.Name)" 
+                                           @onchange="@((ChangeEventArgs e) => ToggleEditScope(scope.Name, (bool)e.Value!))" />
+                                    <span>@scope.DisplayName</span>
+                                </label>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="editAccessTokenLifetime">@LocalizationService.GetString("AccessTokenLifetime") (@LocalizationService.GetString("Seconds"))</label>
+                        <input id="editAccessTokenLifetime" @bind="updateClientRequest.AccessTokenLifetime" class="form-input" type="number" min="300" max="86400" />
+                    </div>
+
+                    <div class="input-group">
+                        <label for="editRefreshTokenLifetime">@LocalizationService.GetString("RefreshTokenLifetimeOptional") (@LocalizationService.GetString("Seconds"))</label>
+                        <input id="editRefreshTokenLifetime" @bind="updateClientRequest.RefreshTokenLifetime" class="form-input" type="number" min="300" max="2592000" />
+                        <small style="color: var(--text-muted); font-size: 0.8rem;">@LocalizationService.GetString("LeaveEmptyForNoRefreshTokens")</small>
+                    </div>
+
+                    <div class="input-group">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: normal;">
+                            <input type="checkbox" @bind="updateClientRequest.RequirePkce" />
+                            <span>@LocalizationService.GetString("RequirePKCE")</span>
+                        </label>
+                    </div>
+
+                    <div class="input-group">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: normal;">
+                            <input type="checkbox" @bind="updateClientRequest.Enabled" />
+                            <span>@LocalizationService.GetString("Enabled")</span>
+                        </label>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline" @onclick="HideEditClientModal">
+                            @LocalizationService.GetString("Cancel")
+                        </button>
+                        <button type="submit" class="btn btn-primary" disabled="@isUpdatingClient">
+                            @if (isUpdatingClient)
+                            {
+                                <div class="loading-spinner"></div>
+                                @LocalizationService.GetString("UpdatingClient")
+                            }
+                            else
+                            {
+                                @LocalizationService.GetString("UpdateClient")
+                            }
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Regenerate Secret Modal -->
+@if (showRegenerateSecretModal && clientForSecretRegeneration != null)
+{
+    <div class="modal-overlay" @onclick="HideRegenerateSecretModal">
+        <div class="modal-dialog" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h3>@LocalizationService.GetString("NewSecretGenerated")</h3>
+                <button class="modal-close" @onclick="HideRegenerateSecretModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                @if (isRegeneratingSecret)
+                {
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p>@LocalizationService.GetString("RegeneratingSecret")</p>
+                    </div>
+                }
+                else if (!string.IsNullOrEmpty(newGeneratedSecret))
+                {
+                    <div class="alert alert-warning">
+                        <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        </svg>
+                        @LocalizationService.GetString("NewSecretWarning")
+                    </div>
+
+                    <div class="input-group">
+                        <label class="field-label">@LocalizationService.GetString("ClientSecret")</label>
+                        <div class="token-value-container">
+                            <input class="token-value-input" readonly type="@(showNewSecret ? "text" : "password")" value="@newGeneratedSecret" />
+                            <button class="btn btn-outline btn-sm" @onclick="ToggleNewSecretVisibility" title="@(showNewSecret ? LocalizationService.GetString("HideSecret") : LocalizationService.GetString("ShowSecret"))">
+                                @if (showNewSecret)
+                                {
+                                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                                        <line x1="1" y1="1" x2="23" y2="23"/>
+                                    </svg>
+                                }
+                                else
+                                {
+                                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                }
+                            </button>
+                            <button class="btn btn-outline btn-sm" @onclick="CopyNewSecretToClipboard" title="@LocalizationService.GetString("CopyToClipboard")">
+                                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-primary" @onclick="HideRegenerateSecretModal">
+                    @LocalizationService.GetString("Close")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Client Details Modal -->
+@if (showClientDetailsModal && selectedClient != null)
+{
+    <div class="modal-overlay" @onclick="HideClientDetailsModal">
+        <div class="modal-dialog large-modal" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h3>@LocalizationService.GetString("ClientDetails"): @selectedClient.ClientName</h3>
+                <button class="modal-close" @onclick="HideClientDetailsModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="client-details-grid">
+                    <!-- Basic Information -->
+                    <div class="detail-section">
+                        <h4 class="section-subtitle">@LocalizationService.GetString("BasicInformation")</h4>
+                        
+                        <div class="field">
+                            <label class="field-label">@LocalizationService.GetString("ClientName")</label>
+                            <div class="field-value">@selectedClient.ClientName</div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(selectedClient.Description))
+                        {
+                            <div class="field">
+                                <label class="field-label">@LocalizationService.GetString("Description")</label>
+                                <div class="field-value">@selectedClient.Description</div>
+                            </div>
+                        }
+
+                        <div class="field">
+                            <label class="field-label">@LocalizationService.GetString("ClientType")</label>
+                            <div class="field-value">
+                                <span class="client-type-badge @(selectedClient.ClientType == OAuthClientType.Confidential ? "client-type-confidential" : "client-type-public")">
+                                    @selectedClient.ClientType.ToString()
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="field-label">@LocalizationService.GetString("Status")</label>
+                            <div class="field-value">
+                                <span class="status-badge @(selectedClient.Enabled ? "status-active" : "status-inactive")">
+                                    @(selectedClient.Enabled ? LocalizationService.GetString("Enabled") : LocalizationService.GetString("Disabled"))
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Credentials -->
+                    <div class="detail-section">
+                        <h4 class="section-subtitle">@LocalizationService.GetString("Credentials")</h4>
+                        
+                        <div class="field">
+                            <label class="field-label">@LocalizationService.GetString("ClientId")</label>
+                            <div class="token-value-container">
+                                <input class="token-value-input" readonly value="@selectedClient.ClientId" />
+                                <button class="btn btn-outline btn-sm" @onclick="() => CopyToClipboard(selectedClient.ClientId)" title="@LocalizationService.GetString("CopyToClipboard")">
+                                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        @if (selectedClient.ClientType == OAuthClientType.Confidential)
+                        {
+                            <div class="field">
+                                <label class="field-label">@LocalizationService.GetString("ClientSecret")</label>
+                                @if (!string.IsNullOrEmpty(selectedClient.ClientSecret))
+                                {
+                                    <div class="token-value-container">
+                                        <input class="token-value-input" readonly type="@(showClientSecret ? "text" : "password")" value="@selectedClient.ClientSecret" />
+                                        <button class="btn btn-outline btn-sm" @onclick="ToggleSecretVisibility" title="@(showClientSecret ? LocalizationService.GetString("HideSecret") : LocalizationService.GetString("ShowSecret"))">
+                                            @if (showClientSecret)
+                                            {
+                                                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                                                    <line x1="1" y1="1" x2="23" y2="23"/>
+                                                </svg>
+                                            }
+                                            else
+                                            {
+                                                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                                    <circle cx="12" cy="12" r="3"/>
+                                                </svg>
+                                            }
+                                        </button>
+                                        <button class="btn btn-outline btn-sm" @onclick="() => CopyToClipboard(selectedClient.ClientSecret!)" title="@LocalizationService.GetString("CopyToClipboard")">
+                                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-warning">
+                                        <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                            <line x1="12" y1="9" x2="12" y2="13"/>
+                                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                        </svg>
+                                        @LocalizationService.GetString("NoClientSecretGenerated")
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Configuration Details -->
+                <div class="detail-section">
+                    <h4 class="section-subtitle">@LocalizationService.GetString("Configuration")</h4>
+                    
+                    <div class="field">
+                        <label class="field-label">@LocalizationService.GetString("RedirectURIs")</label>
+                        <div class="field-value">
+                            @if (selectedClient.RedirectUris.Any())
+                            {
+                                <div class="uri-list">
+                                    @foreach (var uri in selectedClient.RedirectUris)
+                                    {
+                                        <div class="uri-item">
+                                            <code>@uri</code>
+                                            <button class="btn btn-outline btn-sm" @onclick="() => CopyToClipboard(uri)" title="@LocalizationService.GetString("CopyToClipboard")">
+                                                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="text-muted">@LocalizationService.GetString("NoRedirectURIs")</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label">@LocalizationService.GetString("AllowedScopes")</label>
+                        <div class="field-value">
+                            <div class="scope-badges">
+                                @foreach (var scope in selectedClient.AllowedScopes)
+                                {
+                                    <span class="scope-badge">@scope</span><br />
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label">@LocalizationService.GetString("AllowedGrantTypes")</label>
+                        <div class="field-value">
+                            <div class="grant-type-badges">
+                                @foreach (var grantType in selectedClient.AllowedGrantTypes)
+                                {
+                                    <span class="grant-type-badge">@grantType.ToString()</span><br />
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-grid">
+                        <div class="field">
+                            <label class="field-label">@LocalizationService.GetString("AccessTokenLifetime")</label>
+                            <div class="field-value">@selectedClient.AccessTokenLifetime @LocalizationService.GetString("Seconds")</div>
+                        </div>
+
+                        @if (selectedClient.RefreshTokenLifetime.HasValue)
+                        {
+                            <div class="field">
+                                <label class="field-label">@LocalizationService.GetString("RefreshTokenLifetime")</label>
+                                <div class="field-value">@selectedClient.RefreshTokenLifetime.Value @LocalizationService.GetString("Seconds")</div>
+                            </div>
+                        }
+
+                        <div class="field">
+                            <label class="field-label">@LocalizationService.GetString("RequirePKCE")</label>
+                            <div class="field-value">
+                                <span class="status-badge @(selectedClient.RequirePkce ? "status-active" : "status-inactive")">
+                                    @(selectedClient.RequirePkce ? LocalizationService.GetString("Yes") : LocalizationService.GetString("No"))
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OAuth Endpoints Information -->
+                <div class="oauth-endpoints-info">
+                    <h4 class="oauth-endpoints-title">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"/>
+                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"/>
+                        </svg>
+                        @LocalizationService.GetString("OAuthEndpoints")
+                    </h4>
+                    
+                    <div class="oauth-endpoint-item">
+                        <div class="oauth-endpoint-label">@LocalizationService.GetString("AuthorizationEndpoint"):</div>
+                        <div class="oauth-endpoint-url">@(GetBaseUrl())/oauth/authorize</div>
+                    </div>
+                    
+                    <div class="oauth-endpoint-item">
+                        <div class="oauth-endpoint-label">@LocalizationService.GetString("TokenEndpoint"):</div>
+                        <div class="oauth-endpoint-url">@(GetBaseUrl())/oauth/token</div>
+                    </div>
+                    
+                    <div class="oauth-endpoint-item">
+                        <div class="oauth-endpoint-label">@LocalizationService.GetString("UserInfoEndpoint"):</div>
+                        <div class="oauth-endpoint-url">@(GetBaseUrl())/oauth/userinfo</div>
+                    </div>
+                    
+                    <div class="oauth-endpoint-item">
+                        <div class="oauth-endpoint-label">@LocalizationService.GetString("DiscoveryEndpoint"):</div>
+                        <div class="oauth-endpoint-url">@(GetBaseUrl())/oauth/.well-known/oauth-authorization-server</div>
+                    </div>
+                </div>
+
+                <!-- Metadata -->
+                <div class="detail-section">
+                    <h4 class="section-subtitle">@LocalizationService.GetString("Metadata")</h4>
+                    
+                    <div class="metadata-grid">
+                        @if (!string.IsNullOrEmpty(selectedClient.CreatedBy))
+                        {
+                            <div class="field">
+                                <label class="field-label">@LocalizationService.GetString("CreatedBy")</label>
+                                <div class="field-value">@selectedClient.CreatedBy</div>
+                            </div>
+                        }
+
+                        <div class="field">
+                            <label class="field-label">@LocalizationService.GetString("Created")</label>
+                            <div class="field-value">@selectedClient.CreatedUtc.ToString("G")</div>
+                        </div>
+
+                        @if (selectedClient.ModifiedUtc != selectedClient.CreatedUtc)
+                        {
+                            <div class="field">
+                                <label class="field-label">@LocalizationService.GetString("LastModified")</label>
+                                <div class="field-value">@selectedClient.ModifiedUtc.ToString("G")</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-outline" @onclick="HideClientDetailsModal">
+                    @LocalizationService.GetString("Close")
+                </button>
+                <button class="btn btn-primary" @onclick="() => ShowEditClientModal(selectedClient)">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="14,2 18,6 7,17 3,17 3,13 14,2"/>
+                        <line x1="11" y1="5" x2="16" y2="10"/>
+                    </svg>
+                    @LocalizationService.GetString("Edit")
+                </button>
+                @if (selectedClient.ClientType == OAuthClientType.Confidential)
+                {
+                    <button class="btn btn-warning" @onclick="() => ShowRegenerateSecretModal(selectedClient)">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                        </svg>
+                        @LocalizationService.GetString("RegenerateSecret")
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Edit Client Modal -->
+@if (showEditClientModal && selectedClient != null)
+{
+    <div class="modal-overlay" @onclick="HideEditClientModal">
+        <div class="modal-dialog" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h3>@LocalizationService.GetString("EditOAuthClient"): @selectedClient.ClientName</h3>
+                <button class="modal-close" @onclick="HideEditClientModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form @onsubmit="UpdateClient" @onsubmit:preventDefault="true">
+                    <div class="input-group">
+                        <label for="editClientName">@LocalizationService.GetString("ClientName") *</label>
+                        <input id="editClientName" @bind="updateClientRequest.ClientName" class="form-input" type="text" required maxlength="100" />
+                    </div>
+
+                    <div class="input-group">
+                        <label for="editClientDescription">@LocalizationService.GetString("Description")</label>
+                        <textarea id="editClientDescription" @bind="updateClientRequest.Description" class="form-input" rows="3" maxlength="500"></textarea>
+                    </div>
+
+                    <div class="input-group">
+                        <label>@LocalizationService.GetString("ClientType")</label>
+                        <div class="field-value">
+                            <span class="client-type-badge @(selectedClient.ClientType == OAuthClientType.Confidential ? "client-type-confidential" : "client-type-public")">
+                                @selectedClient.ClientType.ToString()
+                            </span>
+                            <small style="color: var(--text-muted); font-size: 0.8rem; margin-left: 0.5rem;">
+                                @LocalizationService.GetString("ClientTypeCannotBeChanged")
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="editRedirectUris">@LocalizationService.GetString("RedirectURIs") *</label>
+                        <textarea id="editRedirectUris" @bind="editRedirectUrisText" class="form-input" rows="4" placeholder="https://example.com/callback&#10;https://app.example.com/auth/callback"></textarea>
+                        <small style="color: var(--text-muted); font-size: 0.8rem;">@LocalizationService.GetString("OneURIPerLine")</small>
+                    </div>
+
+                    <div class="input-group">
+                        <label>@LocalizationService.GetString("AllowedScopes") *</label>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.5rem; margin-top: 0.5rem;">
+                            @foreach (var scope in availableScopes)
+                            {
+                                <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: normal;">
+                                    <input type="checkbox" 
+                                           checked="@editSelectedScopes.Contains(scope.Name)" 
+                                           @onchange="@((ChangeEventArgs e) => ToggleEditScope(scope.Name, (bool)e.Value!))" />
+                                    <span>@scope.DisplayName</span>
+                                </label>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="editAccessTokenLifetime">@LocalizationService.GetString("AccessTokenLifetime") (@LocalizationService.GetString("Seconds"))</label>
+                        <input id="editAccessTokenLifetime" @bind="updateClientRequest.AccessTokenLifetime" class="form-input" type="number" min="300" max="86400" />
+                    </div>
+
+                    <div class="input-group">
+                        <label for="editRefreshTokenLifetime">@LocalizationService.GetString("RefreshTokenLifetimeOptional") (@LocalizationService.GetString("Seconds"))</label>
+                        <input id="editRefreshTokenLifetime" @bind="updateClientRequest.RefreshTokenLifetime" class="form-input" type="number" min="300" max="2592000" />
+                        <small style="color: var(--text-muted); font-size: 0.8rem;">@LocalizationService.GetString("LeaveEmptyForNoRefreshTokens")</small>
+                    </div>
+
+                    <div class="input-group">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: normal;">
+                            <input type="checkbox" @bind="updateClientRequest.RequirePkce" />
+                            <span>@LocalizationService.GetString("RequirePKCE")</span>
+                        </label>
+                    </div>
+
+                    <div class="input-group">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: normal;">
+                            <input type="checkbox" @bind="updateClientRequest.Enabled" />
+                            <span>@LocalizationService.GetString("Enabled")</span>
+                        </label>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline" @onclick="HideEditClientModal">
+                            @LocalizationService.GetString("Cancel")
+                        </button>
+                        <button type="submit" class="btn btn-primary" disabled="@isUpdatingClient">
+                            @if (isUpdatingClient)
+                            {
+                                <div class="loading-spinner"></div>
+                                @LocalizationService.GetString("UpdatingClient")
+                            }
+                            else
+                            {
+                                @LocalizationService.GetString("UpdateClient")
+                            }
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Regenerate Secret Modal -->
+@if (showRegenerateSecretModal && clientForSecretRegeneration != null)
+{
+    <div class="modal-overlay" @onclick="HideRegenerateSecretModal">
+        <div class="modal-dialog" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h3>@LocalizationService.GetString("NewSecretGenerated")</h3>
+                <button class="modal-close" @onclick="HideRegenerateSecretModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                @if (isRegeneratingSecret)
+                {
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p>@LocalizationService.GetString("RegeneratingSecret")</p>
+                    </div>
+                }
+                else if (!string.IsNullOrEmpty(newGeneratedSecret))
+                {
+                    <div class="alert alert-warning">
+                        <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                        @LocalizationService.GetString("NewSecretWarning")
+                    </div>
+
+                    <div class="input-group">
+                        <label class="field-label">@LocalizationService.GetString("ClientSecret")</label>
+                        <div class="token-value-container">
+                            <input class="token-value-input" readonly type="@(showNewSecret ? "text" : "password")" value="@newGeneratedSecret" />
+                            <button class="btn btn-outline btn-sm" @onclick="ToggleNewSecretVisibility" title="@(showNewSecret ? LocalizationService.GetString("HideSecret") : LocalizationService.GetString("ShowSecret"))">
+                                @if (showNewSecret)
+                                {
+                                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                                        <line x1="1" y1="1" x2="23" y2="23"/>
+                                    </svg>
+                                }
+                                else
+                                {
+                                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                        <circle cx="12" cy="12" r="3"/>
+                                    </svg>
+                                }
+                            </button>
+                            <button class="btn btn-outline btn-sm" @onclick="CopyNewSecretToClipboard" title="@LocalizationService.GetString("CopyToClipboard")">
+                                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-primary" @onclick="HideRegenerateSecretModal">
+                    @LocalizationService.GetString("Close")
+                </button>
             </div>
         </div>
     </div>
@@ -528,6 +1166,20 @@
     private CreateOAuthClientRequest newClientRequest = new();
     private string redirectUrisText = "";
     private HashSet<string> selectedScopes = new();
+
+    // Edit client modal
+    private bool showEditClientModal = false;
+    private bool isUpdatingClient = false;
+    private UpdateOAuthClientRequest updateClientRequest = new();
+    private string editRedirectUrisText = "";
+    private HashSet<string> editSelectedScopes = new();
+
+    // Regenerate secret modal
+    private bool showRegenerateSecretModal = false;
+    private bool isRegeneratingSecret = false;
+    private OAuthClient? clientForSecretRegeneration = null;
+    private string? newGeneratedSecret = null;
+    private bool showNewSecret = false;
 
     // Client details modal
     private bool showClientDetailsModal = false;
@@ -569,6 +1221,180 @@
         showCreateClientModal = false;
     }
 
+    private void ShowEditClientModal(OAuthClient client)
+    {
+        updateClientRequest = new UpdateOAuthClientRequest
+        {
+            ClientId = client.ClientId,
+            ClientName = client.ClientName,
+            Description = client.Description,
+            RedirectUris = new List<string>(client.RedirectUris),
+            AllowedScopes = new List<string>(client.AllowedScopes),
+            AccessTokenLifetime = client.AccessTokenLifetime,
+            RefreshTokenLifetime = client.RefreshTokenLifetime,
+            RequirePkce = client.RequirePkce,
+            AllowPlainTextPkce = client.AllowPlainTextPkce,
+            LogoUri = client.LogoUri,
+            ClientUri = client.ClientUri,
+            TosUri = client.TosUri,
+            PolicyUri = client.PolicyUri,
+            Enabled = client.Enabled
+        };
+
+        editRedirectUrisText = string.Join("\n", client.RedirectUris);
+        editSelectedScopes = new HashSet<string>(client.AllowedScopes);
+        
+        selectedClient = client;
+        showEditClientModal = true;
+        
+        // Hide details modal if open
+        showClientDetailsModal = false;
+    }
+
+    private void HideEditClientModal()
+    {
+        showEditClientModal = false;
+        selectedClient = null;
+    }
+
+    private async Task UpdateClient()
+    {
+        try
+        {
+            isUpdatingClient = true;
+
+            // Validate redirect URIs
+            var uris = editRedirectUrisText
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(uri => uri.Trim())
+                .Where(uri => !string.IsNullOrEmpty(uri))
+                .ToList();
+
+            if (!uris.Any())
+            {
+                await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                    LocalizationService.GetString("RedirectURIsRequired"));
+                return;
+            }
+
+            // Parse redirect URIs
+            updateClientRequest.RedirectUris = uris;
+
+            // Set selected scopes
+            updateClientRequest.AllowedScopes = editSelectedScopes.ToList();
+
+            if (!updateClientRequest.AllowedScopes.Any())
+            {
+                await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                    LocalizationService.GetString("ScopesRequired"));
+                return;
+            }
+
+            var success = await OAuthClientService.UpdateClientAsync(updateClientRequest, CurrentUser?.UserName ?? "admin");
+            
+            if (success)
+            {
+                await JSRuntime.InvokeVoidAsync("toastHelper.success", 
+                    LocalizationService.GetString("OAuthClientUpdatedSuccessfully"));
+                
+                showEditClientModal = false;
+                await LoadDataAsync();
+                await OnDataChanged.InvokeAsync();
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                    LocalizationService.GetString("ErrorUpdatingOAuthClientDetails"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("OAuthClientManagementTab", $"Error updating OAuth client: {ex.Message}", ex);
+            await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                LocalizationService.GetString("ErrorUpdatingOAuthClientDetails"));
+        }
+        finally
+        {
+            isUpdatingClient = false;
+        }
+    }
+
+    private async Task ShowRegenerateSecretModal(OAuthClient client)
+    {
+        clientForSecretRegeneration = client;
+        newGeneratedSecret = null;
+        showNewSecret = false;
+        
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
+            LocalizationService.GetString("ConfirmRegenerateSecret"));
+            
+        if (confirmed)
+        {
+            await RegenerateClientSecret();
+        }
+    }
+
+    private async Task RegenerateClientSecret()
+    {
+        if (clientForSecretRegeneration == null) return;
+
+        try
+        {
+            isRegeneratingSecret = true;
+            showRegenerateSecretModal = true;
+
+            newGeneratedSecret = await OAuthClientService.RegenerateClientSecretAsync(clientForSecretRegeneration.ClientId);
+            
+            await JSRuntime.InvokeVoidAsync("toastHelper.success", 
+                LocalizationService.GetString("ClientSecretRegeneratedSuccessfully"));
+            
+            await LoadDataAsync();
+            await OnDataChanged.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("OAuthClientManagementTab", $"Error regenerating client secret: {ex.Message}", ex);
+            await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                LocalizationService.GetString("ErrorRegeneratingSecret"));
+            showRegenerateSecretModal = false;
+        }
+        finally
+        {
+            isRegeneratingSecret = false;
+        }
+    }
+
+    private void HideRegenerateSecretModal()
+    {
+        showRegenerateSecretModal = false;
+        clientForSecretRegeneration = null;
+        newGeneratedSecret = null;
+        showNewSecret = false;
+    }
+
+    private void ToggleNewSecretVisibility()
+    {
+        showNewSecret = !showNewSecret;
+    }
+
+    private async Task CopyNewSecretToClipboard()
+    {
+        if (!string.IsNullOrEmpty(newGeneratedSecret))
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", newGeneratedSecret);
+                await JSRuntime.InvokeVoidAsync("toastHelper.success", 
+                    LocalizationService.GetString("ClientSecretCopiedToClipboard"));
+            }
+            catch
+            {
+                await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                    LocalizationService.GetString("FailedToCopyToClipboard"));
+            }
+        }
+    }
+
     private void ToggleScope(string scopeName, bool isSelected)
     {
         if (isSelected)
@@ -578,6 +1404,18 @@
         else
         {
             selectedScopes.Remove(scopeName);
+        }
+    }
+
+    private void ToggleEditScope(string scopeName, bool isSelected)
+    {
+        if (isSelected)
+        {
+            editSelectedScopes.Add(scopeName);
+        }
+        else
+        {
+            editSelectedScopes.Remove(scopeName);
         }
     }
 
@@ -670,18 +1508,6 @@
     private void ToggleSecretVisibility()
     {
         showClientSecret = !showClientSecret;
-    }
-
-    private void ShowEditClientModal(OAuthClient client)
-    {
-        // TODO: Implement edit client modal
-        JSRuntime.InvokeVoidAsync("toastHelper.info", "Edit functionality coming soon!");
-    }
-
-    private void ShowRegenerateSecretModal(OAuthClient client)
-    {
-        // TODO: Implement regenerate secret modal
-        JSRuntime.InvokeVoidAsync("toastHelper.info", "Regenerate secret functionality coming soon!");
     }
 
     private async Task ToggleClientEnabled(OAuthClient client)

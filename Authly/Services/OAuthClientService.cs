@@ -31,6 +31,11 @@ namespace Authly.Services
         Task<bool> UpdateClientAsync(OAuthClient client);
 
         /// <summary>
+        /// Update OAuth client from request
+        /// </summary>
+        Task<bool> UpdateClientAsync(UpdateOAuthClientRequest request, string modifiedBy);
+
+        /// <summary>
         /// Delete OAuth client
         /// </summary>
         Task<bool> DeleteClientAsync(string clientId);
@@ -163,6 +168,37 @@ namespace Authly.Services
             
             await SaveClientsAsync(clients);
             _logger.Log("OAuthClientService", $"Updated OAuth client: {client.ClientId}");
+            return true;
+        }
+
+        public async Task<bool> UpdateClientAsync(UpdateOAuthClientRequest request, string modifiedBy)
+        {
+            var clients = await GetAllClientsAsync();
+            var client = clients.FirstOrDefault(c => c.ClientId == request.ClientId);
+            
+            if (client == null)
+            {
+                return false;
+            }
+
+            // Update client properties (but preserve ClientType and secret)
+            client.ClientName = request.ClientName;
+            client.Description = request.Description;
+            client.RedirectUris = request.RedirectUris;
+            client.AllowedScopes = request.AllowedScopes;
+            client.AccessTokenLifetime = request.AccessTokenLifetime;
+            client.RefreshTokenLifetime = request.RefreshTokenLifetime;
+            client.RequirePkce = request.RequirePkce;
+            client.AllowPlainTextPkce = request.AllowPlainTextPkce;
+            client.LogoUri = request.LogoUri;
+            client.ClientUri = request.ClientUri;
+            client.TosUri = request.TosUri;
+            client.PolicyUri = request.PolicyUri;
+            client.Enabled = request.Enabled;
+            client.ModifiedUtc = DateTime.UtcNow;
+
+            await SaveClientsAsync(clients);
+            _logger.Log("OAuthClientService", $"Updated OAuth client: {client.ClientId} by {modifiedBy}");
             return true;
         }
 

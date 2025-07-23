@@ -793,4 +793,123 @@
   <data name="FailedToCopyToClipboard" xml:space="preserve">
     <value>Kopieren in Zwischenablage fehlgeschlagen</value>
   </data>
+  <!-- Additional OAuth Client Management Translations -->
+  <data name="EditOAuthClient" xml:space="preserve">
+    <value>OAuth-Client bearbeiten</value>
+  </data>
+  <data name="UpdateClient" xml:space="preserve">
+    <value>Client aktualisieren</value>
+  </data>
+  <data name="UpdatingClient" xml:space="preserve">
+    <value>Client wird aktualisiert...</value>
+  </data>
+  <data name="OAuthClientUpdatedSuccessfully" xml:space="preserve">
+    <value>OAuth-Client erfolgreich aktualisiert</value>
+  </data>
+  <data name="ErrorUpdatingOAuthClientDetails" xml:space="preserve">
+    <value>Fehler beim Aktualisieren der OAuth-Client-Details</value>
+  </data>
+  <data name="RegenerateClientSecret" xml:space="preserve">
+    <value>Client-Geheimnis neu generieren</value>
+  </data>
+  <data name="ConfirmRegenerateSecret" xml:space="preserve">
+    <value>Sind Sie sicher, dass Sie das Client-Geheimnis neu generieren möchten? Das aktuelle Geheimnis wird sofort ungültig.</value>
+  </data>
+  <data name="RegeneratingSecret" xml:space="preserve">
+    <value>Geheimnis wird neu generiert...</value>
+  </data>
+  <data name="ClientSecretRegeneratedSuccessfully" xml:space="preserve">
+    <value>Client-Geheimnis erfolgreich neu generiert</value>
+  </data>
+  <data name="ErrorRegeneratingSecret" xml:space="preserve">
+    <value>Fehler beim Neugenerieren des Client-Geheimnisses</value>
+  </data>
+  <data name="NewSecretGenerated" xml:space="preserve">
+    <value>Neues Geheimnis generiert</value>
+  </data>
+  <data name="NewSecretWarning" xml:space="preserve">
+    <value>Dies ist Ihr neues Client-Geheimnis. Bitte kopieren Sie es jetzt, da es nicht mehr angezeigt wird.</value>
+  </data>
+  <data name="RefreshTokenLifetimeOptional" xml:space="preserve">
+    <value>Lebensdauer des Aktualisierungstokens (optional)</value>
+  </data>
+  <data name="LeaveEmptyForNoRefreshTokens" xml:space="preserve">
+    <value>Leer lassen, um Aktualisierungstokens zu deaktivieren</value>
+  </data>
+  <data name="ClientSecretCopiedToClipboard" xml:space="preserve">
+    <value>Client-Geheimnis in Zwischenablage kopiert</value>
+  </data>
+  <data name="ClientTypeCannotBeChanged" xml:space="preserve">
+    <value>Client-Typ kann nach der Erstellung nicht geändert werden</value>
+  </data>
+  <!-- Application Settings Translations -->
+  <data name="ApplicationSettings" xml:space="preserve">
+    <value>Anwendungseinstellungen</value>
+  </data>
+  <data name="ApplicationSettingsDescription" xml:space="preserve">
+    <value>Anwendungskonfiguration und Sicherheitseinstellungen verwalten</value>
+  </data>
+  <data name="RegistrationSettings" xml:space="preserve">
+    <value>Registrierungseinstellungen</value>
+  </data>
+  <data name="RegistrationSettingsDescription" xml:space="preserve">
+    <value>Verfügbarkeit der Benutzerregistrierung und temporären Zugang kontrollieren</value>
+  </data>
+  <data name="PermanentRegistration" xml:space="preserve">
+    <value>Dauerhafte Registrierung</value>
+  </data>
+  <data name="PermanentRegistrationDescription" xml:space="preserve">
+    <value>Registrierungseinstellung in der Anwendungskonfiguration konfiguriert</value>
+  </data>
+  <data name="TemporaryRegistration" xml:space="preserve">
+    <value>Temporäre Registrierung</value>
+  </data>
+  <data name="TemporaryRegistrationDescription" xml:space="preserve">
+    <value>Registrierung temporär für eine bestimmte Dauer aktivieren</value>
+  </data>
+  <data name="CurrentRegistrationStatus" xml:space="preserve">
+    <value>Aktueller Registrierungsstatus</value>
+  </data>
+  <data name="CurrentRegistrationStatusDescription" xml:space="preserve">
+    <value>Gesamtverfügbarkeit der Registrierung unter Berücksichtigung dauerhafter und temporärer Einstellungen</value>
+  </data>
+  <data name="Duration" xml:space="preserve">
+    <value>Dauer</value>
+  </data>
+  <data name="Minutes" xml:space="preserve">
+    <value>Minuten</value>
+  </data>
+  <data name="RemainingTime" xml:space="preserve">
+    <value>Verbleibende Zeit</value>
+  </data>
+  <data name="RegistrationAllowed" xml:space="preserve">
+    <value>Registrierung erlaubt</value>
+  </data>
+  <data name="RegistrationDisabled" xml:space="preserve">
+    <value>Registrierung deaktiviert</value>
+  </data>
+  <data name="TemporaryRegistrationEnabled" xml:space="preserve">
+    <value>Temporäre Registrierung erfolgreich aktiviert</value>
+  </data>
+  <data name="TemporaryRegistrationDisabled" xml:space="preserve">
+    <value>Temporäre Registrierung erfolgreich deaktiviert</value>
+  </data>
+  <data name="ErrorEnablingTemporaryRegistration" xml:space="preserve">
+    <value>Fehler beim Aktivieren der temporären Registrierung</value>
+  </data>
+  <data name="ErrorDisablingTemporaryRegistration" xml:space="preserve">
+    <value>Fehler beim Deaktivieren der temporären Registrierung</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>Aktiviert</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Deaktiviert</value>
+  </data>
+  <data name="Enable" xml:space="preserve">
+    <value>Aktivieren</value>
+  </data>
+  <data name="Disable" xml:space="preserve">
+    <value>Deaktivieren</value>
+  </data>
 </root>
