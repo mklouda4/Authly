@@ -3350,13 +3350,28 @@ h1:focus {
     }
 
     .token-value-container {
-        flex-direction: column;
-        align-items: stretch;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.5rem !important;
+        width: 100% !important;
     }
 
     .token-value-input {
-        font-size: 0.7rem;
-        word-break: break-all;
+        width: 100% !important;
+        flex: none !important;
+        font-size: 0.8rem !important;
+        padding: 0.75rem !important;
+        word-break: break-all !important;
+        min-height: 44px !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Tlačítka kopírování v kontejnerech tokenů */
+    .token-value-container .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        min-height: 44px !important;
+        flex: none !important;
     }
 
     .modal-actions {
