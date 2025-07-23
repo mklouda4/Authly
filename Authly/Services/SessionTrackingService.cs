@@ -1,3 +1,4 @@
+using Authly.Extension;
 using System.Collections.Concurrent;
 
 namespace Authly.Services
@@ -77,7 +78,7 @@ namespace Authly.Services
         /// </summary>
         public void AddSession(string userName)
         {
-            var sessionId = GetDeterministicGuidFromString(userName).ToString();
+            var sessionId = userName.GetDeterministicStringFromString();
             try
             {
 
@@ -107,7 +108,7 @@ namespace Authly.Services
         /// </summary>
         public void RemoveSession(string userName)
         {
-            var sessionId = GetDeterministicGuidFromString(userName).ToString();
+            var sessionId = userName.GetDeterministicStringFromString();
             try
             {
                 if (_activeSessions.TryRemove(sessionId, out var removedSession))
@@ -186,20 +187,6 @@ namespace Authly.Services
         public void Dispose()
         {
             _cleanupTimer?.Dispose();
-        }
-
-        /// <summary>
-        /// Generates a deterministic GUID from a string input using MD5 hashing.
-        /// </summary>
-        /// <param name="input"></param>
-        /// <returns></returns>
-        private static Guid GetDeterministicGuidFromString(string input)
-        {
-            if (string.IsNullOrEmpty(input))
-                return Guid.Empty;
-
-            var hash = System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(input));
-            return new Guid(hash);
         }
     }
 }

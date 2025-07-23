@@ -1,10 +1,25 @@
-﻿namespace Authly.Models
+﻿using Authly.Extension;
+
+namespace Authly.Models
 {
     /// <summary>
     /// Role model for user authorization and permissions
     /// </summary>
     public class RoleModel
     {
+        public RoleModel()
+        {
+            IsEditable = false;
+            Delete = false;
+        }
+        public RoleModel(string code, string description)
+            : this()
+        {
+            Id = description.GetDeterministicStringFromString();
+            Code = code;
+            Description = description;
+        }
+
         /// <summary>
         /// Gets or sets the unique identifier for the role
         /// </summary>

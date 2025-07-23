@@ -1,4 +1,5 @@
-﻿using Authly.Models;
+﻿using Authly.Extension;
+using Authly.Models;
 using Authly.Services;
 using System.Text.Json;
 
@@ -59,16 +60,14 @@ namespace Authly.Authorization.UserStorage
                     var json = File.ReadAllText(_usersFilePath);
                     var users = JsonSerializer.Deserialize<List<User>>(json, _jsonSerializerOptions);
 
-                    int idCounter = 1;
                     foreach (var user in users ?? [])
                     {
-                        user.Id = idCounter.ToString();
+                        user.Id = user.UserName.GetDeterministicStringFromString();
                         user.NormalizedUserName = user.UserName?.ToUpper();
                         user.Email ??= $"{user.UserName?.ToLower()}@{_applicationService.ApplicationName}.com".ToLower();
                         user.NormalizedEmail = user.Email?.ToUpper() ?? string.Empty;
                         user.SecurityStamp = $"{user.UserName}-security-stamp".ToLower();
                         user.EmailConfirmed = true;
-                        idCounter++;
                     }
 
                     if (users != null && users.Count > 0)
@@ -86,7 +85,7 @@ namespace Authly.Authorization.UserStorage
             var defaultUsers = new List<User>
             {
                 new() {
-                    Id = "1",
+                    Id = "admin".GetDeterministicStringFromString(),
                     UserName = "admin",
                     NormalizedUserName = "ADMIN",
                     PasswordHash = "admin123",
@@ -100,7 +99,7 @@ namespace Authly.Authorization.UserStorage
                     Administrator = true
                 },
                 new() {
-                    Id = "2",
+                    Id = "user".GetDeterministicStringFromString(),
                     UserName = "user",
                     NormalizedUserName = "USER",
                     PasswordHash = "user123",
@@ -222,12 +221,15 @@ namespace Authly.Authorization.UserStorage
             
             // Simple role assignment logic for demo purposes
             var user = _users.FirstOrDefault(x => x.Id == userId);
-            if (user?.UserName?.ToLower() == "admin")
+            var roles = new List<RoleModel>();
+            if (user?.Administrator == true)
             {
-                return [.. _roles.Where(x => x.Code == "Admin")];
+                roles.Add(new("AD1", "administrator"));
+                roles.Add(new("AD2", "admin"));
             }
-            
-            return [.. _roles.Where(x => x.Code == "User")];
+            roles.Add(new("US1", "user"));
+
+            return roles;
         }
 
         /// <summary>

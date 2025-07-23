@@ -1,6 +1,7 @@
 ﻿using Authly.Authorization;
 using Authly.Authorization.UserStorage;
 using Authly.Extension;
+using Authly.Models;
 using Authly.Services;
 using System.Security.Claims;
 using System.Text.Json;
@@ -58,7 +59,7 @@ namespace Authly.Middleware
 
         /// <summary>
         /// Handles authentication verification requests from reverse proxy
-        /// Returns 200 if user is authenticated, 401/403 if not
+        /// Returns 200 if user is authenticated via session or token, 401/403 if not
         /// </summary>
         private async Task HandleAuthVerificationAsync(HttpContext context,
             IConfiguration configuration,
@@ -87,8 +88,19 @@ namespace Authly.Middleware
 
                 var authHeader = context.Request.Headers["Authorization"].ToString();
                 appLogger.Log("ExternalAuthMiddleware", $"Authorization header: {authHeader}");
-                
-                // Check if user is authenticated
+
+                // Try token-based authentication first
+                var user = await TryTokenAuthenticationAsync(context, appLogger);
+                if (user != null)
+                {
+                    await SetAuthHeadersFromUser(context, appLogger, user);
+                    appLogger.Log("ExternalAuthMiddleware", $"Auth verification successful for user: {user.UserName} (token auth)");
+                    context.Response.StatusCode = 200;
+                    await context.Response.WriteAsync("OK");
+                    return;
+                }
+
+                // Fallback to session-based authentication
                 var authResult = await signInManager.AuthenticateAsync();
 
                 if (!authResult.Succeeded || authResult.Principal?.Identity?.IsAuthenticated != true)
@@ -107,11 +119,6 @@ namespace Authly.Middleware
                     context.Response.StatusCode = 302;
                     context.Response.Headers.TryAdd("Location", loginUrl);
                     return;
-
-                    //appLogger.Log("ExternalAuthMiddleware", "User not authenticated - returning 401");
-                    //context.Response.StatusCode = 401;
-                    //await context.Response.WriteAsync("Unauthorized");
-                    //return;
                 }
 
                 appLogger.Log("ExternalAuthMiddleware", $"AuthResult succeeded: {authResult.Succeeded}");
@@ -121,7 +128,7 @@ namespace Authly.Middleware
                     appLogger.Log("ExternalAuthMiddleware", $"Principal identity name: {authResult.Principal.Identity?.Name}");
                 }
 
-                // Get user information from claims
+                // Get user information from claims for session auth
                 var userId = authResult.Principal.FindFirst(ClaimTypes.UserData)?.Value;
                 var userName = authResult.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 var userEmail = authResult.Principal.FindFirst(ClaimTypes.Email)?.Value;
@@ -138,8 +145,8 @@ namespace Authly.Middleware
                 // Optional: Verify user still exists and is not locked out
                 if (!string.IsNullOrEmpty(userId))
                 {
-                    var user = await userStorage.FindUserById(userId);
-                    if (user == null)
+                    var sessionUser = await userStorage.FindUserById(userId);
+                    if (sessionUser == null)
                     {
                         appLogger.LogWarning("ExternalAuthMiddleware", $"User with ID {userId} not found in storage");
                         context.Response.StatusCode = 401;
@@ -148,7 +155,7 @@ namespace Authly.Middleware
                     }
 
                     // Check if user is locked out
-                    if (user.IsLockedOut)
+                    if (sessionUser.IsLockedOut)
                     {
                         appLogger.LogWarning("ExternalAuthMiddleware", $"User {userName} is locked out");
                         context.Response.StatusCode = 403;
@@ -157,25 +164,10 @@ namespace Authly.Middleware
                     }
                 }
 
-                // Add user information to response headers for reverse proxy
-                _ = context.Response.Headers.TryAdd("X-Auth-User", userName ?? "");
-                _ = context.Response.Headers.TryAdd("X-Auth-Email", userEmail ?? "");
-                _ = context.Response.Headers.TryAdd("X-Auth-Name", userDisplayName ?? "");
-                _ = context.Response.Headers.TryAdd("X-Auth-UserId", userId ?? "");
-                _ = context.Response.Headers.TryAdd("Remote-User", userName ?? "");
-                _ = context.Response.Headers.TryAdd("Remote-Email", userEmail ?? "");
-                _ = context.Response.Headers.TryAdd("Remote-Name", userDisplayName ?? "");
-                _ = context.Response.Headers.TryAdd("Remote-UserId", userId ?? "");
+                // Add user information to response headers for reverse proxy (session auth)
+                await SetAuthHeadersFromSession(context, authResult, userName, userEmail, userDisplayName, userId);
 
-                // Add role information
-                var roles = authResult.Principal.FindAll(ClaimTypes.Role).Select(c => c.Value).ToArray();
-                if (roles.Length > 0)
-                {
-                    _ = context.Response.Headers.TryAdd("X-Auth-Roles", string.Join(",", roles));
-                    _ = context.Response.Headers.TryAdd("Remote-Groups", string.Join(",", roles));
-                }
-
-                appLogger.Log("ExternalAuthMiddleware", $"Auth verification successful for user: {userName}");
+                appLogger.Log("ExternalAuthMiddleware", $"Auth verification successful for user: {userName} (session auth)");
 
                 context.Response.StatusCode = 200;
                 await context.Response.WriteAsync("OK");
@@ -189,8 +181,96 @@ namespace Authly.Middleware
         }
 
         /// <summary>
+        /// Sets authentication headers from User object (token-based auth)
+        /// </summary>
+        private async Task SetAuthHeadersFromUser(HttpContext context, IApplicationLogger appLogger, User user)
+        {
+            await Task.CompletedTask;
+            try
+            {
+                // Add user information to response headers for reverse proxy
+                _ = context.Response.Headers.TryAdd("X-Auth-User", user.UserName ?? "");
+                _ = context.Response.Headers.TryAdd("X-Auth-Email", user.Email ?? "");
+                _ = context.Response.Headers.TryAdd("X-Auth-Name", user.FullName ?? "");
+                _ = context.Response.Headers.TryAdd("X-Auth-UserId", user.Id ?? "");
+                _ = context.Response.Headers.TryAdd("Remote-User", user.UserName ?? "");
+                _ = context.Response.Headers.TryAdd("Remote-Email", user.Email ?? "");
+                _ = context.Response.Headers.TryAdd("Remote-Name", user.FullName ?? "");
+                _ = context.Response.Headers.TryAdd("Remote-UserId", user.Id ?? "");
+
+                // Add role information based on user properties
+                var roles = new List<string> { "user" };
+                if (user.Administrator)
+                {
+                    roles.Add("admin");
+                    roles.Add("Administrator");
+                }
+
+                if (roles.Count > 0)
+                {
+                    var rolesString = string.Join(",", roles);
+                    _ = context.Response.Headers.TryAdd("X-Auth-Roles", rolesString);
+                    _ = context.Response.Headers.TryAdd("Remote-Groups", rolesString);
+                }
+
+                // Add additional headers for token-based auth
+                _ = context.Response.Headers.TryAdd("X-Auth-Method", "token");
+                _ = context.Response.Headers.TryAdd("X-Auth-IsAdmin", user.Administrator.ToString().ToLower());
+                _ = context.Response.Headers.TryAdd("X-Auth-HasTotp", user.HasTotp.ToString().ToLower());
+
+                appLogger.Log("ExternalAuthMiddleware", $"Set auth headers for token user: {user.UserName}");
+            }
+            catch (Exception ex)
+            {
+                appLogger.LogError("ExternalAuthMiddleware", "Error setting auth headers from user", ex);
+            }
+        }
+
+        /// <summary>
+        /// Sets authentication headers from session claims
+        /// </summary>
+        private async Task SetAuthHeadersFromSession(HttpContext context, Microsoft.AspNetCore.Authentication.AuthenticateResult authResult, 
+            string? userName, string? userEmail, string? userDisplayName, string? userId)
+        {
+            await Task.CompletedTask;
+            try
+            {
+                // Add user information to response headers for reverse proxy
+                _ = context.Response.Headers.TryAdd("X-Auth-User", userName ?? "");
+                _ = context.Response.Headers.TryAdd("X-Auth-Email", userEmail ?? "");
+                _ = context.Response.Headers.TryAdd("X-Auth-Name", userDisplayName ?? "");
+                _ = context.Response.Headers.TryAdd("X-Auth-UserId", userId ?? "");
+                _ = context.Response.Headers.TryAdd("Remote-User", userName ?? "");
+                _ = context.Response.Headers.TryAdd("Remote-Email", userEmail ?? "");
+                _ = context.Response.Headers.TryAdd("Remote-Name", userDisplayName ?? "");
+                _ = context.Response.Headers.TryAdd("Remote-UserId", userId ?? "");
+
+                // Add role information from claims
+                var roles = authResult.Principal.FindAll(ClaimTypes.Role).Select(c => c.Value).ToArray();
+                if (roles.Length > 0)
+                {
+                    var rolesString = string.Join(",", roles);
+                    _ = context.Response.Headers.TryAdd("X-Auth-Roles", rolesString);
+                    _ = context.Response.Headers.TryAdd("Remote-Groups", rolesString);
+                }
+
+                // Add additional headers for session-based auth
+                _ = context.Response.Headers.TryAdd("X-Auth-Method", "session");
+                
+                // Check if user is admin from roles
+                var isAdmin = roles.Contains("Administrator") || roles.Contains("admin");
+                _ = context.Response.Headers.TryAdd("X-Auth-IsAdmin", isAdmin.ToString().ToLower());
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't fail the request
+                // appLogger.LogError would need to be accessible here
+            }
+        }
+
+        /// <summary>
         /// Handles user information requests from reverse proxy
-        /// Returns JSON with user details if authenticated
+        /// Returns JSON with user details if authenticated via session or token
         /// </summary>
         private async Task HandleUserInfoAsync(
             HttpContext context,
@@ -213,7 +293,15 @@ namespace Authly.Middleware
                     return;
                 }
 
-                // Check if user is authenticated
+                // Try token-based authentication first
+                var user = await TryTokenAuthenticationAsync(context, appLogger);
+                if (user != null)
+                {
+                    await ReturnUserInfoAsync(context, appLogger, user, "token");
+                    return;
+                }
+
+                // Fallback to session-based authentication
                 var authResult = await signInManager.AuthenticateAsync();
 
                 if (!authResult.Succeeded || authResult.Principal?.Identity?.IsAuthenticated != true)
@@ -224,15 +312,14 @@ namespace Authly.Middleware
                     return;
                 }
 
-                // Get user information from claims
+                // Get user information from claims for session auth
                 var userId = authResult.Principal.FindFirst(ClaimTypes.UserData)?.Value;
                 var userName = authResult.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 var userEmail = authResult.Principal.FindFirst(ClaimTypes.Email)?.Value;
                 var userDisplayName = authResult.Principal.FindFirst(ClaimTypes.Name)?.Value;
                 var roles = authResult.Principal.FindAll(ClaimTypes.Role).Select(c => c.Value).ToArray();
 
-                // Create user info response
-                var userInfo = new
+                var sessionUserInfo = new
                 {
                     id = userId,
                     username = userName,
@@ -240,20 +327,12 @@ namespace Authly.Middleware
                     displayName = userDisplayName,
                     roles,
                     authenticated = true,
+                    authenticationMethod = "session",
                     authenticationTime = authResult.Properties?.IssuedUtc?.ToString("yyyy-MM-ddTHH:mm:ssZ")
                 };
 
-                context.Response.ContentType = "application/json";
-                context.Response.StatusCode = 200;
-
-                var json = JsonSerializer.Serialize(userInfo, new JsonSerializerOptions
-                {
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                });
-
-                await context.Response.WriteAsync(json);
-
-                appLogger.Log("ExternalAuthMiddleware", $"User info returned for user: {userName}");
+                await WriteJsonResponseAsync(context, sessionUserInfo);
+                appLogger.Log("ExternalAuthMiddleware", $"User info returned for user: {userName} (session auth)");
             }
             catch (Exception ex)
             {
@@ -261,6 +340,180 @@ namespace Authly.Middleware
                 context.Response.StatusCode = 500;
                 await context.Response.WriteAsync("Internal server error");
             }
+        }
+
+        /// <summary>
+        /// Attempts to authenticate user using token from Authorization header or URL parameter
+        /// </summary>
+        private async Task<User?> TryTokenAuthenticationAsync(HttpContext context, IApplicationLogger appLogger)
+        {
+            try
+            {
+                string? token = null;
+
+                // Try to get token from Authorization header (Bearer token)
+                var authHeader = context.Request.Headers["Authorization"].ToString();
+                if (!string.IsNullOrEmpty(authHeader))
+                {
+                    if (authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        token = authHeader["Bearer ".Length..].Trim();
+                        appLogger.Log("ExternalAuthMiddleware", "Token found in Authorization header");
+                      }
+                    else if (authHeader.StartsWith("Token ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        token = authHeader["Token ".Length..].Trim();
+                        appLogger.Log("ExternalAuthMiddleware", "Token found in Authorization header (Token scheme)");
+                    }
+                }
+
+                // Try to get token from URL parameter as fallback
+                if (string.IsNullOrEmpty(token))
+                {
+                    token = context.Request.Query["token"].FirstOrDefault() ?? 
+                            context.Request.Query["access_token"].FirstOrDefault();
+                    
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        appLogger.Log("ExternalAuthMiddleware", "Token found in URL parameter");
+                    }
+                }
+
+                // Try to get token from X-API-Key header as additional option
+                if (string.IsNullOrEmpty(token))
+                {
+                    token = context.Request.Headers["X-API-Key"].FirstOrDefault();
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        appLogger.Log("ExternalAuthMiddleware", "Token found in X-API-Key header");
+                      }
+                }
+
+                if (string.IsNullOrEmpty(token))
+                {
+                    return null;
+                }
+
+                // Get required services from DI container
+                var tokenService = context.RequestServices.GetRequiredService<ITokenService>();
+                var securityService = context.RequestServices.GetRequiredService<ISecurityService>();
+                var ipAddress = context.GetClientIpAddress();
+                
+                // Validate token and get user
+                var user = await tokenService.ValidateTokenAsync(token);
+                
+                if (user != null)
+                {
+                    appLogger.Log("ExternalAuthMiddleware", $"Token validation successful for user: {user.UserName}");
+
+                    // Check if user is locked out
+                    if (securityService.IsUserLockedOut(user))
+                    {
+                        appLogger.LogWarning("ExternalAuthMiddleware", $"Token user {user.UserName} is locked out until {user.LockoutEnd}");
+                        
+                        // Record the failed attempt for trying to access with locked account
+                        var securityResult = securityService.RecordFailedAttempt(user, ipAddress);
+                        appLogger.LogWarning("ExternalAuthMiddleware", $"Recorded failed attempt for locked user {user.UserName} from IP {ipAddress}");
+
+                        // Update user with any changes from security service (e.g., extended lockout)
+                        var userStore = context.RequestServices.GetRequiredService<IUserStorage>();
+                        await userStore.UpdateUser(user);
+                        
+                        return null;
+                    }
+                    
+                    // User is valid and not locked out - record successful access
+                    appLogger.Log("ExternalAuthMiddleware", $"Token authentication successful for user: {user.UserName}");
+                                        
+                    return user;
+                }
+                else
+                {
+                    appLogger.LogWarning("ExternalAuthMiddleware", $"Invalid or expired token provided from IP: {ipAddress}");
+                    
+                    // Record failed attempt for invalid token
+                    // We don't have a user object here, so we'll record it as IP-only attempt
+                    securityService.RecordFailedAttempt(null, ipAddress);
+                }
+                
+                return null;
+            }
+            catch (Exception ex)
+            {
+                appLogger.LogError("ExternalAuthMiddleware", "Error during token authentication", ex);
+                
+                // Record failed attempt on exception as well
+                try
+                {
+                    var securityService = context.RequestServices.GetRequiredService<ISecurityService>();
+                    var ipAddress = context.GetClientIpAddress();
+                    securityService.RecordFailedAttempt(null, ipAddress);
+                }
+                catch (Exception secEx)
+                {
+                    appLogger.LogError("ExternalAuthMiddleware", "Error recording failed attempt after token authentication exception", secEx);
+                }
+                
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Returns user information as JSON response
+        /// </summary>
+        private async Task ReturnUserInfoAsync(HttpContext context, IApplicationLogger appLogger, User user, string authMethod)
+        {
+            try
+            {
+                // Determine user roles
+                var roles = new List<string>();
+                if (user.Administrator)
+                {
+                    roles.Add("Administrator");
+                    roles.Add("admin");
+                }
+                roles.Add("user");
+
+                var userInfo = new
+                {
+                    id = user.Id,
+                    username = user.UserName,
+                    email = user.Email,
+                    displayName = user.FullName,
+                    roles = roles.ToArray(),
+                    authenticated = true,
+                    authenticationMethod = authMethod,
+                    isAdmin = user.Administrator,
+                    hasTotp = user.HasTotp,
+                    emailConfirmed = user.EmailConfirmed,
+                    authenticationTime = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
+                };
+
+                await WriteJsonResponseAsync(context, userInfo);
+                appLogger.Log("ExternalAuthMiddleware", $"User info returned for user: {user.UserName} ({authMethod} auth)");
+            }
+            catch (Exception ex)
+            {
+                appLogger.LogError("ExternalAuthMiddleware", "Error returning user info", ex);
+                context.Response.StatusCode = 500;
+                await context.Response.WriteAsync("Internal server error");
+            }
+        }
+
+        /// <summary>
+        /// Writes JSON response to HTTP context
+        /// </summary>
+        private static async Task WriteJsonResponseAsync(HttpContext context, object data)
+        {
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = 200;
+
+            var json = JsonSerializer.Serialize(data, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
+
+            await context.Response.WriteAsync(json);
         }
 
         /// <summary>
