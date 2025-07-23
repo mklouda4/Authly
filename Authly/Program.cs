@@ -7,23 +7,18 @@ using Authly.Authorization.Microsoft;
 using Authly.Authorization.UserStorage;
 using Authly.Components;
 using Authly.Configuration;
+using Authly.Middleware;
 using Authly.Models;
 using Authly.Services;
 using HealthChecks.UI.Client;
-using Microsoft.AspNetCore.Authentication.Facebook;
-using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
 using Prometheus;
-using Swashbuckle.AspNetCore.SwaggerGen;
-using System.Globalization;
 
 namespace Authly
 {
@@ -99,11 +94,11 @@ namespace Authly
                     Title = "Authly OAuth API",
                     Version = "v1",
                     Description = "OAuth 2.0 Authorization Server API for Authly",
-                    Contact = new OpenApiContact
-                    {
-                        Name = "Authly OAuth API",
-                        Url = new Uri("https://github.com/your-repo/authly")
-                    }
+                    //Contact = new OpenApiContact
+                    //{
+                    //    Name = "Authly OAuth API",
+                    //    Url = new Uri("https://github.com/your-repo/authly")
+                    //}
                 });
 
                 // Enable annotations for better documentation
@@ -263,11 +258,11 @@ namespace Authly
                 options.SignIn.RequireConfirmedEmail = false;
                 options.SignIn.RequireConfirmedPhoneNumber = false;
             })
-            .AddUserStore<CustomUserStore>()
-            .AddRoleStore<CustomRoleStore>()
-            .AddUserManager<CustomUserManager>()
-            .AddSignInManager<CustomSignInManager>()
-            .AddDefaultTokenProviders();
+                .AddUserStore<CustomUserStore>()
+                .AddRoleStore<CustomRoleStore>()
+                .AddUserManager<CustomUserManager>()
+                .AddSignInManager<CustomSignInManager>()
+                .AddDefaultTokenProviders();
 
             // Configure Authentication with External Providers (conditionally)
             _ = builder.Services.AddAuthentication();
@@ -285,7 +280,7 @@ namespace Authly
                 var applicationService = serviceProvider.GetRequiredService<IApplicationService>();
 
                 options.Cookie.Name = $"{applicationService.ApplicationName}Auth";
-                if(!string.IsNullOrEmpty(applicationService.DomainName))
+                if (!string.IsNullOrEmpty(applicationService.DomainName))
                     options.Cookie.Domain = $".{applicationService.DomainName}";
                 options.Cookie.HttpOnly = true;
                 options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
@@ -362,14 +357,13 @@ namespace Authly
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
-
-                app.UseMiddleware<SwaggerVersionMiddleware>();
+                _ = app.UseMiddleware<SwaggerVersionMiddleware>();
                 // Enable Swagger in development
                 _ = app.UseSwagger(c =>
                 {
                     c.OpenApiVersion = OpenApiSpecVersion.OpenApi3_0;
                 });
-                
+
                 _ = app.UseSwaggerUI(c =>
                 {
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Authly OAuth API v1");
@@ -482,42 +476,6 @@ namespace Authly
                 {
                     configuration[mapping.Value] = envValue;
                 }
-            }
-        }
-    }
-
-    public class SwaggerVersionMiddleware
-    {
-        private readonly RequestDelegate _next;
-
-        public SwaggerVersionMiddleware(RequestDelegate next)
-        {
-            _next = next;
-        }
-
-        public async Task InvokeAsync(HttpContext context)
-        {
-            if (context.Request.Path.StartsWithSegments("/swagger") &&
-                context.Request.Path.Value.EndsWith("/swagger.json"))
-            {
-                var originalBodyStream = context.Response.Body;
-                using var responseBody = new MemoryStream();
-                context.Response.Body = responseBody;
-
-                await _next(context);
-
-                context.Response.Body.Seek(0, SeekOrigin.Begin);
-                var responseBodyText = await new StreamReader(context.Response.Body).ReadToEndAsync();
-
-                // Nahradit neplatnou verzi
-                responseBodyText = responseBodyText.Replace("\"openapi\": \"3.0.4\",", "\"openapi\": \"3.0.3\",");
-
-                context.Response.Body = originalBodyStream;
-                await context.Response.WriteAsync(responseBodyText);
-            }
-            else
-            {
-                await _next(context);
             }
         }
     }
