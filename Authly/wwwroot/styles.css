@@ -3649,3 +3649,23 @@ h1:focus {
     order: 2 !important; /* Ensure input comes after label */
     width: 100% !important;
 }
+
+/* CENTER LOGIN BUTTON */
+.login-container .btn.btn-primary {
+    width: 100% !important;
+    justify-content: center !important;
+    text-align: center !important;
+    display: flex !important;
+    align-items: center !important;
+    margin: 0 auto !important;
+}
+
+.login-container form {
+    display: flex;
+    flex-direction: column;
+}
+
+.login-container button[type="submit"] {
+    align-self: center !important;
+    width: 100% !important;
+}
