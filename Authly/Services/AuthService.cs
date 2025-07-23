@@ -55,7 +55,7 @@ namespace Authly.Services
         private readonly AuthenticationStateProvider _authenticationStateProvider;
         private readonly IUserStorage _userStorage;
         private readonly NavigationManager _navigationManager;
-        private readonly ILogger<AuthService> _logger;
+        private readonly IApplicationLogger _logger;
 
         /// <summary>
         /// Initializes a new instance of AuthService
@@ -65,7 +65,7 @@ namespace Authly.Services
             AuthenticationStateProvider authenticationStateProvider,
             IUserStorage userStorage,
             NavigationManager navigationManager,
-            ILogger<AuthService> logger)
+            IApplicationLogger logger)
         {
             _httpClient = httpClient;
             _authenticationStateProvider = authenticationStateProvider;
@@ -88,30 +88,30 @@ namespace Authly.Services
                     var userId = authState.User.FindFirst(ClaimTypes.UserData)?.Value;
                     var userName = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-                    _logger.LogDebug("GetCurrentUserAsync - userId: {UserId}, userName: {UserName}", userId, userName);
+                    _logger.LogDebug("AuthService", $"GetCurrentUserAsync - userId: {userId}, userName: {userName}");
 
                     if (!string.IsNullOrEmpty(userId))
                     {
                         var user = await _userStorage.FindUserById(userId);
                         var userInfo = user == null ? "NULL" : $"{user.UserName} (ID: {user.Id})";
-                        _logger.LogDebug("FindUserById({UserId}) returned: {UserInfo}", userId, userInfo);
+                        _logger.LogDebug("AuthService", $"FindUserById({userId}) returned: {userInfo}");
                         return user;
                     }
                     else if (!string.IsNullOrEmpty(userName))
                     {
                         var user = await _userStorage.FindUserByName(userName);
                         var userInfo = user == null ? "NULL" : $"{user.UserName} (ID: {user.Id})";
-                        _logger.LogDebug("FindUserByName({UserName}) returned: {UserInfo}", userName, userInfo);
+                        _logger.LogDebug("AuthService", $"FindUserByName({userName}) returned: {userInfo}");
                         return user;
                     }
                 }
 
-                _logger.LogDebug("GetCurrentUserAsync - user not authenticated");
+                _logger.LogDebug("AuthService", "GetCurrentUserAsync - user not authenticated");
                 return null;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting current user");
+                _logger.LogError("AuthService", "Error getting current user", ex);
                 return null;
             }
         }
@@ -131,7 +131,7 @@ namespace Authly.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error checking TOTP requirement for user {Username}", username);
+                _logger.LogError("AuthService", $"Error checking TOTP requirement for user {username}", ex);
                 return false;
             }
         }
@@ -182,18 +182,18 @@ namespace Authly.Services
                 var success = await _userStorage.UpdateUser(currentUser);
                 if (success)
                 {
-                    _logger.LogInformation("User {UserId} profile updated successfully", currentUser.Id);
+                    _logger.LogInfo("AuthService", $"User {currentUser.Id} profile updated successfully");
                     return true;
                 }
                 else
                 {
-                    _logger.LogWarning("Failed to update user {UserId} profile", currentUser.Id);
+                    _logger.LogWarning("AuthService", $"Failed to update user {currentUser.Id} profile");
                     return false;
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating user profile");
+                _logger.LogError("AuthService", "Error updating user profile", ex);
                 return false;
             }
         }
@@ -210,7 +210,7 @@ namespace Authly.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error checking authentication status");
+                _logger.LogError("AuthService", "Error checking authentication status", ex);
                 return false;
             }
         }

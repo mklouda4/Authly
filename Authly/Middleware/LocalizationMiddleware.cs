@@ -9,7 +9,7 @@ namespace Authly.Middleware
     /// <summary>
     /// Middleware pro nastavení kultury z localStorage
     /// </summary>
-    public class LocalizationMiddleware(RequestDelegate next, ILogger<LocalizationMiddleware> logger, LocalizationService localizationService)
+    public class LocalizationMiddleware(RequestDelegate next, IApplicationLogger logger, LocalizationService localizationService)
     {
         public async Task InvokeAsync(HttpContext context)
         {
@@ -41,7 +41,7 @@ namespace Authly.Middleware
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error in LocalizationMiddleware");
+                logger.LogError("LocalizationMiddleware", "Error in LocalizationMiddleware", ex);
             }
         }
 
@@ -79,12 +79,12 @@ namespace Authly.Middleware
                             });
                     }
                     
-                    logger.LogInformation("Culture set to: {Culture}", culture);
+                    logger.Log("LocalizationMiddleware", $"Culture set to: {culture}");
                 }
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error setting culture: {Culture}", culture);
+                logger.LogError("LocalizationMiddleware", $"Error setting culture: {culture}", ex);
             }
         }
     }

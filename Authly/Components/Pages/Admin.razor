@@ -65,6 +65,17 @@
                     @LocalizationService.GetString("TokenManagement")
                 </button>
 
+                <button class="tab-button @(activeTab == "oauth" ? "active" : "")" @onclick="@(() => SetActiveTab("oauth"))">
+                    <svg class="tab-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14,2 14,8 20,8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10,9 9,9 8,9"/>
+                    </svg>
+                    @LocalizationService.GetString("OAuthClients")
+                </button>
+
                 <button class="tab-button @(activeTab == "settings" ? "active" : "")" @onclick="@(() => SetActiveTab("settings"))">
                     <svg class="tab-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="3"/>
@@ -91,6 +102,12 @@
                 <TokenManagementTab Users="availableUsers" 
                                    IsLoading="false" 
                                    OnDataChanged="RefreshCurrentTabData" />
+            }
+            else if (activeTab == "oauth")
+            {
+                <OAuthClientManagementTab CurrentUser="currentUser"
+                                         IsLoading="false" 
+                                         OnDataChanged="RefreshCurrentTabData" />
             }
             else if (activeTab == "settings")
             {
@@ -130,7 +147,7 @@ else
     private string activeTab = "users"; // default hodnota
     
     private const string ADMIN_TAB_STORAGE_KEY = "authly_admin_active_tab";
-    private readonly List<string> validTabs = new() { "users", "ips", "tokens", "settings" };
+    private readonly List<string> validTabs = new() { "users", "ips", "tokens", "oauth", "settings" };
 
     private User? currentUser;
     private List<User> availableUsers = new(); // Pouze pro dropdown v token managementu

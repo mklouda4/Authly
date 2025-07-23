@@ -1,5 +1,6 @@
 ﻿using Authly.Configuration;
 using Microsoft.Extensions.Options;
+using System.Diagnostics;
 
 namespace Authly.Services
 {
@@ -13,6 +14,11 @@ namespace Authly.Services
         /// </summary>
         void Log(string category, string message);
         
+        /// <summary>
+        /// Log an debug message
+        /// </summary>
+        void LogDebug(string category, string message);
+
         /// <summary>
         /// Log an error message with optional exception
         /// </summary>
@@ -62,6 +68,18 @@ namespace Authly.Services
             
             var logMessage = $"[{category}] {message}";
             Console.WriteLine(logMessage);
+            _logger.LogDebug(logMessage);
+        }
+
+        /// <summary>
+        /// Log an debug message
+        /// </summary>
+        public void LogDebug(string category, string message)
+        {
+            if (!IsEnabled) return;
+
+            var logMessage = $"[{category}] DEBUG: {message}";
+            Debug.WriteLine(logMessage);
             _logger.LogDebug(logMessage);
         }
 

@@ -48,7 +48,7 @@ namespace Authly.Services
     /// </summary>
     public class LocalizationService(
         IStringLocalizer<LocalizationService> localizer,
-        ILogger<LocalizationService> logger,
+        IApplicationLogger logger,
         IHttpContextAccessor httpContextAccessor) : ILocalizationService
     {
 
@@ -72,7 +72,7 @@ namespace Authly.Services
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error getting localized string for key: {Key}", key);
+                logger.LogError("LocalizationService", "Error getting localized string for key: {key}", ex);
                 return key; // Return key as fallback
             }
         }
@@ -88,7 +88,7 @@ namespace Authly.Services
                 
                 if (localizedString.ResourceNotFound)
                 {
-                    logger.LogWarning("Localized string not found for key: {Key}", key);
+                    logger.LogWarning("LocalizationService", $"Localized string not found for key: {key}");
                     return key;
                 }
                 
@@ -96,7 +96,7 @@ namespace Authly.Services
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error getting localized string for key: {Key}", key);
+                logger.LogError("LocalizationService", $"Error getting localized string for key: {key}", ex);
                 return key; // Return key as fallback
             }
         }
@@ -145,19 +145,19 @@ namespace Authly.Services
                                 Path = "/"
                             });
                         
-                        logger.LogInformation("Culture cookie set to: {Culture}", culture);
+                        logger.LogInfo("LocalizationService", $"Culture cookie set to: {culture}");
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError(ex, "Error setting culture cookie");
+                        logger.LogError("LocalizationService", "Error setting culture cookie", ex);
                     }
                 }
                 
-                logger.LogInformation("Culture set to: {Culture}", culture);
+                logger.LogInfo("LocalizationService", "Culture set to: {culture}");
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error setting culture: {Culture}", culture);
+                logger.LogError("LocalizationService", "Error setting culture: {culture}", ex);
             }
         }
 

@@ -10,12 +10,20 @@ using Authly.Configuration;
 using Authly.Models;
 using Authly.Services;
 using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Authentication.Facebook;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
+using Microsoft.OpenApi;
+using Microsoft.OpenApi.Models;
 using Prometheus;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using System.Globalization;
 
 namespace Authly
 {
@@ -77,6 +85,63 @@ namespace Authly
             // Add services to the container.
             _ = builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
+
+            // Add controllers for OAuth endpoints
+            _ = builder.Services.AddControllers();
+
+            // Add Swagger/OpenAPI services
+            _ = builder.Services.AddEndpointsApiExplorer();
+            _ = builder.Services.AddSwaggerGen(c =>
+            {
+                // Configure OpenAPI document with explicit version
+                c.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "Authly OAuth API",
+                    Version = "v1",
+                    Description = "OAuth 2.0 Authorization Server API for Authly",
+                    Contact = new OpenApiContact
+                    {
+                        Name = "Authly OAuth API",
+                        Url = new Uri("https://github.com/your-repo/authly")
+                    }
+                });
+
+                // Enable annotations for better documentation
+                c.EnableAnnotations();
+
+                // Add Bearer token authentication (simplified)
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT",
+                    Description = "Enter JWT Bearer token obtained from /oauth/token endpoint"
+                });
+
+                // Global security requirement for Bearer tokens
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
+
+                // Configure XML documentation
+                var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                if (File.Exists(xmlPath))
+                {
+                    c.IncludeXmlComments(xmlPath);
+                }
+            });
 
             // HttpContextAccessor for accessing HttpContext in services
             _ = builder.Services.AddHttpContextAccessor();
@@ -253,6 +318,13 @@ namespace Authly
             // Register Token service
             _ = builder.Services.AddScoped<ITokenService, TokenService>();
 
+            // Register OAuth services
+            _ = builder.Services.AddOAuthClientService();
+            _ = builder.Services.AddOAuthAuthorizationService();
+
+            // Register OAuth cleanup background service
+            _ = builder.Services.AddHostedService<OAuthCleanupService>();
+
             // Register Temporary Registration service
             _ = builder.Services.AddSingleton<ITemporaryRegistrationService, TemporaryRegistrationService>();
 
@@ -290,7 +362,26 @@ namespace Authly
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
-                // Remove WebAssembly debugging
+
+                app.UseMiddleware<SwaggerVersionMiddleware>();
+                // Enable Swagger in development
+                _ = app.UseSwagger(c =>
+                {
+                    c.OpenApiVersion = OpenApiSpecVersion.OpenApi3_0;
+                });
+                
+                _ = app.UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Authly OAuth API v1");
+                    c.RoutePrefix = "swagger";
+                    c.DocumentTitle = "Authly OAuth API Documentation";
+                    c.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.List);
+                    c.DefaultModelExpandDepth(2);
+                    c.DefaultModelsExpandDepth(1);
+                    c.DisplayRequestDuration();
+                    c.EnableDeepLinking();
+                    c.EnableFilter();
+                });
             }
             else
             {
@@ -318,6 +409,9 @@ namespace Authly
 
             // ExternalAuthMiddleware for reverse proxy SSO support
             _ = app.UseMiddleware<Authly.Middleware.ExternalAuthMiddleware>();
+
+            // Map controllers for OAuth endpoints
+            _ = app.MapControllers();
 
             _ = app.UseAntiforgery();
 
@@ -388,6 +482,42 @@ namespace Authly
                 {
                     configuration[mapping.Value] = envValue;
                 }
+            }
+        }
+    }
+
+    public class SwaggerVersionMiddleware
+    {
+        private readonly RequestDelegate _next;
+
+        public SwaggerVersionMiddleware(RequestDelegate next)
+        {
+            _next = next;
+        }
+
+        public async Task InvokeAsync(HttpContext context)
+        {
+            if (context.Request.Path.StartsWithSegments("/swagger") &&
+                context.Request.Path.Value.EndsWith("/swagger.json"))
+            {
+                var originalBodyStream = context.Response.Body;
+                using var responseBody = new MemoryStream();
+                context.Response.Body = responseBody;
+
+                await _next(context);
+
+                context.Response.Body.Seek(0, SeekOrigin.Begin);
+                var responseBodyText = await new StreamReader(context.Response.Body).ReadToEndAsync();
+
+                // Nahradit neplatnou verzi
+                responseBodyText = responseBodyText.Replace("\"openapi\": \"3.0.4\",", "\"openapi\": \"3.0.3\",");
+
+                context.Response.Body = originalBodyStream;
+                await context.Response.WriteAsync(responseBodyText);
+            }
+            else
+            {
+                await _next(context);
             }
         }
     }

@@ -15,7 +15,15 @@ namespace Authly.Configuration
         /// </summary>
         public string Name { get; set; } = "Authly";
 
+        /// <summary>
+        /// Gets the configured domain
+        /// </summary>
         public string Domain { get; set; }
+
+        /// <summary>
+        /// Gets the configured base URI
+        /// </summary>
+        public string BaseUrl { get; set; }
 
         /// <summary>
         /// Application version

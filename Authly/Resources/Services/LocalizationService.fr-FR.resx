@@ -612,4 +612,185 @@
   <data name="DateTimeFormatExample" xml:space="preserve">
     <value>Exemple de format</value>
   </data>
+  <!-- OAuth Client Management Translations -->
+  <data name="OAuthClientManagement" xml:space="preserve">
+    <value>Gestion des clients OAuth</value>
+  </data>
+  <data name="CreateOAuthClient" xml:space="preserve">
+    <value>Créer un client OAuth</value>
+  </data>
+  <data name="LoadingOAuthClients" xml:space="preserve">
+    <value>Chargement des clients OAuth...</value>
+  </data>
+  <data name="NoOAuthClientsConfigured" xml:space="preserve">
+    <value>Aucun client OAuth configuré</value>
+  </data>
+  <data name="ClientName" xml:space="preserve">
+    <value>Nom du client</value>
+  </data>
+  <data name="ClientId" xml:space="preserve">
+    <value>ID du client</value>
+  </data>
+  <data name="ClientType" xml:space="preserve">
+    <value>Type de client</value>
+  </data>
+  <data name="Scopes" xml:space="preserve">
+    <value>Portées</value>
+  </data>
+  <data name="ViewDetails" xml:space="preserve">
+    <value>Voir les détails</value>
+  </data>
+  <data name="Details" xml:space="preserve">
+    <value>Détails</value>
+  </data>
+  <data name="EditClient" xml:space="preserve">
+    <value>Modifier le client</value>
+  </data>
+  <data name="DisableClient" xml:space="preserve">
+    <value>Désactiver le client</value>
+  </data>
+  <data name="EnableClient" xml:space="preserve">
+    <value>Activer le client</value>
+  </data>
+  <data name="DeleteClient" xml:space="preserve">
+    <value>Supprimer le client</value>
+  </data>
+  <data name="RegenerateSecret" xml:space="preserve">
+    <value>Régénérer le secret</value>
+  </data>
+  <data name="Secret" xml:space="preserve">
+    <value>Secret</value>
+  </data>
+  <data name="Description" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="Confidential" xml:space="preserve">
+    <value>Confidentiel</value>
+  </data>
+  <data name="Public" xml:space="preserve">
+    <value>Public</value>
+  </data>
+  <data name="RedirectURIs" xml:space="preserve">
+    <value>URIs de redirection</value>
+  </data>
+  <data name="OneURIPerLine" xml:space="preserve">
+    <value>Une URI par ligne</value>
+  </data>
+  <data name="AllowedScopes" xml:space="preserve">
+    <value>Portées autorisées</value>
+  </data>
+  <data name="AccessTokenLifetime" xml:space="preserve">
+    <value>Durée de vie du token d'accès</value>
+  </data>
+  <data name="Seconds" xml:space="preserve">
+    <value>secondes</value>
+  </data>
+  <data name="CreateClient" xml:space="preserve">
+    <value>Créer le client</value>
+  </data>
+  <data name="ClientDetails" xml:space="preserve">
+    <value>Détails du client</value>
+  </data>
+  <data name="BasicInformation" xml:space="preserve">
+    <value>Informations de base</value>
+  </data>
+  <data name="Credentials" xml:space="preserve">
+    <value>Identifiants</value>
+  </data>
+  <data name="ClientSecret" xml:space="preserve">
+    <value>Secret du client</value>
+  </data>
+  <data name="CopyToClipboard" xml:space="preserve">
+    <value>Copier dans le presse-papiers</value>
+  </data>
+  <data name="HideSecret" xml:space="preserve">
+    <value>Masquer le secret</value>
+  </data>
+  <data name="ShowSecret" xml:space="preserve">
+    <value>Afficher le secret</value>
+  </data>
+  <data name="NoClientSecretGenerated" xml:space="preserve">
+    <value>Aucun secret de client généré</value>
+  </data>
+  <data name="Configuration" xml:space="preserve">
+    <value>Configuration</value>
+  </data>
+  <data name="NoRedirectURIs" xml:space="preserve">
+    <value>Aucune URI de redirection configurée</value>
+  </data>
+  <data name="AllowedGrantTypes" xml:space="preserve">
+    <value>Types de grants autorisés</value>
+  </data>
+  <data name="RefreshTokenLifetime" xml:space="preserve">
+    <value>Durée de vie du token de rafraîchissement</value>
+  </data>
+  <data name="RequirePKCE" xml:space="preserve">
+    <value>Exiger PKCE</value>
+  </data>
+  <data name="OAuthEndpoints" xml:space="preserve">
+    <value>Points de terminaison OAuth</value>
+  </data>
+  <data name="AuthorizationEndpoint" xml:space="preserve">
+    <value>Point de terminaison d'autorisation</value>
+  </data>
+  <data name="TokenEndpoint" xml:space="preserve">
+    <value>Point de terminaison de token</value>
+  </data>
+  <data name="UserInfoEndpoint" xml:space="preserve">
+    <value>Point de terminaison d'informations utilisateur</value>
+  </data>
+  <data name="DiscoveryEndpoint" xml:space="preserve">
+    <value>Point de terminaison de découverte</value>
+  </data>
+  <data name="Metadata" xml:space="preserve">
+    <value>Métadonnées</value>
+  </data>
+  <data name="CreatedBy" xml:space="preserve">
+    <value>Créé par</value>
+  </data>
+  <data name="Created" xml:space="preserve">
+    <value>Créé</value>
+  </data>
+  <data name="LastModified" xml:space="preserve">
+    <value>Dernière modification</value>
+  </data>
+  <data name="RedirectURIsRequired" xml:space="preserve">
+    <value>Les URIs de redirection sont requises</value>
+  </data>
+  <data name="ScopesRequired" xml:space="preserve">
+    <value>Au moins une portée est requise</value>
+  </data>
+  <data name="OAuthClientCreatedSuccessfully" xml:space="preserve">
+    <value>Client OAuth créé avec succès</value>
+  </data>
+  <data name="ErrorCreatingOAuthClient" xml:space="preserve">
+    <value>Erreur lors de la création du client OAuth</value>
+  </data>
+  <data name="OAuthClientEnabled" xml:space="preserve">
+    <value>Client OAuth activé avec succès</value>
+  </data>
+  <data name="OAuthClientDisabled" xml:space="preserve">
+    <value>Client OAuth désactivé avec succès</value>
+  </data>
+  <data name="ErrorUpdatingOAuthClient" xml:space="preserve">
+    <value>Erreur lors de la mise à jour du client OAuth</value>
+  </data>
+  <data name="ConfirmDeleteOAuthClient" xml:space="preserve">
+    <value>Êtes-vous sûr de vouloir supprimer ce client OAuth ?</value>
+  </data>
+  <data name="OAuthClientDeletedSuccessfully" xml:space="preserve">
+    <value>Client OAuth supprimé avec succès</value>
+  </data>
+  <data name="ErrorDeletingOAuthClient" xml:space="preserve">
+    <value>Erreur lors de la suppression du client OAuth</value>
+  </data>
+  <data name="ErrorLoadingOAuthClients" xml:space="preserve">
+    <value>Erreur lors du chargement des clients OAuth</value>
+  </data>
+  <data name="CopiedToClipboard" xml:space="preserve">
+    <value>Copié dans le presse-papiers</value>
+  </data>
+  <data name="FailedToCopyToClipboard" xml:space="preserve">
+    <value>Échec de la copie dans le presse-papiers</value>
+  </data>
 </root>

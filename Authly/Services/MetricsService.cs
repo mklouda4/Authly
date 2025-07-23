@@ -47,7 +47,7 @@ namespace Authly.Services
     /// <summary>
     /// Prometheus metrics service for application monitoring
     /// </summary>
-    public class MetricsService(IOptions<ApplicationOptions> options, ILogger<MetricsService> logger) : IMetricsService
+    public class MetricsService(IOptions<ApplicationOptions> options, IApplicationLogger logger) : IMetricsService
     {
         private readonly ApplicationOptions _options = options.Value;
 
@@ -88,11 +88,11 @@ namespace Authly.Services
                 var reasonLabel = reason ?? "unknown";
                 
                 _loginAttemptsCounter.WithLabels(result, reasonLabel).Inc();
-                logger.LogDebug("Recorded login attempt: {Result}, Reason: {Reason}", result, reasonLabel);
+                logger.LogDebug("MetricsService", $"Recorded login attempt: {result}, Reason: {reasonLabel}");
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error recording login attempt metric");
+                logger.LogError("MetricsService", "Error recording login attempt metric", ex);
             }
         }
 
@@ -106,11 +106,11 @@ namespace Authly.Services
             try
             {
                 _userLockoutsCounter.Inc();
-                logger.LogDebug("Recorded user lockout");
+                logger.LogDebug("MetricsService", "Recorded user lockout");
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error recording user lockout metric");
+                logger.LogError("MetricsService", "Error recording user lockout metric", ex);
             }
         }
 
@@ -124,11 +124,11 @@ namespace Authly.Services
             try
             {
                 _ipBansCounter.Inc();
-                logger.LogDebug("Recorded IP ban");
+                logger.LogDebug("MetricsService", "Recorded IP ban");
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error recording IP ban metric");
+                logger.LogError("MetricsService", "Error recording IP ban metric", ex);
             }
         }
 
@@ -142,11 +142,11 @@ namespace Authly.Services
             try
             {
                 _activeUserSessionsGauge.Set(count);
-                logger.LogDebug("Recorded active user sessions: {Count}", count);
+                logger.LogDebug("MetricsService", $"Recorded active user sessions: {count}");
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error recording active user sessions metric");
+                logger.LogError("MetricsService", "Error recording active user sessions metric", ex);
             }
         }
 
@@ -160,11 +160,11 @@ namespace Authly.Services
             try
             {
                 _securityEventsCounter.WithLabels(eventType).Inc();
-                logger.LogDebug("Recorded security event: {EventType}", eventType);
+                logger.LogDebug("MetricsService", $"Recorded security event: {eventType}");
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error recording security event metric");
+                logger.LogError("MetricsService", "Error recording security event metric", ex);
             }
         }
     }

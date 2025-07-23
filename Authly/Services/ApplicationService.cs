@@ -19,6 +19,11 @@ namespace Authly.Services
         string DomainName { get; }
 
         /// <summary>
+        /// Gets the configured base URI
+        /// </summary>
+        string BaseUri { get; }
+
+        /// <summary>
         /// Gets the configured application version
         /// </summary>
         string ApplicationVersion { get; }
@@ -91,6 +96,11 @@ namespace Authly.Services
         /// Gets the configured domain name from settings
         /// </summary>
         public string DomainName => _options.Domain;
+
+        /// <summary>
+        /// Gets the configured base URI
+        /// </summary>
+        public string BaseUri => _options.BaseUrl;
 
         /// <summary>
         /// Gets the configured application version from settings

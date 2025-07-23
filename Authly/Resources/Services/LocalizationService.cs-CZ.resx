@@ -681,4 +681,185 @@
   <data name="ErrorDisablingTemporaryRegistration" xml:space="preserve">
     <value>Došlo k chybě při zakazování dočasné registrace</value>
   </data>
+  <!-- OAuth Client Management Translations -->
+  <data name="OAuthClientManagement" xml:space="preserve">
+    <value>Správa OAuth klientů</value>
+  </data>
+  <data name="CreateOAuthClient" xml:space="preserve">
+    <value>Vytvořit OAuth klienta</value>
+  </data>
+  <data name="LoadingOAuthClients" xml:space="preserve">
+    <value>Načítání OAuth klientů...</value>
+  </data>
+  <data name="NoOAuthClientsConfigured" xml:space="preserve">
+    <value>Žádní OAuth klienti nejsou nakonfigurováni</value>
+  </data>
+  <data name="ClientName" xml:space="preserve">
+    <value>Název klienta</value>
+  </data>
+  <data name="ClientId" xml:space="preserve">
+    <value>ID klienta</value>
+  </data>
+  <data name="ClientType" xml:space="preserve">
+    <value>Typ klienta</value>
+  </data>
+  <data name="Scopes" xml:space="preserve">
+    <value>Rozsahy</value>
+  </data>
+  <data name="ViewDetails" xml:space="preserve">
+    <value>Zobrazit podrobnosti</value>
+  </data>
+  <data name="Details" xml:space="preserve">
+    <value>Podrobnosti</value>
+  </data>
+  <data name="EditClient" xml:space="preserve">
+    <value>Upravit klienta</value>
+  </data>
+  <data name="DisableClient" xml:space="preserve">
+    <value>Zakázat klienta</value>
+  </data>
+  <data name="EnableClient" xml:space="preserve">
+    <value>Povolit klienta</value>
+  </data>
+  <data name="DeleteClient" xml:space="preserve">
+    <value>Smazat klienta</value>
+  </data>
+  <data name="RegenerateSecret" xml:space="preserve">
+    <value>Regenerovat tajný klíč</value>
+  </data>
+  <data name="Secret" xml:space="preserve">
+    <value>Tajný klíč</value>
+  </data>
+  <data name="Description" xml:space="preserve">
+    <value>Popis</value>
+  </data>
+  <data name="Confidential" xml:space="preserve">
+    <value>Důverný</value>
+  </data>
+  <data name="Public" xml:space="preserve">
+    <value>Veřejný</value>
+  </data>
+  <data name="RedirectURIs" xml:space="preserve">
+    <value>Přesměrovací URI</value>
+  </data>
+  <data name="OneURIPerLine" xml:space="preserve">
+    <value>Jedno URI na řádek</value>
+  </data>
+  <data name="AllowedScopes" xml:space="preserve">
+    <value>Povolené rozsahy</value>
+  </data>
+  <data name="AccessTokenLifetime" xml:space="preserve">
+    <value>Životnost přístupového tokenu</value>
+  </data>
+  <data name="Seconds" xml:space="preserve">
+    <value>sekund</value>
+  </data>
+  <data name="CreateClient" xml:space="preserve">
+    <value>Vytvořit klienta</value>
+  </data>
+  <data name="ClientDetails" xml:space="preserve">
+    <value>Podrobnosti klienta</value>
+  </data>
+  <data name="BasicInformation" xml:space="preserve">
+    <value>Základní informace</value>
+  </data>
+  <data name="Credentials" xml:space="preserve">
+    <value>Přihlašovací údaje</value>
+  </data>
+  <data name="ClientSecret" xml:space="preserve">
+    <value>Tajný klíč klienta</value>
+  </data>
+  <data name="CopyToClipboard" xml:space="preserve">
+    <value>Kopírovat do schránky</value>
+  </data>
+  <data name="HideSecret" xml:space="preserve">
+    <value>Skrýt tajný klíč</value>
+  </data>
+  <data name="ShowSecret" xml:space="preserve">
+    <value>Zobrazit tajný klíč</value>
+  </data>
+  <data name="NoClientSecretGenerated" xml:space="preserve">
+    <value>Žádný tajný klíč klienta nebyl vygenerován</value>
+  </data>
+  <data name="Configuration" xml:space="preserve">
+    <value>Konfigurace</value>
+  </data>
+  <data name="NoRedirectURIs" xml:space="preserve">
+    <value>Žádné přesměrovací URI nejsou nakonfigurovány</value>
+  </data>
+  <data name="AllowedGrantTypes" xml:space="preserve">
+    <value>Povolené typy grantů</value>
+  </data>
+  <data name="RefreshTokenLifetime" xml:space="preserve">
+    <value>Životnost obnovovacího tokenu</value>
+  </data>
+  <data name="RequirePKCE" xml:space="preserve">
+    <value>Vyžadovat PKCE</value>
+  </data>
+  <data name="OAuthEndpoints" xml:space="preserve">
+    <value>OAuth endpointy</value>
+  </data>
+  <data name="AuthorizationEndpoint" xml:space="preserve">
+    <value>Autorizační endpoint</value>
+  </data>
+  <data name="TokenEndpoint" xml:space="preserve">
+    <value>Token endpoint</value>
+  </data>
+  <data name="UserInfoEndpoint" xml:space="preserve">
+    <value>UserInfo endpoint</value>
+  </data>
+  <data name="DiscoveryEndpoint" xml:space="preserve">
+    <value>Discovery endpoint</value>
+  </data>
+  <data name="Metadata" xml:space="preserve">
+    <value>Metadata</value>
+  </data>
+  <data name="CreatedBy" xml:space="preserve">
+    <value>Vytvořil</value>
+  </data>
+  <data name="Created" xml:space="preserve">
+    <value>Vytvořeno</value>
+  </data>
+  <data name="LastModified" xml:space="preserve">
+    <value>Naposledy upraveno</value>
+  </data>
+  <data name="RedirectURIsRequired" xml:space="preserve">
+    <value>Přesměrovací URI jsou povinná</value>
+  </data>
+  <data name="ScopesRequired" xml:space="preserve">
+    <value>Alespoň jeden rozsah je povinný</value>
+  </data>
+  <data name="OAuthClientCreatedSuccessfully" xml:space="preserve">
+    <value>OAuth klient byl úspěšně vytvořen</value>
+  </data>
+  <data name="ErrorCreatingOAuthClient" xml:space="preserve">
+    <value>Chyba při vytváření OAuth klienta</value>
+  </data>
+  <data name="OAuthClientEnabled" xml:space="preserve">
+    <value>OAuth klient byl úspěšně povolen</value>
+  </data>
+  <data name="OAuthClientDisabled" xml:space="preserve">
+    <value>OAuth klient byl úspěšně zakázán</value>
+  </data>
+  <data name="ErrorUpdatingOAuthClient" xml:space="preserve">
+    <value>Chyba při aktualizaci OAuth klienta</value>
+  </data>
+  <data name="ConfirmDeleteOAuthClient" xml:space="preserve">
+    <value>Jste si jisti, že chcete smazat tohoto OAuth klienta?</value>
+  </data>
+  <data name="OAuthClientDeletedSuccessfully" xml:space="preserve">
+    <value>OAuth klient byl úspěšně smazán</value>
+  </data>
+  <data name="ErrorDeletingOAuthClient" xml:space="preserve">
+    <value>Chyba při mazání OAuth klienta</value>
+  </data>
+  <data name="ErrorLoadingOAuthClients" xml:space="preserve">
+    <value>Chyba při načítání OAuth klientů</value>
+  </data>
+  <data name="CopiedToClipboard" xml:space="preserve">
+    <value>Zkopírováno do schránky</value>
+  </data>
+  <data name="FailedToCopyToClipboard" xml:space="preserve">
+    <value>Nepodařilo se zkopírovat do schránky</value>
+  </data>
 </root>
