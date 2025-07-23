@@ -114,7 +114,10 @@ else
     private bool isLoading = true;
     private bool isAuthenticated = false;
     private bool isAdmin = false;
-    private string activeTab = "users";
+    private string activeTab = "users"; // default hodnota
+    
+    private const string ADMIN_TAB_STORAGE_KEY = "authly_admin_active_tab";
+    private readonly List<string> validTabs = new() { "users", "ips", "tokens" };
 
     private User? currentUser;
     private List<User> availableUsers = new(); // Pouze pro dropdown v token managementu
@@ -145,6 +148,9 @@ else
                 return;
             }
 
+            // Načti poslední aktivní záložku z localStorage
+            await LoadActiveTabFromStorage();
+
             // Načteme pouze uživatele pro dropdown v token managementu
             await LoadUsersForDropdown();
             
@@ -157,6 +163,43 @@ else
             isLoading = false;
             await JSRuntime.InvokeVoidAsync("toastHelper.error", 
                 LocalizationService.GetString("UnexpectedError"));
+        }
+    }
+
+    private async Task LoadActiveTabFromStorage()
+    {
+        try
+        {
+            var savedTab = await JSRuntime.InvokeAsync<string>("localStorage.getItem", ADMIN_TAB_STORAGE_KEY);
+            
+            if (!string.IsNullOrEmpty(savedTab) && validTabs.Contains(savedTab))
+            {
+                activeTab = savedTab;
+                Logger.Log("AdminPanel", $"Restored active tab from storage: {activeTab}");
+            }
+            else
+            {
+                Logger.Log("AdminPanel", $"Using default tab: {activeTab}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning("AdminPanel", $"Could not load active tab from storage, using default. Error: {ex.Message}");
+            // V případě chyby zůstane výchozí hodnota "users"
+        }
+    }
+
+    private async Task SaveActiveTabToStorage(string tab)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", ADMIN_TAB_STORAGE_KEY, tab);
+            Logger.Log("AdminPanel", $"Saved active tab to storage: {tab}");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning("AdminPanel", $"Could not save active tab to storage. Error: {ex.Message}");
+            // Nebrání funkčnosti, jen se neuloží stav
         }
     }
 
@@ -174,10 +217,20 @@ else
         }
     }
 
-    private void SetActiveTab(string tab)
+    private async Task SetActiveTab(string tab)
     {
+        if (!validTabs.Contains(tab))
+        {
+            Logger.LogWarning("AdminPanel", $"Invalid tab requested: {tab}");
+            return;
+        }
+
         activeTab = tab;
+        await SaveActiveTabToStorage(tab);
         Logger.Log("AdminPanel", $"Switched to tab: {tab}");
+        
+        // Vynutí re-render komponenty pro správné zobrazení nové záložky
+        StateHasChanged();
     }
 
     private async Task RefreshCurrentTabData()
@@ -190,4 +243,4 @@ else
         
         Logger.Log("AdminPanel", $"Data refreshed for tab: {activeTab}");
     }
-}}
+}
