@@ -8,18 +8,24 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 # Use the official .NET 8 SDK for building
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY Authly.csproj .
-RUN dotnet restore Authly.csproj
+
+# Copy all .csproj files and restore (this is more reliable)
+COPY *.csproj ./
+RUN dotnet restore
+
+# Copy everything else and build
 COPY . .
-RUN dotnet build Authly.csproj -c Release -o /app/build
+RUN dotnet build -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish Authly.csproj -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
 # Create data directory for file storage
 RUN mkdir -p /app/data
+
 # Set the entry point using JSON array format
 ENTRYPOINT ["dotnet", "Authly.dll"]
