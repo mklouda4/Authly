@@ -57,7 +57,7 @@ services:
       - AUTHLY_IP_RATE_LIMIT_WINDOW=${AUTHLY_IP_RATE_LIMIT_WINDOW:-30}
       
     volumes:
-      - ./data:/app/data
+      - ./data:/app/wwwroot/data
       - ./keys:/root/.aspnet/DataProtection-Keys
       
     healthcheck:
