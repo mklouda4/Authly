@@ -16,9 +16,9 @@
         <div class="metrics-disabled">
             <div class="warning-card">
                 <svg class="warning-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                    <line x1="12" y1="9" x2="12" y2="13"/>
-                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
                 <h3>@LocalizationService.GetString("MetricsDisabled")</h3>
                 <p>@LocalizationService.GetString("MetricsDisabledDescription")</p>
@@ -30,9 +30,9 @@
         <div class="error-container">
             <div class="error-card">
                 <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="15" y1="9" x2="9" y2="15"/>
-                    <line x1="9" y1="9" x2="15" y2="15"/>
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="15" y1="9" x2="9" y2="15" />
+                    <line x1="9" y1="9" x2="15" y2="15" />
                 </svg>
                 <h3>@LocalizationService.GetString("ErrorLoadingMetrics")</h3>
                 <p>@errorMessage</p>
@@ -53,9 +53,9 @@
                 <div class="metrics-buttons">
                     <button class="btn btn-outline btn-sm" @onclick="RefreshData" disabled="@isRefreshing">
                         <svg class="btn-icon-sm @(isRefreshing ? "spin" : "")" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="23 4 23 10 17 10"/>
-                            <polyline points="1 20 1 14 7 14"/>
-                            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                            <polyline points="23 4 23 10 17 10" />
+                            <polyline points="1 20 1 14 7 14" />
+                            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
                         </svg>
                         @LocalizationService.GetString("Refresh")
                     </button>
@@ -79,9 +79,9 @@
                 <div class="metric-header">
                     <h3>@LocalizationService.GetString("LoginAttempts")</h3>
                     <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-                        <polyline points="10,17 15,12 10,7"/>
-                        <line x1="15" y1="12" x2="3" y2="12"/>
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                        <polyline points="10,17 15,12 10,7" />
+                        <line x1="15" y1="12" x2="3" y2="12" />
                     </svg>
                 </div>
                 <div class="metric-value">@(loginMetrics?.Total ?? 0)</div>
@@ -94,10 +94,10 @@
                 <div class="metric-header">
                     <h3>@LocalizationService.GetString("ActiveSessions")</h3>
                     <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                        <circle cx="9" cy="7" r="4"/>
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                     </svg>
                 </div>
                 <div class="metric-value">@(securityMetrics?.ActiveSessions ?? 0)</div>
@@ -110,7 +110,7 @@
                 <div class="metric-header">
                     <h3>@LocalizationService.GetString("SecurityEvents")</h3>
                     <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                     </svg>
                 </div>
                 <div class="metric-value">@((securityMetrics?.UserLockouts ?? 0) + (securityMetrics?.IpBans ?? 0))</div>
@@ -146,15 +146,24 @@
     window.metricsCharts = {
         loginChart: null,
         securityChart: null,
-        
+        initialized: false,
+
+        initialize: function() {
+            if (this.initialized) return;
+            this.initialized = true;
+        },
+
         createLoginChart: function(data, labels) {
             const ctx = document.getElementById('loginChart');
-            if (!ctx) return;
-            
+            if (!ctx) {
+                console.warn('LoginChart canvas element not found');
+                return;
+            }
+
             if (this.loginChart) {
                 this.loginChart.destroy();
             }
-            
+
             this.loginChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
@@ -176,18 +185,21 @@
                 }
             });
         },
-        
+
         createSecurityChart: function(securityData, eventsData, labels) {
             const ctx = document.getElementById('securityChart');
-            if (!ctx) return;
-            
+            if (!ctx) {
+                console.warn('SecurityChart canvas element not found');
+                return;
+            }
+
             if (this.securityChart) {
                 this.securityChart.destroy();
             }
-            
+
             const eventTypes = Object.keys(eventsData);
             const eventValues = Object.values(eventsData);
-            
+
             this.securityChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -218,7 +230,7 @@
                 }
             });
         },
-        
+
         destroy: function() {
             if (this.loginChart) {
                 this.loginChart.destroy();
@@ -228,6 +240,7 @@
                 this.securityChart.destroy();
                 this.securityChart = null;
             }
+            this.initialized = false;
         }
     };
 </script>
@@ -251,6 +264,7 @@
     private Dictionary<string, double> securityEvents = new();
 
     private bool _previousVisibility = false;
+    private bool _chartsInitialized = false;
 
     private class LoginMetrics
     {
@@ -270,33 +284,35 @@
     protected override async Task OnInitializedAsync()
     {
         isMetricsEnabled = MetricsDashboardService.IsMetricsEnabled;
-        
-        if (isMetricsEnabled && !hasLoadedData)
-        {
-            await LoadDataIfNeeded();
-        }
-        
         await base.OnInitializedAsync();
     }
 
     protected override async Task OnParametersSetAsync()
     {
-        if (IsVisible && !_previousVisibility && !hasLoadedData)
+        if (IsVisible && !_previousVisibility)
         {
             await LoadDataIfNeeded();
         }
-        
+
         _previousVisibility = IsVisible;
         await base.OnParametersSetAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (IsVisible && !hasLoadedData)
+        if (firstRender && IsVisible && isMetricsEnabled)
         {
             await LoadDataIfNeeded();
         }
-        
+
+        // Pokud máme data a grafy ještě nejsou inicializované, vykreslíme je
+        if (IsVisible && !_chartsInitialized && loginMetrics != null && securityMetrics != null)
+        {
+            await Task.Delay(50); // Krátká pauza pro jistotu, že DOM je připraven
+            await UpdateCharts();
+            _chartsInitialized = true;
+        }
+
         await base.OnAfterRenderAsync(firstRender);
     }
 
@@ -313,22 +329,19 @@
             errorMessage = string.Empty;
 
             var metricsData = await MetricsDashboardService.GetMetricsDashboardDataAsync();
-            
+
             if (metricsData != null)
             {
                 // Convert to JsonDocument for easier parsing
                 var json = JsonSerializer.Serialize(metricsData);
                 var data = JsonDocument.Parse(json);
-                
+
                 ParseMetricsData(data);
                 lastUpdated = DateTime.Now;
-                
-                // Update charts after state change
-                StateHasChanged();
-                await Task.Delay(100); // Allow DOM to update
-                await UpdateCharts();
 
-                await Task.Delay(100);
+                // Označíme, že grafy potřebují být překresleny
+                _chartsInitialized = false;
+
                 StateHasChanged();
             }
             else
@@ -352,7 +365,7 @@
     private void ParseMetricsData(JsonDocument data)
     {
         var root = data.RootElement;
-        
+
         if (root.TryGetProperty("loginAttempts", out var loginElement))
         {
             loginMetrics = new LoginMetrics
@@ -386,40 +399,55 @@
 
     private async Task UpdateCharts()
     {
-        if (loginMetrics != null)
+        try
         {
-            await JSRuntime.InvokeVoidAsync("metricsCharts.createLoginChart", new
+            if (loginMetrics != null)
             {
-                successful = loginMetrics.Successful,
-                failed = loginMetrics.Failed
-            }, new
-            {
-                successfulLabel = LocalizationService.GetString("Successful"),
-                failedLabel = LocalizationService.GetString("Failed")
-            });
-        }
-
-        if (securityMetrics != null)
-        {
-            await JSRuntime.InvokeVoidAsync("metricsCharts.createSecurityChart", 
-                securityMetrics, securityEvents, new
+                await JSRuntime.InvokeVoidAsync("metricsCharts.createLoginChart", new
                 {
-                    userLockoutsLabel = LocalizationService.GetString("UserLockouts"),
-                    ipBansLabel = LocalizationService.GetString("IPBans"),
-                    countLabel = LocalizationService.GetString("Count")
+                    successful = loginMetrics.Successful,
+                    failed = loginMetrics.Failed
+                }, new
+                {
+                    successfulLabel = LocalizationService.GetString("Successful"),
+                    failedLabel = LocalizationService.GetString("Failed")
                 });
+            }
+
+            if (securityMetrics != null)
+            {
+                await JSRuntime.InvokeVoidAsync("metricsCharts.createSecurityChart",
+                    securityMetrics, securityEvents, new
+                    {
+                        userLockoutsLabel = LocalizationService.GetString("UserLockouts"),
+                        ipBansLabel = LocalizationService.GetString("IPBans"),
+                        countLabel = LocalizationService.GetString("Count")
+                    });
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating charts: {ex.Message}");
         }
     }
 
     private async Task RefreshData()
     {
         if (isRefreshing) return;
-        
+
         isRefreshing = true;
         StateHasChanged();
-        
+
         await LoadDataAsync();
-        
+
+        // Po načtení dat počkáme chvilku a pak překreslíme grafy
+        if (loginMetrics != null && securityMetrics != null)
+        {
+            await Task.Delay(100);
+            await UpdateCharts();
+            _chartsInitialized = true;
+        }
+
         isRefreshing = false;
         StateHasChanged();
     }
@@ -427,15 +455,15 @@
     private async Task GenerateSampleData()
     {
         if (isRefreshing) return;
-        
+
         try
         {
             isRefreshing = true;
             StateHasChanged();
-            
+
             // Generuj vzorová data
             await MetricsService.GenerateSampleDataAsync();
-            
+
             // Refreshni dashboard
             await LoadDataAsync();
         }
@@ -503,10 +531,10 @@
         margin-bottom: 2rem;
     }
 
-    .metrics-header h2 {
-        margin: 0;
-        color: var(--text-primary);
-    }
+        .metrics-header h2 {
+            margin: 0;
+            color: var(--text-primary);
+        }
 
     .metrics-actions {
         display: flex;
@@ -546,12 +574,12 @@
         margin-bottom: 1rem;
     }
 
-    .metric-header h3 {
-        margin: 0;
-        font-size: 1rem;
-        color: var(--text-secondary);
-        font-weight: 500;
-    }
+        .metric-header h3 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
 
     .metric-icon {
         width: 24px;
@@ -588,12 +616,12 @@
         margin-bottom: 1.5rem;
     }
 
-    .chart-header h3 {
-        margin: 0;
-        font-size: 1.1rem;
-        color: var(--text-primary);
-        font-weight: 600;
-    }
+        .chart-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
 
     canvas {
         height: 300px !important;
@@ -604,7 +632,12 @@
     }
 
     @@keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
     }
 </style>
