@@ -664,7 +664,8 @@
         .metrics-tab
 
     {
-        padding: 0.75rem;
+        padding: 0.5rem;
+        overflow-x: hidden;
     }
 
     .metrics-header h2 {
@@ -694,6 +695,9 @@
 
     .metric-card {
         padding: 0.75rem;
+        margin: 0;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .metric-header {
@@ -720,28 +724,39 @@
 
     .metrics-charts {
         gap: 1rem;
+        grid-template-columns: 1fr;
+        width: 100%;
     }
 
     .chart-container {
-        padding: 0.75rem;
-        min-height: 280px;
+        padding: 0.5rem;
+        min-height: 250px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
     }
 
     .chart-header {
-        margin-bottom: 1rem;
+        margin-bottom: 0.75rem;
     }
 
         .chart-header h3 {
-            font-size: 1rem;
+            font-size: 0.9rem;
         }
 
     canvas {
-        height: 200px !important;
+        height: 180px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box;
     }
 
     .warning-card, .error-card {
         padding: 1rem;
         margin: 0.5rem;
+        max-width: calc(100% - 1rem);
+        box-sizing: border-box;
     }
 
     .warning-icon, .error-icon {
@@ -774,6 +789,11 @@
         height: 32px;
     }
 
+    /* Zabránění přetečení */
+    * {
+        box-sizing: border-box;
+    }
+
     }
 
     /* Extra malé obrazovky */
@@ -781,6 +801,10 @@
         .metrics-tab
 
     {
+        padding: 0.25rem;
+    }
+
+    .metric-card {
         padding: 0.5rem;
     }
 
@@ -789,17 +813,33 @@
     }
 
     .chart-container {
-        padding: 0.5rem;
-        min-height: 250px;
+        padding: 0.25rem;
+        min-height: 220px;
     }
 
+    .chart-header {
+        margin-bottom: 0.5rem;
+    }
+
+        .chart-header h3 {
+            font-size: 0.85rem;
+        }
+
     canvas {
-        height: 180px !important;
+        height: 160px !important;
+        width: 100% !important;
+        max-width: 100% !important;
     }
 
     .btn, .btn-sm {
         font-size: 0.75rem;
         padding: 0.375rem 0.5rem;
+    }
+
+    .warning-card, .error-card {
+        padding: 0.75rem;
+        margin: 0.25rem;
+        max-width: calc(100% - 0.5rem);
     }
 
     }
