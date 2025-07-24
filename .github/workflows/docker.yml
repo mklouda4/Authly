@@ -1,7 +1,4 @@
-Vidím, že máš Dockerfile a Authly.csproj - to je správně! Problém je pravděpodobně v tom, že GitHub Actions workflow hledá Dockerfile v jiné cestě nebo má problém s kontextem.
-🔧 Oprav GitHub Actions workflow
-Aktualizuj .github/workflows/docker.yml:
-yamlname: Build and Push Docker Image
+name: Build and Push Docker Image
 
 on:
   push:
