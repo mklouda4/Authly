@@ -1,6 +1,6 @@
 services:
   authly:
-    build: .
+    image: ghcr.io/mklouda4/authly:latest
     container_name: authly-app
     ports:
       - "${HTTP_PORT:-8080}:80"

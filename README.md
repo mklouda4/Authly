@@ -8,7 +8,7 @@ A modern, containerized authentication server built with ASP.NET Core 8 and Blaz
 - 🛡️ **Security Features** - User lockout, IP rate limiting, TOTP support, and CSRF protection
 - 🌍 **Multi-language Support** - Czech, English, German, French
 - 📊 **Monitoring** - Health checks, metrics, and monitoring dashboard
-- 🐳 **Docker Ready** - Complete containerization with Docker Compose
+- 🐳 **Docker Ready** - Complete containerization with pre-built images
 - 🔗 **SSO Support** - External authentication endpoints for reverse proxies
 - 🚀 **Google OAuth** - Secure Google authentication with PKCE
 - 📘 **Facebook OAuth** - Secure Facebook authentication with Graph API
@@ -39,7 +39,8 @@ nano .env
 ### 3. Start with Docker Compose
 
 ```bash
-# Start Authly with HealthCheck UI
+# Pull the latest image and start Authly with HealthCheck UI
+docker-compose pull
 docker-compose up -d
 
 # Check status
@@ -182,6 +183,42 @@ If you prefer configuration files over environment variables:
   }
 }
 ```
+
+## 🐳 Docker Image
+
+```bash
+Authly is available as a pre-built Docker image from GitHub Container Registry:
+# Pull the latest image
+docker pull ghcr.io/mklouda4/authly:latest
+
+# Run standalone container
+docker run -d \
+  --name authly-app \
+  -p 8080:80 \
+  -p 9090:9090 \
+  -v authly_data:/app/wwwroot/data \
+  -v authly_keys:/app/wwwroot/keys \
+  -e AUTHLY_NAME="My Company Auth" \
+  -e AUTHLY_DOMAIN=your-domain.com \
+  -e AUTHLY_BASE_URL=https://auth.your-domain.com \
+  --restart unless-stopped \
+  ghcr.io/mklouda4/authly:latest
+```
+
+### Available Tags
+
+| Tag | Description | Use Case |
+|-----|-------------|----------|
+| `latest` | Latest stable release | Production deployments |
+| `v1.0.0` | Specific version | Production with version pinning |
+| `develop` | Development builds | Testing and development |
+
+### Image Information
+
+- **Base Image**: mcr.microsoft.com/dotnet/aspnet:8.0
+- **Architecture**: linux/amd64, linux/arm64
+- **Size**: ~200MB
+- **Registry**: GitHub Container Registry (ghcr.io)
 
 ## 🎛️ Admin Panel
 
@@ -458,7 +495,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 
   authly:
-    image: authly:latest
+    image: ghcr.io/mklouda4/authly:latest
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.authly.rule=Host(`auth.example.com`)"
@@ -1095,7 +1132,7 @@ dotnet build -c Release
 # Run tests
 dotnet test
 
-# Build Docker image
+# Build Docker image (optional - pre-built image available)
 docker build -t authly:latest .
 
 # Build with version tag
@@ -1200,7 +1237,20 @@ sudo chown -R $USER:$USER ./data
 chmod 755 ./data
 
 # Or use Docker volume
+```
+
 docker volume create authly-data
+#### Image Issues
+
+```bash
+# Ensure you can pull the image
+docker pull ghcr.io/mklouda4/authly:latest
+
+# Check for registry authentication if needed
+docker login ghcr.io
+
+# Verify image exists
+docker image ls | grep authly
 ```
 
 #### Admin Panel Access Issues
@@ -1356,5 +1406,4 @@ Additional security recommendations:
 
 **Version**: 1.0.0  
 **ASP.NET Core**: 8.0  
-**Docker**: Required  
-**Platforms**: Linux, Windows, macOS
+**Docker Image**: ghcr.io/mklouda4/authly:latest  
