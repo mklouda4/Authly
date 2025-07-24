@@ -1,343 +1,142 @@
 ﻿@page "/dashboard"
 @rendermode InteractiveServer
-@using Authly.Components
 @using Authly.Services
 @using Authly.Models
+@using Authly.Authorization.UserStorage
+@using Authly.Components.Admin
 @using Microsoft.AspNetCore.Components.Authorization
-@using Microsoft.AspNetCore.Components.Forms
-@using OtpNet
+@inject IUserStorage UserStorage
 @inject IAuthService AuthService
-@inject IApplicationService ApplicationService
 @inject IApplicationLogger Logger
 @inject ILocalizationService LocalizationService
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject IQRCodeService QRCodeService
-@inject ITotpService TotpService
-@implements IDisposable
+@inject IJSRuntime JSRuntime
+@inject IApplicationService ApplicationService
 
 @if (isAuthenticated)
 {
     <div class="dashboard-container">
-        
         <div class="dashboard-content">
-            @if (currentUser != null)
-            {
-                <div class="profile-card">
-                    <div class="profile-header">
-                        <h2 class="profile-title">
-                            <svg class="profile-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                <circle cx="12" cy="7" r="4"/>
-                            </svg>
-                            @LocalizationService.GetString("UserProfile")
-                        </h2>
-                        
-                        @if (!isEditing)
-                        {
-                            <div class="profile-actions">
-                                @if (currentUser?.IsExternal != true)
-                                {
-                                    <button class="btn btn-edit" @onclick="StartEditing">
-                                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                        </svg>
-                                        @LocalizationService.GetString("Edit")
-                                    </button>
-                                }
-                                
-                                <a href="@Authorization.Local.LocalAuth.LogoutUri" class="btn btn-danger">
-                                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                                        <polyline points="16,17 21,12 16,7"/>
-                                        <line x1="21" y1="12" x2="9" y2="12"/>
-                                    </svg>
-                                    @LocalizationService.GetString("Logout")
-                                </a>
-                                
-                                @if (currentUser?.Administrator == true)
-                                {
-                                    <a href="/admin" class="btn btn-primary">
-                                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <circle cx="12" cy="12" r="3"/>
-                                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                                        </svg>
-                                        @LocalizationService.GetString("AdminPanel")
-                                    </a>
-                                }
-                            </div>
-                        }
-                    </div>
-                    
-                    @if (!isEditing)
-                    {
-                        <div class="profile-fields">
-                            <div class="field">
-                                <label class="field-label">@LocalizationService.GetString("FullName")</label>
-                                <div class="field-value">@currentUser.FullName</div>
-                            </div>
-                            
-                            <div class="field">
-                                <label class="field-label">@LocalizationService.GetString("Username")</label>
-                                <div class="field-value">@currentUser.UserName</div>
-                            </div>
-                            
-                            <div class="field">
-                                <label class="field-label">@LocalizationService.GetString("Email")</label>
-                                <div class="field-value">@currentUser.Email</div>
-                            </div>
-                            
-                            <div class="field">
-                                <label class="field-label">@LocalizationService.GetString("TotpVerification")</label>
-                                <div class="field-value totp-status">
-                                    @if (currentUser.HasTotp)
-                                    {
-                                        <svg class="totp-icon totp-active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <polyline points="20,6 9,17 4,12"/>
-                                        </svg>
-                                        <span class="totp-text totp-active">@LocalizationService.GetString("Active")</span>
-                                    }
-                                    else
-                                    {
-                                        <svg class="totp-icon totp-inactive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <line x1="18" y1="6" x2="6" y2="18"/>
-                                            <line x1="6" y1="6" x2="18" y2="18"/>
-                                        </svg>
-                                        <span class="totp-text totp-inactive">@LocalizationService.GetString("Inactive")</span>
-                                    }
-                                </div>
-                            </div>
-                            
+            <div class="admin-header">
+                <h1 class="admin-title">
+                    <svg class="admin-icon-sm" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                    @LocalizationService.GetString("Dashboard")
+                </h1>
+            </div>
 
-                            @if (currentUser.HasTotp && !string.IsNullOrEmpty(currentUser.TotpSecret))
-                            {
-                                <div class="field">
-                                    <label class="field-label">@LocalizationService.GetString("TotpSecretKey")</label>
-                                    <div class="totp-secret">
-                                        @currentUser.TotpSecret
-                                    </div>
-                                    <p class="totp-hint">
-                                        @LocalizationService.GetString("TotpSetupInstructions")
-                                    </p>
-                                </div>
-                                
-                                <div class="field">
-                                    <label class="field-label">@LocalizationService.GetString("TotpAuthenticator")</label>
-                                    <div class="totp-authenticator-section">
-                                        <!-- TOTP Live Code in Circle -->
-                                        <div class="totp-live-container">
-                                            <div class="totp-circle-wrapper">
-                                                <div class="totp-circle" 
-                                                     data-urgent="@(remainingSeconds < 10 && remainingSeconds >= 5)"
-                                                     data-critical="@(remainingSeconds < 5)">
-                                                    <svg class="totp-progress-ring" viewBox="0 0 120 120">
-                                                        <!-- Background circle -->
-                                                        <circle class="progress-ring-bg" 
-                                                                cx="60" cy="60" r="54" 
-                                                                fill="none" 
-                                                                stroke-width="8"/>
-                                                        <!-- Progress circle -->
-                                                        <circle cx="60" cy="60" r="54"
-                                                                fill="none"
-                                                                stroke="#3b82f6"
-                                                                stroke-width="8"
-                                                                stroke-dasharray="339.29 339.29"
-                                                                stroke-dashoffset="@GetProgressCircleOffset()"
-                                                                transform="rotate(0 60 60)" />
-                                                    </svg>
-                                                    <div class="totp-circle-content">
-                                                        <span class="totp-live-code">@currentTotpCode</span>
-                                                        <span class="totp-countdown-text">@remainingSeconds s</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <p class="totp-live-hint">
-                                                @LocalizationService.GetString("TotpCurrentCodeHint")
-                                            </p>
-                                        </div>
-                                        
-                                        <!-- QR Code -->
-                                        <div class="totp-qr-container">
-                                            <div class="qr-code-wrapper">
-                                                <img src="data:image/png;base64,@GetQRCode()" 
-                                                     alt="TOTP QR Code" 
-                                                     class="qr-code-image" />
-                                            </div>
-                                            <p class="qr-code-hint">
-                                                @LocalizationService.GetString("TotpQRCodeInstructions")
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    }
-                    else
-                    {
-                        <EditForm Model="editModel" OnValidSubmit="SaveChanges">
-                            <DataAnnotationsValidator />
-                            
-                            <div class="field">
-                                <label class="field-label">@LocalizationService.GetString("FullName")</label>
-                                <InputText @bind-Value="editModel.FullName" class="form-input" />
-                            </div>
-                            
-                            <div class="field">
-                                <label class="field-label">@LocalizationService.GetString("Email")</label>
-                                <InputText @bind-Value="editModel.Email" type="email" class="form-input" />
-                            </div>
-                            
-                            <div class="field">
-                                <label class="field-label">@LocalizationService.GetString("NewPassword")</label>
-                                <InputText @bind-Value="editModel.Password" type="password" placeholder="@LocalizationService.GetString("PasswordPlaceholder")" class="form-input" />
-                            </div>
-                            
-                            <div class="field">
-                                <label class="field-label">@LocalizationService.GetString("TotpVerification")</label>
-                                <div class="totp-toggle">
-                                    <label class="totp-checkbox">
-                                        <InputCheckbox @bind-Value="editModel.HasTotp" />
-                                        <span class="totp-label">
-                                            @if (editModel.HasTotp)
-                                            {
-                                                <svg class="totp-icon totp-active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                    <polyline points="20,6 9,17 4,12"/>
-                                                </svg>
-                                                <span>@LocalizationService.GetString("TotpActive")</span>
-                                            }
-                                            else
-                                            {
-                                                <svg class="totp-icon totp-inactive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                    <line x1="18" y1="6" x2="6" y2="18"/>
-                                                    <line x1="6" y1="6" x2="18" y2="18"/>
-                                                </svg>
-                                                <span>@LocalizationService.GetString("TotpInactive")</span>
-                                            }
-                                        </span>
-                                    </label>
-                                </div>
-                                
-                                @if (editModel.HasTotp)
-                                {
-                                    <div class="totp-info info-success">
-                                        <svg class="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <circle cx="12" cy="12" r="10"/>
-                                            <line x1="12" y1="8" x2="12" y2="12"/>
-                                            <line x1="12" y1="16" x2="12.01" y2="16"/>
-                                        </svg>
-                                        <div>
-                                            <p class="info-title">@LocalizationService.GetString("TotpWillBeActive")</p>
-                                            <p class="info-text">@LocalizationService.GetString("TotpWillBeActiveDescription")</p>
-                                        </div>
-                                    </div>
-                                    
-                                    @if (currentUser != null && currentUser.HasTotp && !string.IsNullOrEmpty(currentUser.TotpSecret))
-                                    {
-                                        <div class="totp-setup">
-                                            <label class="field-label">@LocalizationService.GetString("TotpQRCode")</label>
-                                            <div class="qr-code-container">
-                                                <img src="data:image/png;base64,@GetQRCode()" 
-                                                     alt="TOTP QR Code" 
-                                                     class="qr-code-image" />
-                                            </div>
-                                            <p class="qr-hint">
-                                                @LocalizationService.GetString("TotpQRCodeInstructions")
-                                            </p>
-                                            <div class="totp-secret">
-                                                <label class="field-label">@LocalizationService.GetString("TotpManualEntry")</label>
-                                                <code class="secret-code">@currentUser.TotpSecret</code>
-                                            </div>
-                                        </div>
-                                    }
-                                }
-                                else
-                                {
-                                    <div class="totp-info info-warning">
-                                        <svg class="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                                            <line x1="12" y1="9" x2="12" y2="13"/>
-                                            <line x1="12" y1="17" x2="12.01" y2="17"/>
-                                        </svg>
-                                        <div>
-                                            <p class="info-title">@LocalizationService.GetString("TotpWillBeDeactivated")</p>
-                                            <p class="info-text">@LocalizationService.GetString("TotpWillBeDeactivatedDescription")</p>
-                                        </div>
-                                    </div>
-                                }
-                            </div>
-                            
-                            @if (!string.IsNullOrEmpty(editErrorMessage))
-                            {
-                                <div class="message error-message">
-                                    <svg class="message-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                                        <line x1="12" y1="9" x2="12" y2="13"/>
-                                        <line x1="12" y1="17" x2="12.01" y2="17"/>
-                                    </svg>
-                                    @editErrorMessage
-                                </div>
-                            }
-                            
-                            @if (!string.IsNullOrEmpty(successMessage))
-                            {
-                                <div class="message success-message">
-                                    <svg class="message-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <polyline points="20,6 9,17 4,12"/>
-                                    </svg>
-                                    @successMessage
-                                </div>
-                            }
-                            
-                            <div class="form-buttons">
-                                <button type="submit" disabled="@isLoading" class="btn btn-success">
-                                    @if (isLoading)
-                                    {
-                                        <svg class="btn-icon spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <circle cx="12" cy="12" r="10"/>
-                                            <path d="M16 12l-4-4-4 4"/>
-                                        </svg>
-                                    }
-                                    else
-                                    {
-                                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <polyline points="20,6 9,17 4,12"/>
-                                        </svg>
-                                    }
-                                    @LocalizationService.GetString("SaveChanges")
-                                </button>
-                                
-                                <button type="button" @onclick="CancelEditing" class="btn btn-outline">
-                                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <line x1="18" y1="6" x2="6" y2="18"/>
-                                        <line x1="6" y1="6" x2="18" y2="18"/>
-                                    </svg>
-                                    @LocalizationService.GetString("Cancel")
-                                </button>
-                            </div>
-                        </EditForm>
-                    }
-                </div>
-            }
-            else
-            {
-                <div class="debug-card">
-                    <h2 class="debug-title">⚠️ @LocalizationService.GetString("DebugInformation")</h2>
-                    <p class="debug-text">
-                        @LocalizationService.GetString("DebugFailedToLoad")
-                    </p>
-                    <p class="debug-hint">
-                        @LocalizationService.GetString("DebugRefreshPage")
-                    </p>
+            <!-- Tab Navigation -->
+            <div class="admin-tabs">
+                <!-- Profile tab - visible to all authenticated users -->
+                <button class="tab-button @(activeTab == "profile" ? "active" : "")" @onclick="@(() => SetActiveTab("profile"))">
+                    <svg class="tab-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    @LocalizationService.GetString("Profile")
+                </button>
+
+                @if (isAdmin)
+                {
+                    <!-- Admin-only tabs -->
+                    <button class="tab-button @(activeTab == "users" ? "active" : "")" @onclick="@(() => SetActiveTab("users"))">
+                        <svg class="tab-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        @LocalizationService.GetString("UserManagement")
+                    </button>
                     
-                    @if (ApplicationService.IsDebugLoggingEnabled)
-                    {
-                        <div class="debug-info">
-                            <p><strong>@LocalizationService.GetString("DebugLogging")</strong> @LocalizationService.GetString("DebugEnabled")</p>
-                            <p><strong>@LocalizationService.GetString("Application")</strong> @ApplicationService.ApplicationName v@ApplicationService.ApplicationVersion</p>
-                        </div>
-                    }
-                </div>
+                    <button class="tab-button @(activeTab == "ips" ? "active" : "")" @onclick="@(() => SetActiveTab("ips"))">
+                        <svg class="tab-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                            <line x1="8" y1="21" x2="16" y2="21"/>
+                            <line x1="12" y1="17" x2="12" y2="21"/>
+                        </svg>
+                        @LocalizationService.GetString("IpManagement")
+                    </button>
+
+                    <button class="tab-button @(activeTab == "tokens" ? "active" : "")" @onclick="@(() => SetActiveTab("tokens"))">
+                        <svg class="tab-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                            <line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
+                        @LocalizationService.GetString("TokenManagement")
+                    </button>
+
+                    <button class="tab-button @(activeTab == "oauth" ? "active" : "")" @onclick="@(() => SetActiveTab("oauth"))">
+                        <svg class="tab-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14,2 14,8 20,8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10,9 9,9 8,9"/>
+                        </svg>
+                        @LocalizationService.GetString("OAuthClients")
+                    </button>
+
+                    <button class="tab-button @(activeTab == "metrics" ? "active" : "")" @onclick="@(() => SetActiveTab("metrics"))">
+                        <svg class="tab-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="20" x2="18" y2="10" />
+                            <line x1="12" y1="20" x2="12" y2="4" />
+                            <line x1="6" y1="20" x2="6" y2="14" />
+                        </svg>
+                        @LocalizationService.GetString("Metrics")
+                    </button>
+
+                    <button class="tab-button @(activeTab == "settings" ? "active" : "")" @onclick="@(() => SetActiveTab("settings"))">
+                        <svg class="tab-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                        </svg>
+                        @LocalizationService.GetString("ApplicationSettings")
+                    </button>
+                }
+            </div>
+
+            <!-- Tab Content with Lazy Loading -->
+            @if (activeTab == "profile")
+            {
+                <ProfileTab CurrentUser="currentUser" 
+                           IsLoading="false" 
+                           OnDataChanged="RefreshCurrentTabData" />
+            }
+            else if (activeTab == "users" && isAdmin)
+            {
+                <UsersManagementTab CurrentUser="currentUser" 
+                                   IsLoading="false" 
+                                   OnDataChanged="RefreshCurrentTabData" />
+            }
+            else if (activeTab == "ips" && isAdmin)
+            {
+                <IpManagementTab IsLoading="false" 
+                                OnDataChanged="RefreshCurrentTabData" />
+            }
+            else if (activeTab == "tokens" && isAdmin)
+            {
+                <TokenManagementTab Users="availableUsers" 
+                                   IsLoading="false" 
+                                   OnDataChanged="RefreshCurrentTabData" />
+            }
+            else if (activeTab == "oauth" && isAdmin)
+            {
+                <OAuthClientManagementTab CurrentUser="currentUser"
+                                         IsLoading="false" 
+                                         OnDataChanged="RefreshCurrentTabData" />
+            }
+            else if (activeTab == "metrics" && isAdmin)
+            {
+                <MetricsTab IsVisible="@(activeTab == "metrics")" IsLoading="isLoading" OnDataChanged="RefreshCurrentTabData" />
+            }
+            else if (activeTab == "settings" && isAdmin)
+            {
+                <ApplicationSettingsTab IsLoading="false" 
+                                       OnDataChanged="RefreshCurrentTabData" />
             }
         </div>
     </div>
@@ -356,211 +155,150 @@ else
 }
 
 @code {
-    [Parameter, SupplyParameterFromQuery] 
-    public string? _refresh { get; set; }
-
-    private bool isEditing = false;
     private bool isLoading = true;
     private bool isAuthenticated = false;
-    private string editErrorMessage = string.Empty;
-    private string successMessage = string.Empty;
-    private UserEditModel editModel = new();
-    private User? currentUser;
-    private Timer? totpTimer;
-    private string currentTotpCode = "------";
-    private int remainingSeconds = 30;
+    private bool isAdmin = false;
+    private string activeTab = "profile"; // default to profile for all users
+    
+    private const string ADMIN_TAB_STORAGE_KEY = "authly_admin_active_tab";
+    private readonly List<string> validTabs = new() { "profile", "users", "ips", "tokens", "oauth", "metrics", "settings" };
 
-    public class UserEditModel
-    {
-        public string FullName { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
-        public bool HasTotp { get; set; } = false;
-    }
+    private User? currentUser;
+    private List<User> availableUsers = new(); // Pouze pro dropdown v token managementu
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            Logger.Log("Dashboard", "Starting initialization");
-
-            if (!string.IsNullOrEmpty(_refresh))
-            {
-                Logger.Log("Dashboard", $"Refresh parameter detected: {_refresh}");
-                await Task.Delay(1000);
-
-                if (AuthenticationStateProvider is IdentityRevalidatingAuthenticationStateProvider revalidatingProvider)
-                {
-                    Logger.Log("Dashboard", "Forcing authentication state revalidation");
-                    revalidatingProvider.RevalidateAuthenticationState();
-                    await Task.Delay(500);
-                }
-            }
-            else
-            {
-                await Task.Delay(200);
-            }
+            Logger.Log("AdminPanel", "Starting initialization");
 
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             isAuthenticated = authState.User?.Identity?.IsAuthenticated == true;
 
-            Logger.Log("Dashboard", $"IsAuthenticated: {isAuthenticated}");
-
             if (!isAuthenticated)
             {
-                Logger.LogWarning("Dashboard", "User not authenticated, redirecting to login");
-                var returnUrl = Uri.EscapeDataString(Navigation.ToBaseRelativePath(Navigation.Uri));
-                Navigation.NavigateTo($"/login?returnUrl={returnUrl}");
+                Logger.LogWarning("AdminPanel", "User not authenticated, redirecting to login");
+                Navigation.NavigateTo("/login");
                 return;
             }
 
-            if (!string.IsNullOrEmpty(_refresh))
-            {
-                Logger.Log("Dashboard", "Removing refresh parameter from URL");
-                Navigation.NavigateTo("/dashboard", replace: true);
-            }
-
             currentUser = await AuthService.GetCurrentUserAsync();
-            Logger.Log("Dashboard", $"Current user loaded: {currentUser?.UserName}");
+            isAdmin = currentUser?.Administrator == true;
 
-            // Start TOTP timer if user has TOTP enabled
-            StartTotpTimer();
+            Logger.Log("AdminPanel", $"User authenticated: {currentUser?.UserName}, IsAdmin: {isAdmin}");
 
+            // Načti poslední aktivní záložku z localStorage
+            await LoadActiveTabFromStorage();
+
+            // Pouze admin může načíst uživatele pro dropdown v token managementu
+            if (isAdmin)
+            {
+                await LoadUsersForDropdown();
+            }
+            
             isLoading = false;
-            StateHasChanged();
+            Logger.Log("AdminPanel", $"Initialization completed - using lazy loading for tab data. Active tab: {activeTab}");
         }
         catch (Exception ex)
         {
-            Logger.LogError("Dashboard", "Error during initialization", ex);
+            Logger.LogError("AdminPanel", "Error during initialization", ex);
             isLoading = false;
-            isAuthenticated = false;
-            Navigation.NavigateTo("/login");
+            await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                LocalizationService.GetString("UnexpectedError"));
         }
     }
 
-    private void StartEditing()
+    private async Task LoadActiveTabFromStorage()
     {
-        if (currentUser != null)
-        {
-            editModel.FullName = currentUser.FullName;
-            editModel.Email = currentUser.Email ?? string.Empty;
-            editModel.Password = string.Empty;
-            editModel.HasTotp = currentUser.HasTotp;
-            editErrorMessage = string.Empty;
-            successMessage = string.Empty;
-            isEditing = true;
-        }
-    }
-
-    private async Task SaveChanges()
-    {
-        isLoading = true;
-        editErrorMessage = string.Empty;
-        successMessage = string.Empty;
-
         try
         {
-            var success = await AuthService.UpdateUserAsync(editModel.FullName, editModel.Email, editModel.Password, editModel.HasTotp);
-
-            if (success)
+            var savedTab = await JSRuntime.InvokeAsync<string>("localStorage.getItem", ADMIN_TAB_STORAGE_KEY);
+            
+            if (!string.IsNullOrEmpty(savedTab) && validTabs.Contains(savedTab))
             {
-                successMessage = LocalizationService.GetString("DataSavedSuccessfully");
-                currentUser = await AuthService.GetCurrentUserAsync();
-                await Task.Delay(1500);
-                isEditing = false;
-                StateHasChanged();
+                // If user is not admin, force them to profile tab for admin-only tabs
+                if (!isAdmin && savedTab != "profile")
+                {
+                    activeTab = "profile";
+                    Logger.Log("AdminPanel", $"Non-admin user tried to access admin tab {savedTab}, defaulting to profile");
+                }
+                else
+                {
+                    activeTab = savedTab;
+                    Logger.Log("AdminPanel", $"Restored active tab from storage: {activeTab}");
+                }
             }
             else
             {
-                editErrorMessage = LocalizationService.GetString("FailedToSaveChanges");
-            }
-        }
-        catch (Exception)
-        {
-            editErrorMessage = LocalizationService.GetString("ErrorSavingChanges");
-        }
-        finally
-        {
-            isLoading = false;
-        }
-    }
-
-    private void CancelEditing()
-    {
-        isEditing = false;
-        editErrorMessage = string.Empty;
-        successMessage = string.Empty;
-        editModel = new UserEditModel();
-    }
-
-    private string GetQRCode()
-    {
-        try
-        {
-            if (currentUser != null && !string.IsNullOrEmpty(currentUser.TotpSecret) && !string.IsNullOrEmpty(currentUser.Email))
-            {
-                return QRCodeService.GenerateTotpQRCode(currentUser.Email, currentUser.TotpSecret, ApplicationService.ApplicationName);
+                Logger.Log("AdminPanel", $"Using default tab: {activeTab}");
             }
         }
         catch (Exception ex)
         {
-            Logger.LogError("Dashboard", "Error generating QR code", ex);
+            Logger.LogWarning("AdminPanel", $"Could not load active tab from storage, using default. Error: {ex.Message}");
+            // V případě chyby zůstane výchozí hodnota "profile"
         }
-        return string.Empty;
     }
 
-    private void StartTotpTimer()
+    private async Task SaveActiveTabToStorage(string tab)
     {
-        if (currentUser?.HasTotp == true && !string.IsNullOrEmpty(currentUser.TotpSecret))
+        try
         {
-            // Generate initial code
-            UpdateTotpCode();
-
-            // Start timer that updates every 500ms for smoother animation without being too frequent
-            totpTimer = new Timer(async _ =>
-            {
-                UpdateTotpCode();
-                await InvokeAsync(StateHasChanged);
-            }, null, TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", ADMIN_TAB_STORAGE_KEY, tab);
+            Logger.Log("AdminPanel", $"Saved active tab to storage: {tab}");
         }
-    }
-
-    private void UpdateTotpCode()
-    {
-        if (currentUser?.HasTotp == true && !string.IsNullOrEmpty(currentUser.TotpSecret))
+        catch (Exception ex)
         {
-            try
-            {
-                currentTotpCode = TotpService.GenerateCode(currentUser.TotpSecret);
-                remainingSeconds = TotpService.GetRemainingSeconds();
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError("Dashboard", "Error updating TOTP code", ex);
-                currentTotpCode = "------";
-                remainingSeconds = 30;
-            }
+            Logger.LogWarning("AdminPanel", $"Could not save active tab to storage. Error: {ex.Message}");
+            // Nebrání funkčnosti, jen se neuloží stav
         }
     }
 
-    private string GetCountdownDashArray()
+    private async Task LoadUsersForDropdown()
     {
-        var percentage = (double)remainingSeconds / 30.0 * 100;
-        return $"{percentage}, 100";
-    }
-    private string GetProgressCircleOffset()
-    {
-        const double circumference = 339.29;
-        var percentage = Math.Max(0, Math.Min(1, (double)remainingSeconds / 30.0));
-
-        // Pro debugging
-        var offset = circumference * (1.0 - percentage);
-
-        return offset.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+        try
+        {
+            // Načteme jen základní seznam uživatelů pro dropdown v token managementu
+            availableUsers = await UserStorage.GetAllUsers();
+            Logger.Log("AdminPanel", $"Loaded {availableUsers.Count} users for dropdown");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("AdminPanel", "Error loading users for dropdown", ex);
+        }
     }
 
-    public void Dispose()
+    private async Task SetActiveTab(string tab)
     {
-        totpTimer?.Dispose();
+        if (!validTabs.Contains(tab))
+        {
+            Logger.LogWarning("AdminPanel", $"Invalid tab requested: {tab}");
+            return;
+        }
+
+        // Prevent non-admin users from accessing admin tabs
+        if (!isAdmin && tab != "profile")
+        {
+            Logger.LogWarning("AdminPanel", $"Non-admin user tried to access admin tab: {tab}");
+            return;
+        }
+
+        activeTab = tab;
+        await SaveActiveTabToStorage(tab);
+        Logger.Log("AdminPanel", $"Switched to tab: {tab}");
+        
+        // Vynutí re-render komponenty pro správné zobrazení nové záložky
+        StateHasChanged();
+    }
+
+    private async Task RefreshCurrentTabData()
+    {
+        // Pokud se změní data v aktuální záložce, můžeme refreshnout i data pro dropdown
+        if (isAdmin && (activeTab == "users" || activeTab == "tokens"))
+        {
+            await LoadUsersForDropdown();
+        }
+        
+        Logger.Log("AdminPanel", $"Data refreshed for tab: {activeTab}");
     }
 }

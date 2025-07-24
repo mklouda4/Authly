@@ -1,0 +1,492 @@
+@using Authly.Services
+@using Authly.Models
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using OtpNet
+@inherits BaseAdminTab
+
+<div class="tab-content profile-tab">
+    @if (isLocalLoading)
+    {
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <span>@LocalizationService.GetString("Loading")</span>
+        </div>
+    }
+    else if (currentUser != null)
+    {
+        <div class="profile-card">
+            <div class="profile-header">
+                <h2 class="profile-title">
+                    <svg class="profile-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    @LocalizationService.GetString("UserProfile")
+                </h2>
+                
+                @if (!isEditing)
+                {
+                    <div class="profile-actions">
+                        @if (currentUser?.IsExternal != true)
+                        {
+                            <button class="btn btn-edit" @onclick="StartEditing">
+                                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                                @LocalizationService.GetString("Edit")
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+            
+            @if (!isEditing)
+            {
+                <div class="profile-fields">
+                    <div class="field">
+                        <label class="field-label">@LocalizationService.GetString("FullName")</label>
+                        <div class="field-value">@currentUser.FullName</div>
+                    </div>
+                    
+                    <div class="field">
+                        <label class="field-label">@LocalizationService.GetString("Username")</label>
+                        <div class="field-value">@currentUser.UserName</div>
+                    </div>
+                    
+                    <div class="field">
+                        <label class="field-label">@LocalizationService.GetString("Email")</label>
+                        <div class="field-value">@currentUser.Email</div>
+                    </div>
+                    
+                    <div class="field">
+                        <label class="field-label">@LocalizationService.GetString("TotpVerification")</label>
+                        <div class="field-value totp-status">
+                            @if (currentUser.HasTotp)
+                            {
+                                <svg class="totp-icon totp-active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20,6 9,17 4,12"/>
+                                </svg>
+                                <span class="totp-text totp-active">@LocalizationService.GetString("Active")</span>
+                            }
+                            else
+                            {
+                                <svg class="totp-icon totp-inactive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="6" x2="6" y2="18"/>
+                                    <line x1="6" y1="6" x2="18" y2="18"/>
+                                </svg>
+                                <span class="totp-text totp-inactive">@LocalizationService.GetString("Inactive")</span>
+                            }
+                        </div>
+                    </div>
+
+                    @if (currentUser.HasTotp && !string.IsNullOrEmpty(currentUser.TotpSecret))
+                    {
+                        <div class="field">
+                            <label class="field-label">@LocalizationService.GetString("TotpSecretKey")</label>
+                            <div class="totp-secret">
+                                @currentUser.TotpSecret
+                            </div>
+                            <p class="totp-hint">
+                                @LocalizationService.GetString("TotpSetupInstructions")
+                            </p>
+                        </div>
+                        
+                        <div class="field">
+                            <label class="field-label">@LocalizationService.GetString("TotpAuthenticator")</label>
+                            <div class="totp-authenticator-section">
+                                <!-- TOTP Live Code in Circle -->
+                                <div class="totp-live-container">
+                                    <div class="totp-circle-wrapper">
+                                        <div class="totp-circle" 
+                                             data-urgent="@(remainingSeconds < 10 && remainingSeconds >= 5)"
+                                             data-critical="@(remainingSeconds < 5)">
+                                            <svg class="totp-progress-ring" viewBox="0 0 120 120">
+                                                <!-- Background circle -->
+                                                <circle class="progress-ring-bg" 
+                                                        cx="60" cy="60" r="54" 
+                                                        fill="none" 
+                                                        stroke-width="8"/>
+                                                <!-- Progress circle -->
+                                                <circle cx="60" cy="60" r="54"
+                                                        fill="none"
+                                                        stroke="#3b82f6"
+                                                        stroke-width="8"
+                                                        stroke-dasharray="339.29 339.29"
+                                                        stroke-dashoffset="@GetProgressCircleOffset()"
+                                                        transform="rotate(0 60 60)" />
+                                            </svg>
+                                            <div class="totp-circle-content">
+                                                <span class="totp-live-code">@currentTotpCode</span>
+                                                <span class="totp-countdown-text">@remainingSeconds s</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="totp-live-hint">
+                                        @LocalizationService.GetString("TotpCurrentCodeHint")
+                                    </p>
+                                </div>
+                                
+                                <!-- QR Code -->
+                                <div class="totp-qr-container">
+                                    <div class="qr-code-wrapper">
+                                        <img src="data:image/png;base64,@GetQRCode()" 
+                                             alt="TOTP QR Code" 
+                                             class="qr-code-image" />
+                                    </div>
+                                    <p class="qr-code-hint">
+                                        @LocalizationService.GetString("TotpQRCodeInstructions")
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <EditForm Model="editModel" OnValidSubmit="SaveChanges">
+                    <DataAnnotationsValidator />
+                    
+                    <div class="field">
+                        <label class="field-label">@LocalizationService.GetString("FullName")</label>
+                        <InputText @bind-Value="editModel.FullName" class="form-input" />
+                    </div>
+                    
+                    <div class="field">
+                        <label class="field-label">@LocalizationService.GetString("Email")</label>
+                        <InputText @bind-Value="editModel.Email" type="email" class="form-input" />
+                    </div>
+                    
+                    <div class="field">
+                        <label class="field-label">@LocalizationService.GetString("NewPassword")</label>
+                        <InputText @bind-Value="editModel.Password" type="password" placeholder="@LocalizationService.GetString("PasswordPlaceholder")" class="form-input" />
+                    </div>
+                    
+                    <div class="field">
+                        <label class="field-label">@LocalizationService.GetString("TotpVerification")</label>
+                        <div class="totp-toggle">
+                            <label class="totp-checkbox">
+                                <InputCheckbox @bind-Value="editModel.HasTotp" />
+                                <span class="totp-label">
+                                    @if (editModel.HasTotp)
+                                    {
+                                        <svg class="totp-icon totp-active" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="20,6 9,17 4,12"/>
+                                        </svg>
+                                        <span>@LocalizationService.GetString("TotpActive")</span>
+                                    }
+                                    else
+                                    {
+                                        <svg class="totp-icon totp-inactive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="18" y1="6" x2="6" y2="18"/>
+                                            <line x1="6" y1="6" x2="18" y2="18"/>
+                                        </svg>
+                                        <span>@LocalizationService.GetString("TotpInactive")</span>
+                                    }
+                                </span>
+                            </label>
+                        </div>
+                        
+                        @if (editModel.HasTotp)
+                        {
+                            <div class="totp-info info-success">
+                                <svg class="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <line x1="12" y1="8" x2="12" y2="12"/>
+                                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                                </svg>
+                                <div>
+                                    <p class="info-title">@LocalizationService.GetString("TotpWillBeActive")</p>
+                                    <p class="info-text">@LocalizationService.GetString("TotpWillBeActiveDescription")</p>
+                                </div>
+                            </div>
+                            
+                            @if (currentUser != null && currentUser.HasTotp && !string.IsNullOrEmpty(currentUser.TotpSecret))
+                            {
+                                <div class="totp-setup">
+                                    <label class="field-label">@LocalizationService.GetString("TotpQRCode")</label>
+                                    <div class="qr-code-container">
+                                        <img src="data:image/png;base64,@GetQRCode()" 
+                                             alt="TOTP QR Code" 
+                                             class="qr-code-image" />
+                                    </div>
+                                    <p class="qr-hint">
+                                        @LocalizationService.GetString("TotpQRCodeInstructions")
+                                    </p>
+                                    <div class="totp-secret">
+                                        <label class="field-label">@LocalizationService.GetString("TotpManualEntry")</label>
+                                        <code class="secret-code">@currentUser.TotpSecret</code>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="totp-info info-warning">
+                                <svg class="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                    <line x1="12" y1="9" x2="12" y2="13"/>
+                                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                </svg>
+                                <div>
+                                    <p class="info-title">@LocalizationService.GetString("TotpWillBeDeactivated")</p>
+                                    <p class="info-text">@LocalizationService.GetString("TotpWillBeDeactivatedDescription")</p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    
+                    @if (!string.IsNullOrEmpty(editErrorMessage))
+                    {
+                        <div class="message error-message">
+                            <svg class="message-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                <line x1="12" y1="9" x2="12" y2="13"/>
+                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                            @editErrorMessage
+                        </div>
+                    }
+                    
+                    @if (!string.IsNullOrEmpty(successMessage))
+                    {
+                        <div class="message success-message">
+                            <svg class="message-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20,6 9,17 4,12"/>
+                            </svg>
+                            @successMessage
+                        </div>
+                    }
+                    
+                    <div class="form-buttons">
+                        <button type="submit" disabled="@isSubmitting" class="btn btn-success">
+                            @if (isSubmitting)
+                            {
+                                <svg class="btn-icon spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M16 12l-4-4-4 4"/>
+                                </svg>
+                            }
+                            else
+                            {
+                                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20,6 9,17 4,12"/>
+                                </svg>
+                            }
+                            @LocalizationService.GetString("SaveChanges")
+                        </button>
+                        
+                        <button type="button" @onclick="CancelEditing" class="btn btn-outline">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                            @LocalizationService.GetString("Cancel")
+                        </button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="error-card">
+            <h2 class="error-title">?? @LocalizationService.GetString("DebugInformation")</h2>
+            <p class="error-text">
+                @LocalizationService.GetString("DebugFailedToLoad")
+            </p>
+            <p class="error-hint">
+                @LocalizationService.GetString("DebugRefreshPage")
+            </p>
+        </div>
+    }
+</div>
+
+@code {
+    [Inject] private IAuthService AuthService { get; set; } = default!;
+    [Inject] private IQRCodeService QRCodeService { get; set; } = default!;
+    [Inject] private ITotpService TotpService { get; set; } = default!;
+    [Inject] private IApplicationService ApplicationService { get; set; } = default!;
+
+    [Parameter] public User? CurrentUser { get; set; }
+
+    private bool isEditing = false;
+    private bool isSubmitting = false;
+    private string editErrorMessage = string.Empty;
+    private string successMessage = string.Empty;
+    private UserEditModel editModel = new();
+    private User? currentUser;
+    private Timer? totpTimer;
+    private string currentTotpCode = "------";
+    private int remainingSeconds = 30;
+
+    public class UserEditModel
+    {
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public bool HasTotp { get; set; } = false;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        
+        // Use the passed CurrentUser parameter or load from AuthService
+        currentUser = CurrentUser ?? await AuthService.GetCurrentUserAsync();
+        
+        // Start TOTP timer if user has TOTP enabled
+        StartTotpTimer();
+        
+        hasLoadedData = true;
+        isLocalLoading = false;
+        StateHasChanged();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (CurrentUser != null && CurrentUser != currentUser)
+        {
+            currentUser = CurrentUser;
+            
+            // Restart TOTP timer for new user
+            totpTimer?.Dispose();
+            StartTotpTimer();
+            
+            StateHasChanged();
+        }
+        
+        await base.OnParametersSetAsync();
+    }
+
+    protected override async Task LoadDataAsync()
+    {
+        // Data is loaded in OnInitializedAsync
+        await Task.CompletedTask;
+    }
+
+    private void StartEditing()
+    {
+        if (currentUser != null)
+        {
+            editModel.FullName = currentUser.FullName;
+            editModel.Email = currentUser.Email ?? string.Empty;
+            editModel.Password = string.Empty;
+            editModel.HasTotp = currentUser.HasTotp;
+            editErrorMessage = string.Empty;
+            successMessage = string.Empty;
+            isEditing = true;
+        }
+    }
+
+    private async Task SaveChanges()
+    {
+        isSubmitting = true;
+        editErrorMessage = string.Empty;
+        successMessage = string.Empty;
+
+        try
+        {
+            var success = await AuthService.UpdateUserAsync(editModel.FullName, editModel.Email, editModel.Password, editModel.HasTotp);
+
+            if (success)
+            {
+                successMessage = LocalizationService.GetString("DataSavedSuccessfully");
+                currentUser = await AuthService.GetCurrentUserAsync();
+                
+                // Restart TOTP timer after user update
+                totpTimer?.Dispose();
+                StartTotpTimer();
+                
+                await OnDataChanged.InvokeAsync();
+                await Task.Delay(1500);
+                isEditing = false;
+                StateHasChanged();
+            }
+            else
+            {
+                editErrorMessage = LocalizationService.GetString("FailedToSaveChanges");
+            }
+        }
+        catch (Exception)
+        {
+            editErrorMessage = LocalizationService.GetString("ErrorSavingChanges");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void CancelEditing()
+    {
+        isEditing = false;
+        editErrorMessage = string.Empty;
+        successMessage = string.Empty;
+        editModel = new UserEditModel();
+    }
+
+    private string GetQRCode()
+    {
+        try
+        {
+            if (currentUser != null && !string.IsNullOrEmpty(currentUser.TotpSecret) && !string.IsNullOrEmpty(currentUser.Email))
+            {
+                return QRCodeService.GenerateTotpQRCode(currentUser.Email, currentUser.TotpSecret, ApplicationService.ApplicationName);
+            }
+        }
+        catch (Exception)
+        {
+            // Log error but don't break the UI
+        }
+        return string.Empty;
+    }
+
+    private void StartTotpTimer()
+    {
+        if (currentUser?.HasTotp == true && !string.IsNullOrEmpty(currentUser.TotpSecret))
+        {
+            // Generate initial code
+            UpdateTotpCode();
+
+            // Start timer that updates every 500ms for smoother animation without being too frequent
+            totpTimer = new Timer(async _ =>
+            {
+                UpdateTotpCode();
+                await InvokeAsync(StateHasChanged);
+            }, null, TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(500));
+        }
+    }
+
+    private void UpdateTotpCode()
+    {
+        if (currentUser?.HasTotp == true && !string.IsNullOrEmpty(currentUser.TotpSecret))
+        {
+            try
+            {
+                currentTotpCode = TotpService.GenerateCode(currentUser.TotpSecret);
+                remainingSeconds = TotpService.GetRemainingSeconds();
+            }
+            catch (Exception)
+            {
+                currentTotpCode = "------";
+                remainingSeconds = 30;
+            }
+        }
+    }
+
+    private string GetProgressCircleOffset()
+    {
+        const double circumference = 339.29;
+        var percentage = Math.Max(0, Math.Min(1, (double)remainingSeconds / 30.0));
+        var offset = circumference * (1.0 - percentage);
+        return offset.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    public void Dispose()
+    {
+        totpTimer?.Dispose();
+    }
+}

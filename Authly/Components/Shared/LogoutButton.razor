@@ -1,0 +1,48 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@using Authly.Services
+@implements IDisposable
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ILocalizationService LocalizationService
+
+@if (isAuthenticated)
+{
+    <div class="logout-button">
+        <a href="@Authorization.Local.LocalAuth.LogoutUri" class="logout-btn" title="@LocalizationService.GetString("Logout")">
+            <svg class="logout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16,17 21,12 16,7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+        </a>
+    </div>
+}
+
+@code {
+    private bool isAuthenticated = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        isAuthenticated = authState.User?.Identity?.IsAuthenticated == true;
+
+        // Subscribe to authentication state changes
+        AuthenticationStateProvider.AuthenticationStateChanged += OnAuthenticationStateChanged;
+    }
+
+    private async void OnAuthenticationStateChanged(Task<AuthenticationState> task)
+    {
+        var authState = await task;
+        var newIsAuthenticated = authState.User?.Identity?.IsAuthenticated == true;
+        
+        if (newIsAuthenticated != isAuthenticated)
+        {
+            isAuthenticated = newIsAuthenticated;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose()
+    {
+        AuthenticationStateProvider.AuthenticationStateChanged -= OnAuthenticationStateChanged;
+    }
+}

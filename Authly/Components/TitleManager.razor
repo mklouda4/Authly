@@ -70,10 +70,10 @@
         {
             "" or "/" => LocalizationService.GetString("Home"),
             "login" => LocalizationService.GetString("LoginTitle"),
-            "dashboard" => LocalizationService.GetString("Dashboard"),
+            "dashboard" => string.Empty, // LocalizationService.GetString("Dashboard"),
             "logout" => LocalizationService.GetString("Logout"),
             "error" => LocalizationService.GetString("Error"),
-            _ => LocalizationService.GetString("Home")
+            _ => string.Empty
         };
     }
 

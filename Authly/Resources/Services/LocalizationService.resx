@@ -198,6 +198,9 @@
   <data name="UserProfile" xml:space="preserve">
     <value>User Profile</value>
   </data>
+  <data name="Profile" xml:space="preserve">
+    <value>Profile</value>
+  </data>
   <data name="TotpVerification" xml:space="preserve">
     <value>TOTP Verification</value>
   </data>

@@ -198,6 +198,9 @@
   <data name="UserProfile" xml:space="preserve">
     <value>Uživatelský profil</value>
   </data>
+  <data name="Profile" xml:space="preserve">
+    <value>Profil</value>
+  </data>
   <data name="TotpVerification" xml:space="preserve">
     <value>TOTP ověření</value>
   </data>
@@ -922,7 +925,7 @@
     <value>Metriky</value>
   </data>
   <data name="MetricsDashboard" xml:space="preserve">
-    <value>Dashboard metrik</value>
+    <value>Metriky</value>
   </data>
   <data name="MetricsDisabled" xml:space="preserve">
     <value>Metriky jsou zakázány</value>
