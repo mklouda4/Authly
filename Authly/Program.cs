@@ -19,6 +19,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
 using Prometheus;
+using Microsoft.EntityFrameworkCore;
 
 namespace Authly
 {
@@ -46,6 +47,9 @@ namespace Authly
                 builder.Configuration.GetSection("Security:UserLockout"));
             _ = builder.Services.Configure<IpRateLimitingOptions>(
                 builder.Configuration.GetSection("Security:IpRateLimit"));
+            // Database cleanup configuration
+            _ = builder.Services.Configure<DataCleanupOptions>(
+                builder.Configuration.GetSection(DataCleanupOptions.SectionName));
 
             // Get base application options
             var appOptionsBase = builder.Configuration.GetSection(ApplicationOptions.SectionName).Get<ApplicationOptions>() ?? new ApplicationOptions();
@@ -164,9 +168,6 @@ namespace Authly
             _ = builder.Services.AddScoped<IApplicationService, ApplicationService>();
             _ = builder.Services.AddSingleton<IApplicationLogger, ApplicationLogger>();
             _ = builder.Services.AddScoped<ILocalizationService, LocalizationService>();
-
-            // Register security service
-            _ = builder.Services.AddSingleton<ISecurityService, SecurityService>();
 
             // Register metrics service
             _ = builder.Services.AddSingleton<IMetricsService, MetricsService>();
@@ -310,20 +311,41 @@ namespace Authly
             // Register TOTP service
             _ = builder.Services.AddScoped<ITotpService, TotpService>();
 
-            // Register Token service
-            _ = builder.Services.AddScoped<ITokenService, TokenService>();
+            // Register original services (will be replaced by factory)
+            _ = builder.Services.AddScoped<TokenService>();
+            _ = builder.Services.AddScoped<OAuthAuthorizationService>();
 
-            // Register OAuth services
-            _ = builder.Services.AddOAuthClientService();
-            _ = builder.Services.AddOAuthAuthorizationService();
-
-            // Register OAuth cleanup background service
-            _ = builder.Services.AddHostedService<OAuthCleanupService>();
+            // Register database cleanup background service (NEW)
+            _ = builder.Services.AddHostedService<DataCleanupService>();
 
             // Register Temporary Registration service
             _ = builder.Services.AddSingleton<ITemporaryRegistrationService, TemporaryRegistrationService>();
 
+            // Register data services with factory pattern (NEW)
+            _ = builder.Services.AddDataServices(builder.Configuration);
+
             var app = builder.Build();
+
+            // Ensure database is created for SQLite (NEW)
+            using (var scope = app.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetService<Authly.Data.AuthlyDbContext>();
+                if (context != null)
+                {
+                    try
+                    {
+                        context.Database.EnsureCreated();
+                        
+                        var logger = scope.ServiceProvider.GetRequiredService<IApplicationLogger>();
+                        logger.Log("Program", "Database initialized successfully");
+                    }
+                    catch (Exception ex)
+                    {
+                        var logger = scope.ServiceProvider.GetRequiredService<IApplicationLogger>();
+                        logger.LogError("Program", $"Database initialization failed: {ex.Message}", ex);
+                    }
+                }
+            }
 
             // Configure Prometheus metrics if enabled
             var appOptions = app.Services.GetRequiredService<IOptions<ApplicationOptions>>();
@@ -433,6 +455,10 @@ namespace Authly
                 ["AUTHLY_ENABLE_METRICS"] = "Application:EnableMetrics",
                 ["AUTHLY_ALLOW_REGISTRATION"] = "Application:AllowRegistration",
 
+                // Data storage settings (NEW)
+                ["AUTHLY_DATA_STORAGE_TYPE"] = "DataStorage:Type",
+                ["AUTHLY_CONNECTION_STRING"] = "ConnectionStrings:DefaultConnection",
+
                 // External authentication settings
                 ["AUTHLY_ENABLE_GOOGLE"] = "Application:ExternalAuth:EnableGoogle",
                 ["AUTHLY_ENABLE_MICROSOFT"] = "Application:ExternalAuth:EnableMicrosoft",
@@ -452,6 +478,14 @@ namespace Authly
                 ["AUTHLY_IP_RATE_LIMIT_BAN_DURATION"] = "Security:IpRateLimit:BanDurationMinutes",
                 ["AUTHLY_IP_RATE_LIMIT_SLIDING_WINDOW"] = "Security:IpRateLimit:SlidingWindow",
                 ["AUTHLY_IP_RATE_LIMIT_WINDOW"] = "Security:IpRateLimit:WindowMinutes",
+
+                // Database cleanup settings (NEW)
+                ["AUTHLY_DB_CLEANUP_ENABLED"] = "DatabaseCleanup:Enabled",
+                ["AUTHLY_DB_CLEANUP_INTERVAL_HOURS"] = "DatabaseCleanup:CleanupIntervalHours",
+                ["AUTHLY_DB_CLEANUP_KEEP_IP_ATTEMPTS_DAYS"] = "DatabaseCleanup:KeepIpAttemptsForDays",
+                ["AUTHLY_DB_CLEANUP_KEEP_EXPIRED_AUTH_CODES_HOURS"] = "DatabaseCleanup:KeepExpiredAuthCodesForHours",
+                ["AUTHLY_DB_CLEANUP_KEEP_REVOKED_TOKENS_DAYS"] = "DatabaseCleanup:KeepRevokedTokensForDays",
+                ["AUTHLY_DB_CLEANUP_LOG_STATS"] = "DatabaseCleanup:LogCleanupStats",
 
                 // OAuth settings - Google
                 ["GOOGLE_CLIENT_ID"] = "Authentication:Google:ClientId",

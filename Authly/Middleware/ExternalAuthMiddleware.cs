@@ -18,38 +18,26 @@ namespace Authly.Middleware
         /// Processes HTTP requests and handles external authentication endpoints
         /// </summary>
         /// <param name="context">HTTP context</param>
-        /// <param name="userStorage">User storage service</param>
-        /// <param name="appLogger">Application logger</param>
-        /// <param name="securityService">Security service for failed attempts tracking</param>
-        /// <param name="metricsService">Metrics service for monitoring</param>
-        /// <param name="signInManager">Custom sign-in manager for authentication operations</param>
-        public async Task InvokeAsync(
-            HttpContext context,
-            IConfiguration configuration,
-            IUserStorage userStorage,
-            IApplicationLogger appLogger,
-            ISecurityService securityService,
-            IMetricsService metricsService,
-            CustomSignInManager signInManager)
+        public async Task InvokeAsync(HttpContext context)
         {
             // Handle external auth verification endpoint
             if (context.Request.Path == "/api/authz/forward-auth")
             {
-                await HandleAuthVerificationAsync(context, configuration, userStorage, appLogger, securityService, signInManager);
+                await HandleAuthVerificationAsync(context);
                 return;
             }
 
             // Handle external auth user info endpoint
             if (context.Request.Path == "/api/authz/user")
             {
-                await HandleUserInfoAsync(context, appLogger, securityService, signInManager);
+                await HandleUserInfoAsync(context);
                 return;
             }
 
             // Handle external auth login redirect endpoint
             if (context.Request.Path == "/api/authz/login")
             {
-                await HandleLoginRedirectAsync(context, appLogger, securityService);
+                await HandleLoginRedirectAsync(context);
                 return;
             }
 
@@ -61,15 +49,18 @@ namespace Authly.Middleware
         /// Handles authentication verification requests from reverse proxy
         /// Returns 200 if user is authenticated via session or token, 401/403 if not
         /// </summary>
-        private async Task HandleAuthVerificationAsync(HttpContext context,
-            IConfiguration configuration,
-            IUserStorage userStorage,
-            IApplicationLogger appLogger,
-            ISecurityService securityService,
-            CustomSignInManager signInManager)
+        private async Task HandleAuthVerificationAsync(HttpContext context)
         {
             try
             {
+                // Get services from request services (scoped)
+                var configuration = context.RequestServices.GetRequiredService<IConfiguration>();
+                var userStorage = context.RequestServices.GetRequiredService<IUserStorage>();
+                var appLogger = context.RequestServices.GetRequiredService<IApplicationLogger>();
+                var securityService = context.RequestServices.GetRequiredService<ISecurityService>();
+                var metricsService = context.RequestServices.GetRequiredService<IMetricsService>();
+                var signInManager = context.RequestServices.GetRequiredService<CustomSignInManager>();
+
                 var ipAddress = context.GetClientIpAddress();
                 appLogger.Log("ExternalAuthMiddleware", $"Auth verification request from IP: {ipAddress}");
 
@@ -174,7 +165,129 @@ namespace Authly.Middleware
             }
             catch (Exception ex)
             {
-                appLogger.LogError("ExternalAuthMiddleware", "Error during auth verification", ex);
+                var appLogger = context.RequestServices.GetService<IApplicationLogger>();
+                appLogger?.LogError("ExternalAuthMiddleware", "Error during auth verification", ex);
+                context.Response.StatusCode = 500;
+                await context.Response.WriteAsync("Internal server error");
+            }
+        }
+
+        /// <summary>
+        /// Handles user information requests from reverse proxy
+        /// Returns JSON with user details if authenticated via session or token
+        /// </summary>
+        private async Task HandleUserInfoAsync(HttpContext context)
+        {
+            try
+            {
+                // Get services from request services (scoped)
+                var appLogger = context.RequestServices.GetRequiredService<IApplicationLogger>();
+                var securityService = context.RequestServices.GetRequiredService<ISecurityService>();
+                var signInManager = context.RequestServices.GetRequiredService<CustomSignInManager>();
+
+                var ipAddress = context.GetClientIpAddress();
+                appLogger.Log("ExternalAuthMiddleware", $"User info request from IP: {ipAddress}");
+
+                // Check if IP is banned before proceeding
+                if (securityService.IsIpBanned(ipAddress))
+                {
+                    var banEnd = securityService.GetIpBanEndTime(ipAddress);
+                    appLogger.LogWarning("ExternalAuthMiddleware", $"IP {ipAddress} is banned until {banEnd} - denying user info request");
+                    context.Response.StatusCode = 403;
+                    await context.Response.WriteAsync("IP address banned");
+                    return;
+                }
+
+                // Try token-based authentication first
+                var user = await TryTokenAuthenticationAsync(context, appLogger);
+                if (user != null)
+                {
+                    await ReturnUserInfoAsync(context, appLogger, user, "token");
+                    return;
+                }
+
+                // Fallback to session-based authentication
+                var authResult = await signInManager.AuthenticateAsync();
+
+                if (!authResult.Succeeded || authResult.Principal?.Identity?.IsAuthenticated != true)
+                {
+                    appLogger.Log("ExternalAuthMiddleware", "User not authenticated for user info request");
+                    context.Response.StatusCode = 401;
+                    await context.Response.WriteAsync("Unauthorized");
+                    return;
+                }
+
+                // Get user information from claims for session auth
+                var userId = authResult.Principal.FindFirst(ClaimTypes.UserData)?.Value;
+                var userName = authResult.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var userEmail = authResult.Principal.FindFirst(ClaimTypes.Email)?.Value;
+                var userDisplayName = authResult.Principal.FindFirst(ClaimTypes.Name)?.Value;
+                var roles = authResult.Principal.FindAll(ClaimTypes.Role).Select(c => c.Value).ToArray();
+
+                var sessionUserInfo = new
+                {
+                    id = userId,
+                    username = userName,
+                    email = userEmail,
+                    displayName = userDisplayName,
+                    roles,
+                    authenticated = true,
+                    authenticationMethod = "session",
+                    authenticationTime = authResult.Properties?.IssuedUtc?.ToString("yyyy-MM-ddTHH:mm:ssZ")
+                };
+
+                await WriteJsonResponseAsync(context, sessionUserInfo);
+                appLogger.Log("ExternalAuthMiddleware", $"User info returned for user: {userName} (session auth)");
+            }
+            catch (Exception ex)
+            {
+                var appLogger = context.RequestServices.GetService<IApplicationLogger>();
+                appLogger?.LogError("ExternalAuthMiddleware", "Error during user info request", ex);
+                context.Response.StatusCode = 500;
+                await context.Response.WriteAsync("Internal server error");
+            }
+        }
+
+        /// <summary>
+        /// Handles login redirect requests from reverse proxy
+        /// Redirects to login page with return URL
+        /// </summary>
+        private async Task HandleLoginRedirectAsync(HttpContext context)
+        {
+            try
+            {
+                // Get services from request services (scoped)
+                var appLogger = context.RequestServices.GetRequiredService<IApplicationLogger>();
+                var securityService = context.RequestServices.GetRequiredService<ISecurityService>();
+
+                var ipAddress = context.GetClientIpAddress();
+                var returnUrl = context.Request.Query["returnUrl"].FirstOrDefault() ?? context.Request.Headers["X-Original-URI"].FirstOrDefault() ?? "/";
+
+                appLogger.Log("ExternalAuthMiddleware", $"Login redirect request from IP: {ipAddress}, returnUrl: {returnUrl}");
+
+                // Check if IP is banned before proceeding
+                if (securityService.IsIpBanned(ipAddress))
+                {
+                    var banEnd = securityService.GetIpBanEndTime(ipAddress);
+                    var banEndFormatted = banEnd?.ToString("yyyy-MM-dd HH:mm:ss") ?? "unknown";
+                    appLogger.LogWarning("ExternalAuthMiddleware", $"IP {ipAddress} is banned until {banEnd} - redirecting to login with ban message");
+
+                    // Redirect to login page with IP ban error
+                    var loginUrlWithBan = $"/login?error=ip_banned&banEnd={Uri.EscapeDataString(banEndFormatted)}&returnUrl={Uri.EscapeDataString(returnUrl)}";
+                    context.Response.Redirect(loginUrlWithBan);
+                    return;
+                }
+
+                // Build login URL with return URL
+                var loginUrl = $"/login?returnUrl={Uri.EscapeDataString(returnUrl)}";
+
+                context.Response.Redirect(loginUrl);
+                appLogger.Log("ExternalAuthMiddleware", $"Redirecting to login: {loginUrl}");
+            }
+            catch (Exception ex)
+            {
+                var appLogger = context.RequestServices.GetService<IApplicationLogger>();
+                appLogger?.LogError("ExternalAuthMiddleware", "Error during login redirect", ex);
                 context.Response.StatusCode = 500;
                 await context.Response.WriteAsync("Internal server error");
             }
@@ -264,81 +377,8 @@ namespace Authly.Middleware
             catch (Exception ex)
             {
                 // Log error but don't fail the request
-                // appLogger.LogError would need to be accessible here
-            }
-        }
-
-        /// <summary>
-        /// Handles user information requests from reverse proxy
-        /// Returns JSON with user details if authenticated via session or token
-        /// </summary>
-        private async Task HandleUserInfoAsync(
-            HttpContext context,
-            IApplicationLogger appLogger,
-            ISecurityService securityService,
-            CustomSignInManager signInManager)
-        {
-            try
-            {
-                var ipAddress = context.GetClientIpAddress();
-                appLogger.Log("ExternalAuthMiddleware", $"User info request from IP: {ipAddress}");
-
-                // Check if IP is banned before proceeding
-                if (securityService.IsIpBanned(ipAddress))
-                {
-                    var banEnd = securityService.GetIpBanEndTime(ipAddress);
-                    appLogger.LogWarning("ExternalAuthMiddleware", $"IP {ipAddress} is banned until {banEnd} - denying user info request");
-                    context.Response.StatusCode = 403;
-                    await context.Response.WriteAsync("IP address banned");
-                    return;
-                }
-
-                // Try token-based authentication first
-                var user = await TryTokenAuthenticationAsync(context, appLogger);
-                if (user != null)
-                {
-                    await ReturnUserInfoAsync(context, appLogger, user, "token");
-                    return;
-                }
-
-                // Fallback to session-based authentication
-                var authResult = await signInManager.AuthenticateAsync();
-
-                if (!authResult.Succeeded || authResult.Principal?.Identity?.IsAuthenticated != true)
-                {
-                    appLogger.Log("ExternalAuthMiddleware", "User not authenticated for user info request");
-                    context.Response.StatusCode = 401;
-                    await context.Response.WriteAsync("Unauthorized");
-                    return;
-                }
-
-                // Get user information from claims for session auth
-                var userId = authResult.Principal.FindFirst(ClaimTypes.UserData)?.Value;
-                var userName = authResult.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                var userEmail = authResult.Principal.FindFirst(ClaimTypes.Email)?.Value;
-                var userDisplayName = authResult.Principal.FindFirst(ClaimTypes.Name)?.Value;
-                var roles = authResult.Principal.FindAll(ClaimTypes.Role).Select(c => c.Value).ToArray();
-
-                var sessionUserInfo = new
-                {
-                    id = userId,
-                    username = userName,
-                    email = userEmail,
-                    displayName = userDisplayName,
-                    roles,
-                    authenticated = true,
-                    authenticationMethod = "session",
-                    authenticationTime = authResult.Properties?.IssuedUtc?.ToString("yyyy-MM-ddTHH:mm:ssZ")
-                };
-
-                await WriteJsonResponseAsync(context, sessionUserInfo);
-                appLogger.Log("ExternalAuthMiddleware", $"User info returned for user: {userName} (session auth)");
-            }
-            catch (Exception ex)
-            {
-                appLogger.LogError("ExternalAuthMiddleware", "Error during user info request", ex);
-                context.Response.StatusCode = 500;
-                await context.Response.WriteAsync("Internal server error");
+                var appLogger = context.RequestServices.GetService<IApplicationLogger>();
+                appLogger?.LogError("ExternalAuthMiddleware", "Error setting auth headers from session", ex);
             }
         }
 
@@ -514,46 +554,6 @@ namespace Authly.Middleware
             });
 
             await context.Response.WriteAsync(json);
-        }
-
-        /// <summary>
-        /// Handles login redirect requests from reverse proxy
-        /// Redirects to login page with return URL
-        /// </summary>
-        private async Task HandleLoginRedirectAsync(HttpContext context, IApplicationLogger appLogger, ISecurityService securityService)
-        {
-            try
-            {
-                var ipAddress = context.GetClientIpAddress();
-                var returnUrl = context.Request.Query["returnUrl"].FirstOrDefault() ?? context.Request.Headers["X-Original-URI"].FirstOrDefault() ?? "/";
-
-                appLogger.Log("ExternalAuthMiddleware", $"Login redirect request from IP: {ipAddress}, returnUrl: {returnUrl}");
-
-                // Check if IP is banned before proceeding
-                if (securityService.IsIpBanned(ipAddress))
-                {
-                    var banEnd = securityService.GetIpBanEndTime(ipAddress);
-                    var banEndFormatted = banEnd?.ToString("yyyy-MM-dd HH:mm:ss") ?? "unknown";
-                    appLogger.LogWarning("ExternalAuthMiddleware", $"IP {ipAddress} is banned until {banEnd} - redirecting to login with ban message");
-
-                    // Redirect to login page with IP ban error
-                    var loginUrlWithBan = $"/login?error=ip_banned&banEnd={Uri.EscapeDataString(banEndFormatted)}&returnUrl={Uri.EscapeDataString(returnUrl)}";
-                    context.Response.Redirect(loginUrlWithBan);
-                    return;
-                }
-
-                // Build login URL with return URL
-                var loginUrl = $"/login?returnUrl={Uri.EscapeDataString(returnUrl)}";
-
-                context.Response.Redirect(loginUrl);
-                appLogger.Log("ExternalAuthMiddleware", $"Redirecting to login: {loginUrl}");
-            }
-            catch (Exception ex)
-            {
-                appLogger.LogError("ExternalAuthMiddleware", "Error during login redirect", ex);
-                context.Response.StatusCode = 500;
-                await context.Response.WriteAsync("Internal server error");
-            }
         }
     }
 }
