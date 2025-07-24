@@ -172,9 +172,12 @@ namespace Authly
             // Register metrics service
             _ = builder.Services.AddSingleton<IMetricsService, MetricsService>();
 
+            // Register metrics dashboard service
+            _ = builder.Services.AddScoped<IMetricsDashboardService, MetricsDashboardService>();
+
             // Register session tracking service
             _ = builder.Services.AddSingleton<ISessionTrackingService, SessionTrackingService>();
-
+            
             // Register health checks
             _ = builder.Services.AddHealthChecks()
                 .AddCheck<AuthlyHealthCheck>($"{appOptionsBase.Name}_health".ToLower())
@@ -317,6 +320,9 @@ namespace Authly
 
             // Register database cleanup background service (NEW)
             _ = builder.Services.AddHostedService<DataCleanupService>();
+
+            // Register metrics cleanup background service
+            _ = builder.Services.AddHostedService<MetricsCleanupService>();
 
             // Register Temporary Registration service
             _ = builder.Services.AddSingleton<ITemporaryRegistrationService, TemporaryRegistrationService>();

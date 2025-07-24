@@ -17,19 +17,22 @@ namespace Authly.Services
         private readonly IUserStorage _userStorage;
         private readonly UserLockoutOptions _userLockoutOptions;
         private readonly IpRateLimitingOptions _ipRateLimitingOptions;
+        private readonly IMetricsService _metricsService;
 
         public DatabaseSecurityService(
             AuthlyDbContext context,
             IApplicationLogger logger,
             IUserStorage userStorage,
             IOptions<UserLockoutOptions> userLockoutOptions,
-            IOptions<IpRateLimitingOptions> ipRateLimitingOptions)
+            IOptions<IpRateLimitingOptions> ipRateLimitingOptions,             
+            IMetricsService metricsService)
         {
             _context = context;
             _logger = logger;
             _userStorage = userStorage;
             _userLockoutOptions = userLockoutOptions.Value;
             _ipRateLimitingOptions = ipRateLimitingOptions.Value;
+            _metricsService = metricsService;
         }
 
         public bool IsUserLockedOut(User user)
@@ -222,7 +225,10 @@ namespace Authly.Services
                 user.LockoutEnd = null;
                 
                 _userStorage.UpdateUser(user);
-                
+
+                // Record user lockout metric
+                _metricsService.RecordUserLockout();
+
                 _logger.Log("DatabaseSecurityService", $"User {user.UserName} unlocked successfully");
                 return true;
             }
@@ -292,7 +298,10 @@ namespace Authly.Services
                 user.LastFailedLoginAttempt = DateTime.UtcNow;
                 
                 _userStorage.UpdateUser(user);
-                
+
+                // Record manual lockout metric
+                _metricsService.RecordSecurityEvent("ManualUserLock");
+
                 _logger.Log("DatabaseSecurityService", $"User {user.UserName} locked permanently");
                 return true;
             }
@@ -341,6 +350,10 @@ namespace Authly.Services
                 }
 
                 _context.SaveChanges();
+
+                // Record manual ban metric
+                _metricsService.RecordSecurityEvent("ManualIpBan");
+
                 _logger.Log("DatabaseSecurityService", $"IP {ipAddress} banned permanently");
                 return true;
             }
@@ -444,6 +457,10 @@ namespace Authly.Services
                     _logger.LogWarning("DatabaseSecurityService", $"IP {ipAddress} banned until {ipAttempt.BanEndUtc}");
                     
                     _context.SaveChanges();
+
+                    // Record IP ban metric
+                    _metricsService.RecordIpBan();
+
                     return AuthenticationResult.IpBannedResult(ipAttempt.BanEndUtc.Value);
                 }
 

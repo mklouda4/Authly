@@ -21,6 +21,11 @@ namespace Authly.Data
         public DbSet<OAuthAccessToken> OAuthAccessTokens { get; set; }
         public DbSet<OAuthRefreshToken> OAuthRefreshTokens { get; set; }
 
+        // Metrics entities
+        public DbSet<LoginAttemptMetric> LoginAttemptMetrics { get; set; }
+        public DbSet<SecurityEventMetric> SecurityEventMetrics { get; set; }
+        public DbSet<ActiveSessionMetric> ActiveSessionMetrics { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -125,6 +130,44 @@ namespace Authly.Data
                 entity.HasIndex(e => e.AccessTokenId);
                 entity.HasIndex(e => new { e.ClientId, e.UserId });
                 entity.HasIndex(e => e.ExpiresUtc);
+            });
+
+            // Configure LoginAttemptMetric
+            modelBuilder.Entity<LoginAttemptMetric>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.FailureReason).HasMaxLength(100);
+                entity.Property(e => e.IpAddress).HasMaxLength(45); // IPv6 max length
+                entity.Property(e => e.UserAgent).HasMaxLength(500);
+                entity.Property(e => e.Username).HasMaxLength(256);
+                
+                entity.HasIndex(e => e.Success);
+                entity.HasIndex(e => e.CreatedAt);
+                entity.HasIndex(e => e.IpAddress);
+                entity.HasIndex(e => e.Username);
+            });
+
+            // Configure SecurityEventMetric
+            modelBuilder.Entity<SecurityEventMetric>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.EventType).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Details).HasMaxLength(1000);
+                entity.Property(e => e.IpAddress).HasMaxLength(45); // IPv6 max length
+                entity.Property(e => e.Username).HasMaxLength(256);
+                
+                entity.HasIndex(e => e.EventType);
+                entity.HasIndex(e => e.CreatedAt);
+                entity.HasIndex(e => e.Severity);
+                entity.HasIndex(e => e.IpAddress);
+                entity.HasIndex(e => e.Username);
+            });
+
+            // Configure ActiveSessionMetric
+            modelBuilder.Entity<ActiveSessionMetric>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.CreatedAt);
             });
         }
     }

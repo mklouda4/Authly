@@ -915,4 +915,92 @@
   <data name="TogglePasswordVisibility" xml:space="preserve">
     <value>Passwort-Sichtbarkeit umschalten</value>
   </data>
+  <!-- Metrics-related translations in German -->
+  <data name="Metrics" xml:space="preserve">
+    <value>Metriken</value>
+  </data>
+  <data name="MetricsDashboard" xml:space="preserve">
+    <value>Metriken-Dashboard</value>
+  </data>
+  <data name="MetricsDisabled" xml:space="preserve">
+    <value>Metriken deaktiviert</value>
+  </data>
+  <data name="MetricsDisabledDescription" xml:space="preserve">
+    <value>Metriken-Erfassung ist derzeit deaktiviert. Um Metriken zu aktivieren, setzen Sie die Umgebungsvariable AUTHLY_ENABLE_METRICS auf true und starten Sie die Anwendung neu.</value>
+  </data>
+  <data name="ErrorLoadingMetrics" xml:space="preserve">
+    <value>Fehler beim Laden der Metriken</value>
+  </data>
+  <data name="TryAgain" xml:space="preserve">
+    <value>Erneut versuchen</value>
+  </data>
+  <data name="LastUpdated" xml:space="preserve">
+    <value>Zuletzt aktualisiert</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Aktualisieren</value>
+  </data>
+  <data name="LoginAttempts" xml:space="preserve">
+    <value>Anmeldeversuche</value>
+  </data>
+  <data name="SuccessRate" xml:space="preserve">
+    <value>Erfolgsrate</value>
+  </data>
+  <data name="ActiveSessions" xml:space="preserve">
+    <value>Aktive Sitzungen</value>
+  </data>
+  <data name="CurrentActiveSessions" xml:space="preserve">
+    <value>Aktuelle aktive Sitzungen</value>
+  </data>
+  <data name="SecurityEvents" xml:space="preserve">
+    <value>Sicherheitsereignisse</value>
+  </data>
+  <data name="LockoutsAndBans" xml:space="preserve">
+    <value>Sperrungen und Verbote</value>
+  </data>
+  <data name="LoginAttemptsChart" xml:space="preserve">
+    <value>Anmeldeversuche</value>
+  </data>
+  <data name="SecurityEventsChart" xml:space="preserve">
+    <value>Sicherheitsereignisse</value>
+  </data>
+  <data name="GenerateSampleData" xml:space="preserve">
+    <value>Beispieldaten generieren</value>
+  </data>
+  <data name="GeneratingSampleData" xml:space="preserve">
+    <value>Beispieldaten werden generiert...</value>
+  </data>
+  <data name="SampleDataGenerated" xml:space="preserve">
+    <value>Beispieldaten erfolgreich generiert</value>
+  </data>
+  <data name="FailedToGenerateSampleData" xml:space="preserve">
+    <value>Generierung von Beispieldaten fehlgeschlagen</value>
+  </data>
+  <data name="MetricsDataFor30Days" xml:space="preserve">
+    <value>Metrikdaten für die letzten 30 Tage</value>
+  </data>
+  <data name="NoMetricsData" xml:space="preserve">
+    <value>Keine Metrikdaten verfügbar</value>
+  </data>
+  <data name="RefreshingData" xml:space="preserve">
+    <value>Daten werden aktualisiert...</value>
+  </data>
+  <data name="Successful" xml:space="preserve">
+    <value>Erfolgreich</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>Fehlgeschlagen</value>
+  </data>
+  <data name="UserLockouts" xml:space="preserve">
+    <value>Benutzersperrungen</value>
+  </data>
+  <data name="IPBans" xml:space="preserve">
+    <value>IP-Verbote</value>
+  </data>
+  <data name="Count" xml:space="preserve">
+    <value>Anzahl</value>
+  </data>
+  <data name="OAuthClients" xml:space="preserve">
+    <value>OAuth-Clients</value>
+  </data>
 </root>

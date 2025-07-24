@@ -917,4 +917,92 @@
   <data name="TogglePasswordVisibility" xml:space="preserve">
     <value>Toggle password visibility</value>
   </data>
+  <!-- Metrics-related translations -->
+  <data name="Metrics" xml:space="preserve">
+    <value>Metrics</value>
+  </data>
+  <data name="MetricsDashboard" xml:space="preserve">
+    <value>Metrics Dashboard</value>
+  </data>
+  <data name="MetricsDisabled" xml:space="preserve">
+    <value>Metrics Disabled</value>
+  </data>
+  <data name="MetricsDisabledDescription" xml:space="preserve">
+    <value>Metrics collection is currently disabled. To enable metrics, set the AUTHLY_ENABLE_METRICS environment variable to true and restart the application.</value>
+  </data>
+  <data name="ErrorLoadingMetrics" xml:space="preserve">
+    <value>Error Loading Metrics</value>
+  </data>
+  <data name="TryAgain" xml:space="preserve">
+    <value>Try Again</value>
+  </data>
+  <data name="LastUpdated" xml:space="preserve">
+    <value>Last Updated</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="LoginAttempts" xml:space="preserve">
+    <value>Login Attempts</value>
+  </data>
+  <data name="SuccessRate" xml:space="preserve">
+    <value>Success Rate</value>
+  </data>
+  <data name="ActiveSessions" xml:space="preserve">
+    <value>Active Sessions</value>
+  </data>
+  <data name="CurrentActiveSessions" xml:space="preserve">
+    <value>Current active sessions</value>
+  </data>
+  <data name="SecurityEvents" xml:space="preserve">
+    <value>Security Events</value>
+  </data>
+  <data name="LockoutsAndBans" xml:space="preserve">
+    <value>Lockouts and bans</value>
+  </data>
+  <data name="LoginAttemptsChart" xml:space="preserve">
+    <value>Login Attempts</value>
+  </data>
+  <data name="SecurityEventsChart" xml:space="preserve">
+    <value>Security Events</value>
+  </data>
+  <data name="GenerateSampleData" xml:space="preserve">
+    <value>Generate Sample Data</value>
+  </data>
+  <data name="GeneratingSampleData" xml:space="preserve">
+    <value>Generating sample data...</value>
+  </data>
+  <data name="SampleDataGenerated" xml:space="preserve">
+    <value>Sample data generated successfully</value>
+  </data>
+  <data name="FailedToGenerateSampleData" xml:space="preserve">
+    <value>Failed to generate sample data</value>
+  </data>
+  <data name="MetricsDataFor30Days" xml:space="preserve">
+    <value>Metrics data for the last 30 days</value>
+  </data>
+  <data name="NoMetricsData" xml:space="preserve">
+    <value>No metrics data available</value>
+  </data>
+  <data name="RefreshingData" xml:space="preserve">
+    <value>Refreshing data...</value>
+  </data>
+  <data name="Successful" xml:space="preserve">
+    <value>Successful</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="UserLockouts" xml:space="preserve">
+    <value>User Lockouts</value>
+  </data>
+  <data name="IPBans" xml:space="preserve">
+    <value>IP Bans</value>
+  </data>
+  <data name="Count" xml:space="preserve">
+    <value>Count</value>
+  </data>
+  <data name="OAuthClients" xml:space="preserve">
+    <value>OAuth Clients</value>
+  </data>
 </root>

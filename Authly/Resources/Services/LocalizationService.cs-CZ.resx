@@ -917,4 +917,92 @@
   <data name="TogglePasswordVisibility" xml:space="preserve">
     <value>Přepnout viditelnost hesla</value>
   </data>
+  <!-- Metrics-related translations in Czech -->
+  <data name="Metrics" xml:space="preserve">
+    <value>Metriky</value>
+  </data>
+  <data name="MetricsDashboard" xml:space="preserve">
+    <value>Dashboard metrik</value>
+  </data>
+  <data name="MetricsDisabled" xml:space="preserve">
+    <value>Metriky jsou zakázány</value>
+  </data>
+  <data name="MetricsDisabledDescription" xml:space="preserve">
+    <value>Sběr metrik je aktuálně zakázán. Pro povolení metrik nastavte proměnnou prostředí AUTHLY_ENABLE_METRICS na true a restartujte aplikaci.</value>
+  </data>
+  <data name="ErrorLoadingMetrics" xml:space="preserve">
+    <value>Chyba při načítání metrik</value>
+  </data>
+  <data name="TryAgain" xml:space="preserve">
+    <value>Zkusit znovu</value>
+  </data>
+  <data name="LastUpdated" xml:space="preserve">
+    <value>Naposledy aktualizováno</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Obnovit</value>
+  </data>
+  <data name="LoginAttempts" xml:space="preserve">
+    <value>Pokusy o přihlášení</value>
+  </data>
+  <data name="SuccessRate" xml:space="preserve">
+    <value>Úspěšnost</value>
+  </data>
+  <data name="ActiveSessions" xml:space="preserve">
+    <value>Aktivní relace</value>
+  </data>
+  <data name="CurrentActiveSessions" xml:space="preserve">
+    <value>Aktuální aktivní relace</value>
+  </data>
+  <data name="SecurityEvents" xml:space="preserve">
+    <value>Bezpečnostní události</value>
+  </data>
+  <data name="LockoutsAndBans" xml:space="preserve">
+    <value>Zablokování a bany</value>
+  </data>
+  <data name="LoginAttemptsChart" xml:space="preserve">
+    <value>Pokusy o přihlášení</value>
+  </data>
+  <data name="SecurityEventsChart" xml:space="preserve">
+    <value>Bezpečnostní události</value>
+  </data>
+  <data name="GenerateSampleData" xml:space="preserve">
+    <value>Generovat vzorová data</value>
+  </data>
+  <data name="GeneratingSampleData" xml:space="preserve">
+    <value>Generování vzorových dat...</value>
+  </data>
+  <data name="SampleDataGenerated" xml:space="preserve">
+    <value>Vzorová data byla úspěšně vygenerována</value>
+  </data>
+  <data name="FailedToGenerateSampleData" xml:space="preserve">
+    <value>Nepodařilo se vygenerovat vzorová data</value>
+  </data>
+  <data name="MetricsDataFor30Days" xml:space="preserve">
+    <value>Data metrik za posledních 30 dní</value>
+  </data>
+  <data name="NoMetricsData" xml:space="preserve">
+    <value>Nejsou k dispozici žádná data metrik</value>
+  </data>
+  <data name="RefreshingData" xml:space="preserve">
+    <value>Obnovování dat...</value>
+  </data>
+  <data name="Successful" xml:space="preserve">
+    <value>Úspěšný</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>Neúspěšný</value>
+  </data>
+  <data name="UserLockouts" xml:space="preserve">
+    <value>Zablokování uživatelů</value>
+  </data>
+  <data name="IPBans" xml:space="preserve">
+    <value>Bany IP adres</value>
+  </data>
+  <data name="Count" xml:space="preserve">
+    <value>Počet</value>
+  </data>
+  <data name="OAuthClients" xml:space="preserve">
+    <value>OAuth klienti</value>
+  </data>
 </root>
