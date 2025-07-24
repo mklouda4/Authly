@@ -48,7 +48,7 @@
             <h2>@LocalizationService.GetString("MetricsDashboard")</h2>
             <div class="metrics-actions">
                 <span class="last-updated">
-                    @LocalizationService.GetString("LastUpdated"): @lastUpdated.ToString("HH:mm:ss")
+                    @LocalizationService.GetString("LastUpdated"): @lastUpdated.ToString("G")
                 </span>
                 <div class="metrics-buttons">
                     <button class="btn btn-outline btn-sm" @onclick="RefreshData" disabled="@isRefreshing">
