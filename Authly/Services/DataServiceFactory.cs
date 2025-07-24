@@ -1,7 +1,9 @@
 using Authly.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using System;
 
 namespace Authly.Services
 {
@@ -214,7 +216,10 @@ namespace Authly.Services
             // Register database context with custom logger
             //var connectionString = configuration.GetConnectionString("DefaultConnection") 
             //    ?? "Data Source=wwwroot\\data\\authly.db";
-            var connectionString = "Data Source=wwwroot\\data\\authly.db";
+            var environment = services.BuildServiceProvider().GetRequiredService<IWebHostEnvironment>();
+
+            var dbPath = Path.Combine(environment.WebRootPath ?? environment.ContentRootPath, "data", "authly.db");
+            var connectionString = $"Data Source={dbPath}";
 
             // Register regular DbContext for existing services
             services.AddDbContext<AuthlyDbContext>((serviceProvider, options) => {
