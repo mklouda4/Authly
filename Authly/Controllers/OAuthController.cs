@@ -223,7 +223,6 @@ namespace Authly.Controllers
         )]
         [SwaggerResponse(200, "User Information", typeof(object))]
         [SwaggerResponse(401, "Unauthorized")]
-        [Authorize]
         public async Task<IActionResult> UserInfo()
         {
             try
@@ -268,7 +267,6 @@ namespace Authly.Controllers
         )]
         [SwaggerResponse(200, "User Emails Information", typeof(object))]
         [SwaggerResponse(401, "Unauthorized")]
-        [Authorize]
         public async Task<IActionResult> UserInfoEmails()
         {
             try
