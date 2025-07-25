@@ -149,6 +149,7 @@ namespace Authly.Services
         /// </summary>
         public void CleanupExpiredSessions()
         {
+            return;
             try
             {
                 var cutoffTime = DateTime.UtcNow.Subtract(_sessionTimeout);
