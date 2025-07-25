@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Authly.Models
 {
@@ -156,55 +158,226 @@ namespace Authly.Models
     }
 
     /// <summary>
-    /// OAuth authorization request
+    /// OAuth 2.0 Authorization Request (RFC 6749 Section 4.1.1)
     /// </summary>
     public class OAuthAuthorizationRequest
     {
+        /// <summary>
+        /// REQUIRED. The client identifier as described in Section 2.2.
+        /// </summary>
+        [JsonPropertyName("client_id")]
+        [FromQuery(Name = "client_id")]
         public string ClientId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// REQUIRED. The client redirection endpoint as described in Section 3.1.2.
+        /// </summary>
+        [JsonPropertyName("redirect_uri")]
+        [FromQuery(Name = "redirect_uri")]
         public string RedirectUri { get; set; } = string.Empty;
-        public string ResponseType { get; set; } = string.Empty;
-        public string State { get; set; } = string.Empty;
+
+        /// <summary>
+        /// REQUIRED. Value MUST be set to "code" for authorization code flow.
+        /// </summary>
+        [JsonPropertyName("response_type")]
+        [FromQuery(Name = "response_type")]
+        public string ResponseType { get; set; } = "code";
+
+        /// <summary>
+        /// RECOMMENDED. An unguessable random string. Used to prevent CSRF attacks.
+        /// </summary>
+        [JsonPropertyName("state")]
+        [FromQuery(Name = "state")]
+        public string? State { get; set; }
+
+        /// <summary>
+        /// OPTIONAL. The scope of the access request as described by Section 3.3.
+        /// </summary>
+        [JsonPropertyName("scope")]
+        [FromQuery(Name = "scope")]
         public string? Scope { get; set; }
+
+        /// <summary>
+        /// OPTIONAL. Code challenge for PKCE (RFC 7636).
+        /// </summary>
+        [JsonPropertyName("code_challenge")]
+        [FromQuery(Name = "code_challenge")]
         public string? CodeChallenge { get; set; }
+
+        /// <summary>
+        /// OPTIONAL. Code challenge method for PKCE. MUST be "S256" or "plain".
+        /// </summary>
+        [JsonPropertyName("code_challenge_method")]
+        [FromQuery(Name = "code_challenge_method")]
         public string? CodeChallengeMethod { get; set; }
+
+        /// <summary>
+        /// OPTIONAL. String value used to associate a Client session with an ID Token (OpenID Connect).
+        /// </summary>
+        [JsonPropertyName("nonce")]
+        [FromQuery(Name = "nonce")]
         public string? Nonce { get; set; }
+
+        /// <summary>
+        /// OPTIONAL. Space delimited, case sensitive list of ASCII string values (OpenID Connect).
+        /// </summary>
+        [JsonPropertyName("response_mode")]
+        [FromQuery(Name = "response_mode")]
+        public string? ResponseMode { get; set; }
+
+        /// <summary>
+        /// OPTIONAL. Requested Authentication Context Class Reference values (OpenID Connect).
+        /// </summary>
+        [JsonPropertyName("acr_values")]
+        [FromQuery(Name = "acr_values")]
+        public string? AcrValues { get; set; }
     }
 
     /// <summary>
-    /// OAuth token request
+    /// OAuth 2.0 Token Request (RFC 6749 Section 4.1.3)
     /// </summary>
     public class OAuthTokenRequest
     {
+        /// <summary>
+        /// REQUIRED. Value MUST be set to "authorization_code", "refresh_token", "client_credentials", or "password".
+        /// </summary>
+        [JsonPropertyName("grant_type")]
+        [FromForm(Name = "grant_type")]
         public string GrantType { get; set; } = string.Empty;
+
+        /// <summary>
+        /// REQUIRED. The client identifier as described in Section 2.2.
+        /// </summary>
+        [JsonPropertyName("client_id")]
+        [FromForm(Name = "client_id")]
         public string ClientId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// REQUIRED for confidential clients. The client secret.
+        /// </summary>
+        [JsonPropertyName("client_secret")]
+        [FromForm(Name = "client_secret")]
         public string? ClientSecret { get; set; }
+
+        /// <summary>
+        /// REQUIRED for authorization_code grant. The authorization code received from the authorization server.
+        /// </summary>
+        [JsonPropertyName("code")]
+        [FromForm(Name = "code")]
         public string? Code { get; set; }
+
+        /// <summary>
+        /// REQUIRED if redirect_uri was included in authorization request. Must be identical.
+        /// </summary>
+        [JsonPropertyName("redirect_uri")]
+        [FromForm(Name = "redirect_uri")]
         public string? RedirectUri { get; set; }
+
+        /// <summary>
+        /// REQUIRED for PKCE. Code verifier for the PKCE request.
+        /// </summary>
+        [JsonPropertyName("code_verifier")]
+        [FromForm(Name = "code_verifier")]
         public string? CodeVerifier { get; set; }
+
+        /// <summary>
+        /// REQUIRED for refresh_token grant. The refresh token issued to the client.
+        /// </summary>
+        [JsonPropertyName("refresh_token")]
+        [FromForm(Name = "refresh_token")]
         public string? RefreshToken { get; set; }
+
+        /// <summary>
+        /// OPTIONAL. The scope of the access request as described by Section 3.3.
+        /// </summary>
+        [JsonPropertyName("scope")]
+        [FromForm(Name = "scope")]
         public string? Scope { get; set; }
+
+        /// <summary>
+        /// REQUIRED for resource owner password credentials grant. The resource owner username.
+        /// </summary>
+        [JsonPropertyName("username")]
+        [FromForm(Name = "username")]
+        public string? Username { get; set; }
+
+        /// <summary>
+        /// REQUIRED for resource owner password credentials grant. The resource owner password.
+        /// </summary>
+        [JsonPropertyName("password")]
+        [FromForm(Name = "password")]
+        public string? Password { get; set; }
     }
 
     /// <summary>
-    /// OAuth token response
+    /// OAuth 2.0 Token Response (RFC 6749 Section 5.1)
     /// </summary>
     public class OAuthTokenResponse
     {
+        /// <summary>
+        /// REQUIRED. The access token issued by the authorization server.
+        /// </summary>
+        [JsonPropertyName("access_token")]
         public string AccessToken { get; set; } = string.Empty;
+
+        /// <summary>
+        /// REQUIRED. The type of the token issued. Value is case insensitive and typically "Bearer".
+        /// </summary>
+        [JsonPropertyName("token_type")]
         public string TokenType { get; set; } = "Bearer";
-        public int ExpiresIn { get; set; }
+
+        /// <summary>
+        /// RECOMMENDED. The lifetime in seconds of the access token.
+        /// </summary>
+        [JsonPropertyName("expires_in")]
+        public int? ExpiresIn { get; set; }
+
+        /// <summary>
+        /// OPTIONAL. The refresh token, which can be used to obtain new access tokens.
+        /// </summary>
+        [JsonPropertyName("refresh_token")]
         public string? RefreshToken { get; set; }
+
+        /// <summary>
+        /// OPTIONAL. The scope of the access token as described by Section 3.3.
+        /// </summary>
+        [JsonPropertyName("scope")]
         public string? Scope { get; set; }
+
+        /// <summary>
+        /// OPTIONAL. The identifier of the resource owner (OpenID Connect).
+        /// </summary>
+        [JsonPropertyName("id_token")]
+        public string? IdToken { get; set; }
     }
 
     /// <summary>
-    /// OAuth error response
+    /// OAuth 2.0 Error Response (RFC 6749 Section 5.2)
     /// </summary>
     public class OAuthErrorResponse
     {
+        /// <summary>
+        /// REQUIRED. A single ASCII error code from the predefined list.
+        /// </summary>
+        [JsonPropertyName("error")]
         public string Error { get; set; } = string.Empty;
+
+        /// <summary>
+        /// OPTIONAL. Human-readable ASCII text providing additional information.
+        /// </summary>
+        [JsonPropertyName("error_description")]
         public string? ErrorDescription { get; set; }
+
+        /// <summary>
+        /// OPTIONAL. URI identifying a human-readable web page with information about the error.
+        /// </summary>
+        [JsonPropertyName("error_uri")]
         public string? ErrorUri { get; set; }
+
+        /// <summary>
+        /// REQUIRED if state was present in the client authorization request.
+        /// </summary>
+        [JsonPropertyName("state")]
         public string? State { get; set; }
     }
 
