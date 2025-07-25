@@ -254,6 +254,68 @@ namespace Authly.Controllers
         }
 
         /// <summary>
+        /// OAuth UserInfo endpoint - GET /oauth/userinfo
+        /// </summary>
+        /// <returns>User information</returns>
+        /// <response code="200">User information</response>
+        /// <response code="401">Invalid or missing access token</response>
+        [HttpGet("userinfo/emails")]
+        [HttpPost("userinfo/emails")]
+        [SwaggerOperation(
+            Summary = "OAuth UserInfo emails Endpoint",
+            Description = "Returns user emails information for valid access token",
+            OperationId = "UserInfoEmails"
+        )]
+        [SwaggerResponse(200, "User Emails Information", typeof(object))]
+        [SwaggerResponse(401, "Unauthorized")]
+        [Authorize]
+        public async Task<IActionResult> UserInfoEmails()
+        {
+            try
+            {
+                // Extract access token from Authorization header
+                var authHeader = Request.Headers["Authorization"].ToString();
+                if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+                {
+                    return Unauthorized(new { error = "invalid_token", error_description = "Missing or invalid access token" });
+                }
+
+                var accessToken = authHeader.Substring("Bearer ".Length);
+                var userInfo = await _authorizationService.GetUserInfoAsync(accessToken);
+
+                if (userInfo == null)
+                {
+                    return Unauthorized(new { error = "invalid_token", error_description = "Invalid access token" });
+                }
+
+                var userNameModel = (Dictionary<string, object>)userInfo;
+
+                if (userNameModel == null)
+                {
+                    return Unauthorized(new { error = "invalid_token", error_description = "Invalid access token" });
+                }
+
+                var email = userNameModel.TryGetValue("email", out var emailValue) ? emailValue?.ToString() : null;
+                var emailVerified = userNameModel.TryGetValue("email_verified", out var emailVerifiedValue) ? emailVerifiedValue?.ToString() : null;
+
+                _logger.Log("OAuth", "UserInfoEmails request completed successfully");
+                return Ok(new[]
+                {
+                    new {
+                        email = email,
+                        primary = true,
+                        verified = emailVerifiedValue
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("OAuth", $"Error in userinfo/emails endpoint: {ex.Message}", ex);
+                return BadRequest(new { error = "server_error", error_description = "Internal server error" });
+            }
+        }
+
+        /// <summary>
         /// OAuth Token Revocation endpoint - POST /oauth/revoke
         /// </summary>
         /// <param name="token">Token to revoke</param>
