@@ -335,7 +335,7 @@ namespace Authly
 
             var app = builder.Build();
 
-            // Ensure database is created for SQLite (NEW)
+            // Apply database migrations automatically (UPDATED)
             using (var scope = app.Services.CreateScope())
             {
                 var context = scope.ServiceProvider.GetService<Authly.Data.AuthlyDbContext>();
@@ -343,15 +343,25 @@ namespace Authly
                 {
                     try
                     {
-                        context.Database.EnsureCreated();
+                        // Use migrations instead of EnsureCreated for proper schema updates
+                        context.Database.Migrate();
                         
                         var logger = scope.ServiceProvider.GetRequiredService<IApplicationLogger>();
-                        logger.Log("Program", "Database initialized successfully");
+                        logger.Log("Program", "Database migrations applied successfully");
                     }
                     catch (Exception ex)
                     {
                         var logger = scope.ServiceProvider.GetRequiredService<IApplicationLogger>();
-                        logger.LogError("Program", $"Database initialization failed: {ex.Message}", ex);
+                        logger.LogError("Program", $"Database migration failed: {ex.Message}", ex);
+                        
+                        // In case of migration failure, try to log more details
+                        if (ex.InnerException != null)
+                        {
+                            logger.LogError("Program", $"Inner exception: {ex.InnerException.Message}", ex.InnerException);
+                        }
+                        
+                        // Don't throw the exception to prevent app startup failure
+                        // The app should still start even if migrations fail
                     }
                 }
             }

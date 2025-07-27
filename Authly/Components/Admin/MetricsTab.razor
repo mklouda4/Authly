@@ -213,8 +213,6 @@
         // Kontrola, zda je Chart.js načten
         if (typeof Chart === 'undefined') {
             console.error('Chart.js is not loaded!');
-        } else {
-            console.log('Chart.js loaded successfully, version:', Chart.version);
         }
     });
 
@@ -226,12 +224,10 @@
 
         initialize: function() {
             if (this.initialized) return;
-            console.log('Initializing charts...');
             this.initialized = true;
         },
 
         createLoginChart: function(data, labels) {
-            console.log('Creating login chart with data:', data);
             const ctx = document.getElementById('loginChart');
             if (!ctx) {
                 console.warn('LoginChart canvas element not found');
@@ -263,14 +259,12 @@
                         }
                     }
                 });
-                console.log('Login chart created successfully');
             } catch (error) {
                 console.error('Error creating login chart:', error);
             }
         },
 
         createSecurityChart: function(securityData, eventsData, labels) {
-            console.log('Creating security chart with data:', securityData, eventsData);
             const ctx = document.getElementById('securityChart');
             if (!ctx) {
                 console.warn('SecurityChart canvas element not found');
@@ -314,14 +308,12 @@
                         }
                     }
                 });
-                console.log('Security chart created successfully');
             } catch (error) {
                 console.error('Error creating security chart:', error);
             }
         },
 
         createResponseTimeChart: function(performanceData, labels) {
-            console.log('Creating response time chart with data:', performanceData);
             const ctx = document.getElementById('responseTimeChart');
             if (!ctx) {
                 console.warn('ResponseTimeChart canvas element not found');
@@ -363,7 +355,6 @@
                         }
                     }
                 });
-                console.log('Response time chart created successfully');
             } catch (error) {
                 console.error('Error creating response time chart:', error);
             }
@@ -479,11 +470,9 @@
         {
             try
             {
-                await JSRuntime.InvokeVoidAsync("console.log", "OnAfterRenderAsync: Attempting to update charts...");
                 await Task.Delay(200); // Delší pauza pro jistotu, že DOM je připraven
                 await UpdateCharts();
                 _chartsInitialized = true;
-                await JSRuntime.InvokeVoidAsync("console.log", "OnAfterRenderAsync: Charts updated successfully");
             }
             catch (Exception ex)
             {
@@ -619,14 +608,8 @@
     {
         try
         {
-            await JSRuntime.InvokeVoidAsync("console.log", "UpdateCharts called");
-            await JSRuntime.InvokeVoidAsync("console.log", $"LoginMetrics: {loginMetrics != null}");
-            await JSRuntime.InvokeVoidAsync("console.log", $"SecurityMetrics: {securityMetrics != null}");
-            await JSRuntime.InvokeVoidAsync("console.log", $"PerformanceMetrics: {performanceMetrics != null}");
-
             if (loginMetrics != null)
             {
-                await JSRuntime.InvokeVoidAsync("console.log", $"Creating login chart with data: {loginMetrics.Successful}, {loginMetrics.Failed}");
                 await JSRuntime.InvokeVoidAsync("metricsCharts.createLoginChart", new
                 {
                     successful = loginMetrics.Successful,
@@ -640,7 +623,6 @@
 
             if (securityMetrics != null)
             {
-                await JSRuntime.InvokeVoidAsync("console.log", "Creating security chart");
                 await JSRuntime.InvokeVoidAsync("metricsCharts.createSecurityChart",
                     securityMetrics, securityEvents, new
                     {
@@ -652,7 +634,6 @@
 
             if (performanceMetrics != null)
             {
-                await JSRuntime.InvokeVoidAsync("console.log", "Creating response time chart");
                 await JSRuntime.InvokeVoidAsync("metricsCharts.createResponseTimeChart",
                     performanceMetrics, new
                     {
