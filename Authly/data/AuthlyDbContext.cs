@@ -25,6 +25,9 @@ namespace Authly.Data
         public DbSet<LoginAttemptMetric> LoginAttemptMetrics { get; set; }
         public DbSet<SecurityEventMetric> SecurityEventMetrics { get; set; }
         public DbSet<ActiveSessionMetric> ActiveSessionMetrics { get; set; }
+        public DbSet<PerformanceMetric> PerformanceMetrics { get; set; }
+        public DbSet<ResourceUsageMetric> ResourceUsageMetrics { get; set; }
+        public DbSet<UptimeMetric> UptimeMetrics { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -168,6 +171,40 @@ namespace Authly.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.CreatedAt);
+            });
+
+            // Configure PerformanceMetric
+            modelBuilder.Entity<PerformanceMetric>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.OperationType).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Endpoint).HasMaxLength(500);
+                entity.Property(e => e.HttpMethod).HasMaxLength(10);
+                entity.Property(e => e.UserId).HasMaxLength(256);
+                entity.Property(e => e.IpAddress).HasMaxLength(45);
+                entity.Property(e => e.UserAgent).HasMaxLength(500);
+                
+                entity.HasIndex(e => e.OperationType);
+                entity.HasIndex(e => e.CreatedAt);
+                entity.HasIndex(e => e.Success);
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.ResponseTimeMs);
+            });
+
+            // Configure ResourceUsageMetric
+            modelBuilder.Entity<ResourceUsageMetric>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.CreatedAt);
+            });
+
+            // Configure UptimeMetric
+            modelBuilder.Entity<UptimeMetric>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Details).HasMaxLength(500);
+                entity.HasIndex(e => e.CreatedAt);
+                entity.HasIndex(e => e.IsAvailable);
             });
         }
     }

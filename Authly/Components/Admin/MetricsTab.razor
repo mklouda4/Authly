@@ -65,7 +65,7 @@
 
         <!-- Metrics Overview Cards -->
         <div class="metrics-overview">
-            <div class="metric-card">
+            <div class="metric-card login-card">
                 <div class="metric-header">
                     <h3>@LocalizationService.GetString("LoginAttempts")</h3>
                     <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -80,7 +80,7 @@
                 </div>
             </div>
 
-            <div class="metric-card">
+            <div class="metric-card sessions-card">
                 <div class="metric-header">
                     <h3>@LocalizationService.GetString("ActiveSessions")</h3>
                     <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -96,7 +96,7 @@
                 </div>
             </div>
 
-            <div class="metric-card">
+            <div class="metric-card security-card">
                 <div class="metric-header">
                     <h3>@LocalizationService.GetString("SecurityEvents")</h3>
                     <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -106,6 +106,74 @@
                 <div class="metric-value">@((securityMetrics?.UserLockouts ?? 0) + (securityMetrics?.IpBans ?? 0))</div>
                 <div class="metric-detail">
                     @LocalizationService.GetString("LockoutsAndBans")
+                </div>
+            </div>
+
+            <!-- Performance Metrics Cards -->
+            <div class="metric-card performance-card">
+                <div class="metric-header">
+                    <h3>@LocalizationService.GetString("LoginResponseTime")</h3>
+                    <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12,6 12,12 16,14" />
+                    </svg>
+                </div>
+                <div class="metric-value">@(performanceMetrics?.AverageTime.ToString("F0") ?? "0") ms</div>
+                <div class="metric-detail">
+                    @LocalizationService.GetString("AverageResponseTime")
+                </div>
+            </div>
+
+            <div class="metric-card uptime-card">
+                <div class="metric-header">
+                    <h3>@LocalizationService.GetString("SystemUptime")</h3>
+                    <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7v10c0 5.55 3.84 9.95 9 11 5.16-1.05 9-5.45 9-11V7l-10-5z" />
+                        <path d="M9 12l2 2 4-4" />
+                    </svg>
+                </div>
+                <div class="metric-value">@(availabilityMetrics?.UptimePercentage.ToString("F1") ?? "0")%</div>
+                <div class="metric-detail">
+                    @LocalizationService.GetString("ServiceAvailability")
+                </div>
+            </div>
+
+            <!-- Separate CPU and Memory Cards -->
+            <div class="metric-card cpu-card">
+                <div class="metric-header">
+                    <h3>@LocalizationService.GetString("CpuUsage")</h3>
+                    <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="4" y="4" width="16" height="16" rx="2" ry="2" />
+                        <rect x="9" y="9" width="6" height="6" />
+                        <line x1="9" y1="1" x2="9" y2="4" />
+                        <line x1="15" y1="1" x2="15" y2="4" />
+                        <line x1="9" y1="20" x2="9" y2="23" />
+                        <line x1="15" y1="20" x2="15" y2="23" />
+                        <line x1="20" y1="9" x2="23" y2="9" />
+                        <line x1="20" y1="14" x2="23" y2="14" />
+                        <line x1="1" y1="9" x2="4" y2="9" />
+                        <line x1="1" y1="14" x2="4" y2="14" />
+                    </svg>
+                </div>
+                <div class="metric-value">@(resourceMetrics?.CpuUsagePercent.ToString("F1") ?? "0")%</div>
+                <div class="metric-detail">
+                    @LocalizationService.GetString("ProcessorUsage")
+                </div>
+            </div>
+
+            <div class="metric-card memory-card">
+                <div class="metric-header">
+                    <h3>@LocalizationService.GetString("MemoryUsage")</h3>
+                    <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="14" rx="2" ry="2" />
+                        <path d="M7 8v8" />
+                        <path d="M17 8v8" />
+                        <path d="M12 8v8" />
+                    </svg>
+                </div>
+                <div class="metric-value">@(resourceMetrics?.MemoryUsagePercent.ToString("F1") ?? "0")%</div>
+                <div class="metric-detail">
+                    @((resourceMetrics?.MemoryUsageMB.ToString("F0") ?? "0")) MB / @((resourceMetrics?.TotalMemoryMB.ToString("F0") ?? "0")) MB
                 </div>
             </div>
         </div>
@@ -125,25 +193,45 @@
                 </div>
                 <canvas id="securityChart" width="400" height="200"></canvas>
             </div>
+
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3>@LocalizationService.GetString("ResponseTimeChart")</h3>
+                </div>
+                <canvas id="responseTimeChart" width="400" height="200"></canvas>
+            </div>
         </div>
     }
 </div>
 
 <!-- Include Chart.js from CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
 
 <script>
+    // Přidáme event listener pro načtení stránky
+    document.addEventListener('DOMContentLoaded', function() {
+        // Kontrola, zda je Chart.js načten
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js is not loaded!');
+        } else {
+            console.log('Chart.js loaded successfully, version:', Chart.version);
+        }
+    });
+
     window.metricsCharts = {
         loginChart: null,
         securityChart: null,
+        responseTimeChart: null,
         initialized: false,
 
         initialize: function() {
             if (this.initialized) return;
+            console.log('Initializing charts...');
             this.initialized = true;
         },
 
         createLoginChart: function(data, labels) {
+            console.log('Creating login chart with data:', data);
             const ctx = document.getElementById('loginChart');
             if (!ctx) {
                 console.warn('LoginChart canvas element not found');
@@ -154,29 +242,35 @@
                 this.loginChart.destroy();
             }
 
-            this.loginChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: [labels.successfulLabel, labels.failedLabel],
-                    datasets: [{
-                        data: [data.successful, data.failed],
-                        backgroundColor: ['#10B981', '#EF4444'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
+            try {
+                this.loginChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: [labels.successfulLabel, labels.failedLabel],
+                        datasets: [{
+                            data: [data.successful, data.failed],
+                            backgroundColor: ['#10B981', '#EF4444'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                            }
                         }
                     }
-                }
-            });
+                });
+                console.log('Login chart created successfully');
+            } catch (error) {
+                console.error('Error creating login chart:', error);
+            }
         },
 
         createSecurityChart: function(securityData, eventsData, labels) {
+            console.log('Creating security chart with data:', securityData, eventsData);
             const ctx = document.getElementById('securityChart');
             if (!ctx) {
                 console.warn('SecurityChart canvas element not found');
@@ -187,38 +281,92 @@
                 this.securityChart.destroy();
             }
 
-            const eventTypes = Object.keys(eventsData);
-            const eventValues = Object.values(eventsData);
+            try {
+                const eventTypes = Object.keys(eventsData);
+                const eventValues = Object.values(eventsData);
 
-            this.securityChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: [labels.userLockoutsLabel, labels.ipBansLabel, ...eventTypes],
-                    datasets: [{
-                        label: labels.countLabel,
-                        data: [securityData.userLockouts, securityData.ipBans, ...eventValues],
-                        backgroundColor: ['#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#84CC16'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
+                this.securityChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: [labels.userLockoutsLabel, labels.ipBansLabel, ...eventTypes],
+                        datasets: [{
+                            label: labels.countLabel,
+                            data: [securityData.userLockouts, securityData.ipBans, ...eventValues],
+                            backgroundColor: ['#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#84CC16'],
+                            borderWidth: 0
+                        }]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
                             }
                         }
                     }
-                }
-            });
+                });
+                console.log('Security chart created successfully');
+            } catch (error) {
+                console.error('Error creating security chart:', error);
+            }
+        },
+
+        createResponseTimeChart: function(performanceData, labels) {
+            console.log('Creating response time chart with data:', performanceData);
+            const ctx = document.getElementById('responseTimeChart');
+            if (!ctx) {
+                console.warn('ResponseTimeChart canvas element not found');
+                return;
+            }
+
+            if (this.responseTimeChart) {
+                this.responseTimeChart.destroy();
+            }
+
+            try {
+                this.responseTimeChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: [labels.loginLabel, labels.logoutLabel, labels.oauthLabel],
+                        datasets: [{
+                            label: labels.responseTimeLabel,
+                            data: [performanceData.averageLoginTime, performanceData.averageLogoutTime, performanceData.averageOAuthTime],
+                            backgroundColor: ['#3B82F6', '#10B981', '#8B5CF6'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'ms'
+                                }
+                            }
+                        }
+                    }
+                });
+                console.log('Response time chart created successfully');
+            } catch (error) {
+                console.error('Error creating response time chart:', error);
+            }
         },
 
         destroy: function() {
@@ -229,6 +377,10 @@
             if (this.securityChart) {
                 this.securityChart.destroy();
                 this.securityChart = null;
+            }
+            if (this.responseTimeChart) {
+                this.responseTimeChart.destroy();
+                this.responseTimeChart = null;
             }
             this.initialized = false;
         }
@@ -251,6 +403,9 @@
 
     private LoginMetrics? loginMetrics;
     private SecurityMetrics? securityMetrics;
+    private PerformanceMetrics? performanceMetrics;
+    private ResourceMetrics? resourceMetrics;
+    private AvailabilityMetrics? availabilityMetrics;
     private Dictionary<string, double> securityEvents = new();
 
     private bool _previousVisibility = false;
@@ -269,6 +424,30 @@
         public double UserLockouts { get; set; }
         public double IpBans { get; set; }
         public double ActiveSessions { get; set; }
+    }
+
+    private class PerformanceMetrics
+    {
+        public double AverageTime { get; set; }
+        public double AverageLoginTime { get; set; }
+        public double AverageLogoutTime { get; set; }
+        public double AverageOAuthTime { get; set; }
+        public Dictionary<string, object> OperationStats { get; set; } = new();
+    }
+
+    private class ResourceMetrics
+    {
+        public double CpuUsagePercent { get; set; }
+        public double MemoryUsageMB { get; set; }
+        public double MemoryUsagePercent { get; set; }
+        public int ActiveThreads { get; set; }
+        public int ActiveDbConnections { get; set; }
+        public double TotalMemoryMB { get; set; }
+    }
+
+    private class AvailabilityMetrics
+    {
+        public double UptimePercentage { get; set; }
     }
 
     protected override async Task OnInitializedAsync()
@@ -296,11 +475,20 @@
         }
 
         // Pokud máme data a grafy ještě nejsou inicializované, vykreslíme je
-        if (IsVisible && !_chartsInitialized && loginMetrics != null && securityMetrics != null)
+        if (IsVisible && !_chartsInitialized && loginMetrics != null && securityMetrics != null && performanceMetrics != null)
         {
-            await Task.Delay(50); // Krátká pauza pro jistotu, že DOM je připraven
-            await UpdateCharts();
-            _chartsInitialized = true;
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("console.log", "OnAfterRenderAsync: Attempting to update charts...");
+                await Task.Delay(200); // Delší pauza pro jistotu, že DOM je připraven
+                await UpdateCharts();
+                _chartsInitialized = true;
+                await JSRuntime.InvokeVoidAsync("console.log", "OnAfterRenderAsync: Charts updated successfully");
+            }
+            catch (Exception ex)
+            {
+                await JSRuntime.InvokeVoidAsync("console.error", $"OnAfterRenderAsync: Error updating charts: {ex.Message}");
+            }
         }
 
         await base.OnAfterRenderAsync(firstRender);
@@ -329,7 +517,7 @@
                 ParseMetricsData(data);
                 lastUpdated = DateTime.Now;
 
-                // Označíme, že grafy potřebují být překresleny
+                // Oznacíme, že grafy potřebují být prekresleny
                 _chartsInitialized = false;
 
                 StateHasChanged();
@@ -377,6 +565,46 @@
             };
         }
 
+        if (root.TryGetProperty("performance", out var performanceElement))
+        {
+            performanceMetrics = new PerformanceMetrics
+            {
+                AverageTime = performanceElement.GetProperty("averageTime").GetDouble(),
+                AverageLoginTime = performanceElement.GetProperty("averageLoginTime").GetDouble(),
+                AverageLogoutTime = performanceElement.GetProperty("averageLogoutTime").GetDouble(),
+                AverageOAuthTime = performanceElement.GetProperty("averageOAuthTime").GetDouble()
+            };
+
+            if (performanceElement.TryGetProperty("operationStats", out var operationStatsElement))
+            {
+                foreach (var prop in operationStatsElement.EnumerateObject())
+                {
+                    performanceMetrics.OperationStats[prop.Name] = prop.Value;
+                }
+            }
+        }
+
+        if (root.TryGetProperty("resources", out var resourcesElement))
+        {
+            resourceMetrics = new ResourceMetrics
+            {
+                CpuUsagePercent = resourcesElement.GetProperty("cpuUsagePercent").GetDouble(),
+                MemoryUsageMB = resourcesElement.GetProperty("memoryUsageMB").GetDouble(),
+                MemoryUsagePercent = resourcesElement.GetProperty("memoryUsagePercent").GetDouble(),
+                ActiveThreads = resourcesElement.GetProperty("activeThreads").GetInt32(),
+                ActiveDbConnections = resourcesElement.GetProperty("activeDbConnections").GetInt32(),
+                TotalMemoryMB = resourcesElement.GetProperty("totalMemoryMB").GetDouble()
+            };
+        }
+
+        if (root.TryGetProperty("availability", out var availabilityElement))
+        {
+            availabilityMetrics = new AvailabilityMetrics
+            {
+                UptimePercentage = availabilityElement.GetProperty("uptimePercentage").GetDouble()
+            };
+        }
+
         if (root.TryGetProperty("securityEvents", out var eventsElement))
         {
             securityEvents.Clear();
@@ -391,8 +619,14 @@
     {
         try
         {
+            await JSRuntime.InvokeVoidAsync("console.log", "UpdateCharts called");
+            await JSRuntime.InvokeVoidAsync("console.log", $"LoginMetrics: {loginMetrics != null}");
+            await JSRuntime.InvokeVoidAsync("console.log", $"SecurityMetrics: {securityMetrics != null}");
+            await JSRuntime.InvokeVoidAsync("console.log", $"PerformanceMetrics: {performanceMetrics != null}");
+
             if (loginMetrics != null)
             {
+                await JSRuntime.InvokeVoidAsync("console.log", $"Creating login chart with data: {loginMetrics.Successful}, {loginMetrics.Failed}");
                 await JSRuntime.InvokeVoidAsync("metricsCharts.createLoginChart", new
                 {
                     successful = loginMetrics.Successful,
@@ -406,6 +640,7 @@
 
             if (securityMetrics != null)
             {
+                await JSRuntime.InvokeVoidAsync("console.log", "Creating security chart");
                 await JSRuntime.InvokeVoidAsync("metricsCharts.createSecurityChart",
                     securityMetrics, securityEvents, new
                     {
@@ -414,10 +649,21 @@
                         countLabel = LocalizationService.GetString("Count")
                     });
             }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error updating charts: {ex.Message}");
+
+            if (performanceMetrics != null)
+            {
+                await JSRuntime.InvokeVoidAsync("console.log", "Creating response time chart");
+                await JSRuntime.InvokeVoidAsync("metricsCharts.createResponseTimeChart",
+                    performanceMetrics, new
+                    {
+                        loginLabel = LocalizationService.GetString("Login"),
+                        logoutLabel = LocalizationService.GetString("Logout"),
+                        oauthLabel = "OAuth",
+                        responseTimeLabel = LocalizationService.GetString("ResponseTime")
+                    });
+            }
+        } catch (Exception ex) {
+            await JSRuntime.InvokeVoidAsync("console.error", $"Error updating charts: {ex.Message}");
         }
     }
 
@@ -426,20 +672,32 @@
         if (isRefreshing) return;
 
         isRefreshing = true;
+        _chartsInitialized = false; // Reset flag
         StateHasChanged();
 
-        await LoadDataAsync();
-
-        // Po načtení dat počkáme chvilku a pak překreslíme grafy
-        if (loginMetrics != null && securityMetrics != null)
+        try
         {
-            await Task.Delay(100);
-            await UpdateCharts();
-            _chartsInitialized = true;
-        }
+            await LoadDataAsync();
 
-        isRefreshing = false;
-        StateHasChanged();
+            // Po načtení dat počkáme chvilku a pak prekreslíme grafy
+            if (loginMetrics != null && securityMetrics != null && performanceMetrics != null)
+            {
+                await Task.Delay(300);
+                await UpdateCharts();
+                _chartsInitialized = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("console.error", $"RefreshData error: {ex.Message}");
+            hasError = true;
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isRefreshing = false;
+            StateHasChanged();
+        }
     }
 
     public async ValueTask DisposeAsync()
@@ -518,9 +776,29 @@
 
     .metrics-overview {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         gap: 1.5rem;
         margin-bottom: 2rem;
+    }
+
+    /* Omezení na maximálně 4 karty v řadě */
+    @@media (min-width: 1200px) {
+        .metrics-overview {
+            grid-template-columns: repeat(4, 1fr);
+            max-width: 1600px;
+        }
+    }
+
+    @@media (min-width: 992px) and (max-width: 1199px) {
+        .metrics-overview {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @@media (min-width: 768px) and (max-width: 991px) {
+        .metrics-overview {
+            grid-template-columns: repeat(2, 1fr);
+        }
     }
 
     .metric-card {
@@ -595,252 +873,350 @@
     }
 
     @@keyframes spin {
-        from
+        from {
+            transform: rotate(0deg);
+        }
 
-    {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
-
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     /* Tablet responsive styles */
     @@media (max-width: 768px) {
-        .metrics-tab
+        .metrics-tab {
+            padding: 1rem;
+        }
 
-    {
-        padding: 1rem;
-    }
+        .metrics-header {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+        }
 
-    .metrics-header {
-        flex-direction: column;
-        gap: 1rem;
-        align-items: flex-start;
-    }
+        .metrics-actions {
+            width: 100%;
+            justify-content: space-between;
+        }
 
-    .metrics-actions {
-        width: 100%;
-        justify-content: space-between;
-    }
+        .metrics-overview {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
 
-    .metrics-overview {
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-    }
+        .metric-card {
+            padding: 1rem;
+        }
 
-    .metric-card {
-        padding: 1rem;
-    }
+        .metric-value {
+            font-size: 1.5rem;
+        }
 
-    .metric-value {
-        font-size: 1.5rem;
-    }
+        .metrics-charts {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
 
-    .metrics-charts {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
-    }
+        .chart-container {
+            padding: 1rem;
+        }
 
-    .chart-container {
-        padding: 1rem;
-    }
+        canvas {
+            height: 250px !important;
+        }
 
-    canvas {
-        height: 250px !important;
-    }
-
-    .warning-card, .error-card {
-        padding: 1.5rem;
-        margin: 1rem;
-    }
-
+        .warning-card, .error-card {
+            padding: 1.5rem;
+            margin: 1rem;
+        }
     }
 
     /* Mobile responsive styles */
     @@media (max-width: 480px) {
-        .metrics-tab
+        .metrics-tab {
+            padding: 0.5rem;
+            overflow-x: hidden;
+        }
 
-    {
-        padding: 0.5rem;
-        overflow-x: hidden;
-    }
+        .metrics-header h2 {
+            font-size: 1.25rem;
+        }
 
-    .metrics-header h2 {
-        font-size: 1.25rem;
-    }
+        .metrics-actions {
+            flex-direction: column;
+            gap: 0.75rem;
+            align-items: stretch;
+        }
 
-    .metrics-actions {
-        flex-direction: column;
-        gap: 0.75rem;
-        align-items: stretch;
-    }
+        .last-updated {
+            text-align: center;
+            order: 2;
+        }
 
-    .last-updated {
-        text-align: center;
-        order: 2;
-    }
+        .metrics-buttons {
+            justify-content: center;
+            order: 1;
+        }
 
-    .metrics-buttons {
-        justify-content: center;
-        order: 1;
-    }
+        .metrics-overview {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
 
-    .metrics-overview {
-        grid-template-columns: 1fr;
-        gap: 0.75rem;
-    }
+        .metric-card {
+            padding: 0.75rem;
+            margin: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
 
-    .metric-card {
-        padding: 0.75rem;
-        margin: 0;
-        width: 100%;
-        box-sizing: border-box;
-    }
+        .metric-header {
+            margin-bottom: 0.75rem;
+        }
 
-    .metric-header {
-        margin-bottom: 0.75rem;
-    }
+            .metric-header h3 {
+                font-size: 0.875rem;
+            }
 
-        .metric-header h3 {
+        .metric-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .metric-value {
+            font-size: 1.25rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-detail {
+            font-size: 0.8rem;
+        }
+
+        .metrics-charts {
+            gap: 1rem;
+            grid-template-columns: 1fr;
+            width: 100%;
+        }
+
+        .chart-container {
+            padding: 0.5rem;
+            min-height: 250px;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .chart-header {
+            margin-bottom: 0.75rem;
+        }
+
+            .chart-header h3 {
+                font-size: 0.9rem;
+            }
+
+        canvas {
+            height: 180px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box;
+        }
+
+        .warning-card, .error-card {
+            padding: 1rem;
+            margin: 0.5rem;
+            max-width: calc(100% - 0.5rem);
+            box-sizing: border-box;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
             font-size: 0.875rem;
         }
 
-    .metric-icon {
-        width: 20px;
-        height: 20px;
-    }
-
-    .metric-value {
-        font-size: 1.25rem;
-        margin-bottom: 0.25rem;
-    }
-
-    .metric-detail {
-        font-size: 0.8rem;
-    }
-
-    .metrics-charts {
-        gap: 1rem;
-        grid-template-columns: 1fr;
-        width: 100%;
-    }
-
-    .chart-container {
-        padding: 0.5rem;
-        min-height: 250px;
-        width: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
-        overflow: hidden;
-    }
-
-    .chart-header {
-        margin-bottom: 0.75rem;
-    }
-
-        .chart-header h3 {
-            font-size: 0.9rem;
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.8rem;
         }
 
-    canvas {
-        height: 180px !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box;
-    }
+        .btn-icon-sm {
+            width: 16px;
+            height: 16px;
+        }
+        /* Zlepšení citelnosti na malých obrazovkách */
+        .loading-container {
+            padding: 2rem 1rem;
+        }
 
-    .warning-card, .error-card {
-        padding: 1rem;
-        margin: 0.5rem;
-        max-width: calc(100% - 1rem);
-        box-sizing: border-box;
-    }
-
-    .warning-icon, .error-icon {
-        width: 36px;
-        height: 36px;
-    }
-
-    .btn {
-        padding: 0.5rem 1rem;
-        font-size: 0.875rem;
-    }
-
-    .btn-sm {
-        padding: 0.375rem 0.75rem;
-        font-size: 0.8rem;
-    }
-
-    .btn-icon-sm {
-        width: 16px;
-        height: 16px;
-    }
-
-    /* Zlepšení čitelnosti na malých obrazovkách */
-    .loading-container {
-        padding: 2rem 1rem;
-    }
-
-    .loading-spinner {
-        width: 32px;
-        height: 32px;
-    }
-
-    /* Zabránění přetečení */
-    * {
-        box-sizing: border-box;
-    }
-
+        .loading-spinner {
+            width: 32px;
+            height: 32px;
+        }
+        /* Zabránění pretecení */
+        * {
+            box-sizing: border-box;
+        }
     }
 
     /* Extra malé obrazovky */
     @@media (max-width: 320px) {
-        .metrics-tab
-
-    {
-        padding: 0.25rem;
-    }
-
-    .metric-card {
-        padding: 0.5rem;
-    }
-
-    .metric-value {
-        font-size: 1.1rem;
-    }
-
-    .chart-container {
-        padding: 0.25rem;
-        min-height: 220px;
-    }
-
-    .chart-header {
-        margin-bottom: 0.5rem;
-    }
-
-        .chart-header h3 {
-            font-size: 0.85rem;
+        .metrics-tab {
+            padding: 0.25rem;
         }
 
-    canvas {
-        height: 160px !important;
-        width: 100% !important;
-        max-width: 100% !important;
+        .metric-card {
+            padding: 0.5rem;
+        }
+
+        .metric-value {
+            font-size: 1.1rem;
+        }
+
+        .chart-container {
+            padding: 0.25rem;
+            min-height: 220px;
+        }
+
+        .chart-header {
+            margin-bottom: 0.5rem;
+        }
+
+            .chart-header h3 {
+                font-size: 0.85rem;
+            }
+
+        canvas {
+            height: 160px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .btn, .btn-sm {
+            font-size: 0.75rem;
+            padding: 0.375rem 0.5rem;
+        }
+
+        .warning-card, .error-card {
+            padding: 0.75rem;
+            margin: 0.25rem;
+            max-width: calc(100% - 0.5rem);
+        }
     }
 
-    .btn, .btn-sm {
-        font-size: 0.75rem;
-        padding: 0.375rem 0.5rem;
+    /* Performance metric card styling */
+    .performance-card {
+        border-left: 4px solid #06B6D4;
     }
 
-    .warning-card, .error-card {
-        padding: 0.75rem;
-        margin: 0.25rem;
-        max-width: calc(100% - 0.5rem);
+        .performance-card .metric-icon {
+            color: #06B6D4;
+        }
+
+        .performance-card .metric-value {
+            color: #06B6D4;
+        }
+
+    /* Resource metric card styling */
+    .resource-card {
+        border-left: 4px solid #F59E0B;
     }
 
+        .resource-card .metric-icon {
+            color: #F59E0B;
+        }
+
+        .resource-card .metric-value {
+            color: #F59E0B;
+        }
+
+    /* Login attempts card styling */
+    .login-card {
+        border-left: 4px solid #10B981;
+    }
+
+        .login-card .metric-icon {
+            color: #10B981;
+        }
+
+        .login-card .metric-value {
+            color: #10B981;
+        }
+
+    /* Active sessions card styling */
+    .sessions-card {
+        border-left: 4px solid #3B82F6;
+    }
+
+        .sessions-card .metric-icon {
+            color: #3B82F6;
+        }
+
+        .sessions-card .metric-value {
+            color: #3B82F6;
+        }
+
+    /* Security events card styling */
+    .security-card {
+        border-left: 4px solid #EF4444;
+    }
+
+        .security-card .metric-icon {
+            color: #EF4444;
+        }
+
+        .security-card .metric-value {
+            color: #EF4444;
+        }
+
+    /* Uptime card styling */
+    .uptime-card {
+        border-left: 4px solid #8B5CF6;
+    }
+
+        .uptime-card .metric-icon {
+            color: #8B5CF6;
+        }
+
+        .uptime-card .metric-value {
+            color: #8B5CF6;
+        }
+
+    /* CPU usage card styling */
+    .cpu-card {
+        border-left: 4px solid #EF4444 !important;
+    }
+
+    .cpu-card .metric-icon {
+        color: #EF4444 !important;
+    }
+
+    .cpu-card .metric-value {
+        color: #EF4444 !important;
+    }
+
+    /* Memory usage card styling */
+    .memory-card {
+        border-left: 4px solid #F59E0B !important;
+    }
+
+    .memory-card .metric-icon {
+        color: #F59E0B !important;
+    }
+
+    .memory-card .metric-value {
+        color: #F59E0B !important;
+    }
+
+    /* Chart containers for performance metrics */
+    .chart-container:has(#loginChart) {
+        border-left: 3px solid #10B981;
+    }
+
+    .chart-container:has(#securityChart) {
+        border-left: 3px solid #EF4444;
+    }
+
+    .chart-container:has(#responseTimeChart) {
+        border-left: 3px solid #06B6D4;
     }
 </style>

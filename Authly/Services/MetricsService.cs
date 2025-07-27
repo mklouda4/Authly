@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Authly.Data;
 using Authly.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Routing.Constraints;
 
 namespace Authly.Services
 {
@@ -21,6 +22,17 @@ namespace Authly.Services
         /// <param name="userAgent">User agent string</param>
         /// <param name="username">Username attempted</param>
         Task RecordLoginAttemptAsync(bool success, string? reason = null, string? ipAddress = null, string? userAgent = null, string? username = null);
+
+        /// <summary>
+        /// Record login attempt with response time
+        /// </summary>
+        /// <param name="success">Whether the login was successful</param>
+        /// <param name="responseTimeMs">Response time in milliseconds</param>
+        /// <param name="reason">Reason for failure (if any)</param>
+        /// <param name="ipAddress">IP address of the attempt</param>
+        /// <param name="userAgent">User agent string</param>
+        /// <param name="username">Username attempted</param>
+        Task RecordLoginAttemptAsync(bool success, double? responseTimeMs, string? reason = null, string? ipAddress = null, string? userAgent = null, string? username = null);
 
         /// <summary>
         /// Record security event
@@ -83,6 +95,64 @@ namespace Authly.Services
         /// Gets metrics statistics for a specific time period
         /// </summary>
         Task<object> GetMetricsStatsAsync(DateTime since, DateTime until);
+
+        /// <summary>
+        /// Record performance metric for authentication operations
+        /// </summary>
+        /// <param name="operationType">Type of operation (login, logout, oauth_authorize, etc.)</param>
+        /// <param name="endpoint">Endpoint path</param>
+        /// <param name="httpMethod">HTTP method</param>
+        /// <param name="responseTimeMs">Response time in milliseconds</param>
+        /// <param name="success">Whether the operation was successful</param>
+        /// <param name="statusCode">HTTP status code</param>
+        /// <param name="requestSizeBytes">Request size in bytes</param>
+        /// <param name="responseSizeBytes">Response size in bytes</param>
+        /// <param name="userId">User ID (if available)</param>
+        /// <param name="ipAddress">IP address</param>
+        /// <param name="userAgent">User agent string</param>
+        Task RecordPerformanceMetricAsync(string operationType, string? endpoint = null, string? httpMethod = null, 
+            double responseTimeMs = 0, bool success = true, int? statusCode = null, 
+            long? requestSizeBytes = null, long? responseSizeBytes = null, 
+            string? userId = null, string? ipAddress = null, string? userAgent = null);
+
+        /// <summary>
+        /// Record system resource usage metric
+        /// </summary>
+        /// <param name="cpuUsagePercent">CPU usage percentage</param>
+        /// <param name="memoryUsageMB">Memory usage in MB</param>
+        /// <param name="totalMemoryMB">Total available memory in MB</param>
+        /// <param name="activeThreads">Number of active threads</param>
+        /// <param name="activeDbConnections">Number of active database connections</param>
+        Task RecordResourceUsageMetricAsync(double cpuUsagePercent, double memoryUsageMB, 
+            double totalMemoryMB, int activeThreads, int? activeDbConnections = null);
+
+        /// <summary>
+        /// Record uptime/availability metric
+        /// </summary>
+        /// <param name="isAvailable">Whether the service is available</param>
+        /// <param name="healthCheckResponseTimeMs">Health check response time</param>
+        /// <param name="details">Additional details</param>
+        Task RecordUptimeMetricAsync(bool isAvailable, double? healthCheckResponseTimeMs = null, string? details = null);
+
+        /// <summary>
+        /// Gets performance statistics for different operation types
+        /// </summary>
+        Task<Dictionary<string, object>> GetPerformanceStatsAsync(DateTime? since = null);
+
+        /// <summary>
+        /// Gets average response times for login/logout operations
+        /// </summary>
+        Task<(double averageLoginTime, double averageLogoutTime, double averageOAuthTime, double average)> GetAuthenticationPerformanceAsync(DateTime? since = null);
+
+        /// <summary>
+        /// Gets current system resource usage
+        /// </summary>
+        Task<ResourceUsageMetric?> GetCurrentResourceUsageAsync();
+
+        /// <summary>
+        /// Gets uptime percentage for a time period
+        /// </summary>
+        Task<double> GetUptimePercentageAsync(DateTime since, DateTime until);
 
         // Backward compatibility methods (for Prometheus)
         void RecordLoginAttempt(bool success, string? reason = null);
@@ -150,6 +220,14 @@ namespace Authly.Services
         /// </summary>
         public async Task RecordLoginAttemptAsync(bool success, string? reason = null, string? ipAddress = null, string? userAgent = null, string? username = null)
         {
+            await RecordLoginAttemptAsync(success, null, reason, ipAddress, userAgent, username);
+        }
+
+        /// <summary>
+        /// Record login attempt with response time
+        /// </summary>
+        public async Task RecordLoginAttemptAsync(bool success, double? responseTimeMs, string? reason = null, string? ipAddress = null, string? userAgent = null, string? username = null)
+        {
             try
             {
                 // Uložit do databáze (vždy)
@@ -160,6 +238,7 @@ namespace Authly.Services
                     IpAddress = ipAddress,
                     UserAgent = userAgent,
                     Username = username,
+                    ResponseTimeMs = responseTimeMs,
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -175,7 +254,7 @@ namespace Authly.Services
                     _loginAttemptsCounter.WithLabels(result, reasonLabel).Inc();
                 }
 
-                _logger.LogDebug("MetricsService", $"Recorded login attempt: Success={success}, Reason={reason}, IP={ipAddress}, User={username}");
+                _logger.LogDebug("MetricsService", $"Recorded login attempt: Success={success}, ResponseTime={responseTimeMs}ms, Reason={reason}, IP={ipAddress}, User={username}");
             }
             catch (Exception ex)
             {
@@ -413,20 +492,133 @@ namespace Authly.Services
                 var ipAddress = httpContext?.Connection?.RemoteIpAddress?.ToString() ?? "127.0.0.1";
                 var userAgent = httpContext?.Request?.Headers["User-Agent"].ToString() ?? "Test-Agent";
 
-                // Generuj vzorové login pokusy
+                // Generuj vzorové login pokusy s response times
+                var random = new Random();
                 for (int i = 0; i < 15; i++)
                 {
-                    await RecordLoginAttemptAsync(true, null, ipAddress, userAgent, $"user{i % 3 + 1}");
+                    var responseTime = random.Next(100, 500); // 100-500ms
+                    await RecordLoginAttemptAsync(true, responseTime, null, ipAddress, userAgent, $"user{i % 3 + 1}");
                 }
                 
                 for (int i = 0; i < 5; i++)
                 {
-                    await RecordLoginAttemptAsync(false, "invalid_credentials", ipAddress, userAgent, $"user{i % 2 + 1}");
+                    var responseTime = random.Next(200, 800); // Failed logins take longer
+                    await RecordLoginAttemptAsync(false, responseTime, "invalid_credentials", ipAddress, userAgent, $"user{i % 2 + 1}");
                 }
                 
                 for (int i = 0; i < 2; i++)
                 {
-                    await RecordLoginAttemptAsync(false, "invalid_totp", ipAddress, userAgent, "admin");
+                    var responseTime = random.Next(150, 400);
+                    await RecordLoginAttemptAsync(false, responseTime, "invalid_totp", ipAddress, userAgent, "admin");
+                }
+                
+                // Generuj performance metrics
+                for (int i = 0; i < 100; i++) // Zvýšeno z 20 na 100
+                {
+                    await RecordPerformanceMetricAsync(
+                        "login", 
+                        "/login", 
+                        "POST", 
+                        random.Next(100, 600), 
+                        random.NextDouble() > 0.2, // 80% success rate
+                        200, 
+                        random.Next(100, 500), 
+                        random.Next(200, 1000),
+                        $"user{i % 3 + 1}",
+                        ipAddress, 
+                        userAgent
+                    );
+                }
+
+                for (int i = 0; i < 50; i++) // Zvýšeno z 10 na 50
+                {
+                    await RecordPerformanceMetricAsync(
+                        "oauth_authorize", 
+                        "/oauth/authorize", 
+                        "GET", 
+                        random.Next(50, 300), 
+                        true, 
+                        302, 
+                        random.Next(50, 200), 
+                        random.Next(100, 500),
+                        $"user{i % 2 + 1}",
+                        ipAddress, 
+                        userAgent
+                    );
+                }
+
+                for (int i = 0; i < 40; i++) // Zvýšeno z 8 na 40
+                {
+                    await RecordPerformanceMetricAsync(
+                        "oauth_token", 
+                        "/oauth/token", 
+                        "POST", 
+                        random.Next(80, 250), 
+                        true, 
+                        200, 
+                        random.Next(100, 300), 
+                        random.Next(150, 600),
+                        $"user{i % 2 + 1}",
+                        ipAddress, 
+                        userAgent
+                    );
+                }
+
+                // Přidej další typy operací pro lepší throughput data
+                for (int i = 0; i < 30; i++)
+                {
+                    await RecordPerformanceMetricAsync(
+                        "oauth_userinfo", 
+                        "/oauth/userinfo", 
+                        "GET", 
+                        random.Next(60, 200), 
+                        true, 
+                        200, 
+                        random.Next(50, 150), 
+                        random.Next(100, 400),
+                        $"user{i % 2 + 1}",
+                        ipAddress, 
+                        userAgent
+                    );
+                }
+
+                for (int i = 0; i < 25; i++)
+                {
+                    await RecordPerformanceMetricAsync(
+                        "api_call", 
+                        "/api/data", 
+                        "GET", 
+                        random.Next(40, 180), 
+                        true, 
+                        200, 
+                        random.Next(30, 100), 
+                        random.Next(200, 800),
+                        $"user{i % 3 + 1}",
+                        ipAddress, 
+                        userAgent
+                    );
+                }
+
+                // Generuj resource usage metrics
+                for (int i = 0; i < 5; i++)
+                {
+                    await RecordResourceUsageMetricAsync(
+                        random.Next(5, 25), // CPU 5-25%
+                        random.Next(800, 1200), // Memory 800-1200MB
+                        8192, // 8GB total memory
+                        random.Next(50, 150), // 50-150 threads
+                        random.Next(5, 15) // 5-15 DB connections
+                    );
+                }
+
+                // Generuj uptime metrics
+                for (int i = 0; i < 10; i++)
+                {
+                    await RecordUptimeMetricAsync(
+                        random.NextDouble() > 0.05, // 95% uptime
+                        random.Next(10, 100), // Health check response time
+                        "Service health check"
+                    );
                 }
                 
                 // Generuj bezpečnostní události
@@ -458,6 +650,7 @@ namespace Authly.Services
                 var cutoffDate = DateTime.UtcNow.AddDays(-retentionDays);
 
                 using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+                
                 // Smaž staré login attempts
                 var oldLoginAttempts = await dbContext.LoginAttemptMetrics
                     .Where(x => x.CreatedAt < cutoffDate)
@@ -503,7 +696,61 @@ namespace Authly.Services
                     await dbContext.SaveChangesAsync();
                 }
 
-                _logger.Log("MetricsService", $"Cleaned up old metrics: {oldLoginAttempts} login attempts, {oldSecurityEvents} security events, {oldSessions} session records");
+                // Smaž staré performance metrics
+                var oldPerformanceMetrics = await dbContext.PerformanceMetrics
+                    .Where(x => x.CreatedAt < cutoffDate)
+                    .CountAsync();
+                
+                if (oldPerformanceMetrics > 0)
+                {
+                    await dbContext.PerformanceMetrics
+                        .Where(x => x.CreatedAt < cutoffDate)
+                        .ExecuteDeleteAsync();
+                }
+
+                // Smaž staré resource usage metrics (nech jen jeden záznam za den pro historii)
+                var oldResourceMetrics = await dbContext.ResourceUsageMetrics
+                    .Where(x => x.CreatedAt < cutoffDate)
+                    .GroupBy(x => x.CreatedAt.Date)
+                    .Where(g => g.Count() > 1)
+                    .SelectMany(g => g.OrderByDescending(x => x.CreatedAt).Skip(1))
+                    .CountAsync();
+
+                if (oldResourceMetrics > 0)
+                {
+                    var resourcesToDelete = await dbContext.ResourceUsageMetrics
+                        .Where(x => x.CreatedAt < cutoffDate)
+                        .GroupBy(x => x.CreatedAt.Date)
+                        .Where(g => g.Count() > 1)
+                        .SelectMany(g => g.OrderByDescending(x => x.CreatedAt).Skip(1))
+                        .ToListAsync();
+
+                    dbContext.ResourceUsageMetrics.RemoveRange(resourcesToDelete);
+                    await dbContext.SaveChangesAsync();
+                }
+
+                // Smaž staré uptime metrics (nech jen jeden záznam za hodinu pro historii)
+                var oldUptimeMetrics = await dbContext.UptimeMetrics
+                    .Where(x => x.CreatedAt < cutoffDate)
+                    .GroupBy(x => new { Date = x.CreatedAt.Date, Hour = x.CreatedAt.Hour })
+                    .Where(g => g.Count() > 1)
+                    .SelectMany(g => g.OrderByDescending(x => x.CreatedAt).Skip(1))
+                    .CountAsync();
+
+                if (oldUptimeMetrics > 0)
+                {
+                    var uptimeToDelete = await dbContext.UptimeMetrics
+                        .Where(x => x.CreatedAt < cutoffDate)
+                        .GroupBy(x => new { Date = x.CreatedAt.Date, Hour = x.CreatedAt.Hour })
+                        .Where(g => g.Count() > 1)
+                        .SelectMany(g => g.OrderByDescending(x => x.CreatedAt).Skip(1))
+                        .ToListAsync();
+
+                    dbContext.UptimeMetrics.RemoveRange(uptimeToDelete);
+                    await dbContext.SaveChangesAsync();
+                }
+
+                _logger.Log("MetricsService", $"Cleaned up old metrics: {oldLoginAttempts} login attempts, {oldSecurityEvents} security events, {oldSessions} session records, {oldPerformanceMetrics} performance metrics, {oldResourceMetrics} resource metrics, {oldUptimeMetrics} uptime metrics");
             }
             catch (Exception ex)
             {
@@ -555,6 +802,238 @@ namespace Authly.Services
             {
                 _logger.LogError("MetricsService", "Error getting metrics stats", ex);
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Record performance metric for authentication operations
+        /// </summary>
+        public async Task RecordPerformanceMetricAsync(string operationType, string? endpoint = null, string? httpMethod = null, 
+            double responseTimeMs = 0, bool success = true, int? statusCode = null, 
+            long? requestSizeBytes = null, long? responseSizeBytes = null, 
+            string? userId = null, string? ipAddress = null, string? userAgent = null)
+        {
+            try
+            {
+                var performanceMetric = new PerformanceMetric
+                {
+                    OperationType = operationType,
+                    Endpoint = endpoint,
+                    HttpMethod = httpMethod,
+                    ResponseTimeMs = responseTimeMs,
+                    Success = success,
+                    StatusCode = statusCode,
+                    RequestSizeBytes = requestSizeBytes,
+                    ResponseSizeBytes = responseSizeBytes,
+                    UserId = userId,
+                    IpAddress = ipAddress,
+                    UserAgent = userAgent,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+                dbContext.PerformanceMetrics.Add(performanceMetric);
+                await dbContext.SaveChangesAsync();
+
+                _logger.LogDebug("MetricsService", $"Recorded performance metric: {operationType} - {responseTimeMs}ms - Success: {success}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("MetricsService", "Error recording performance metric", ex);
+            }
+        }
+
+        /// <summary>
+        /// Record system resource usage metric
+        /// </summary>
+        public async Task RecordResourceUsageMetricAsync(double cpuUsagePercent, double memoryUsageMB, 
+            double totalMemoryMB, int activeThreads, int? activeDbConnections = null)
+        {
+            try
+            {
+                var resourceMetric = new ResourceUsageMetric
+                {
+                    CpuUsagePercent = cpuUsagePercent,
+                    MemoryUsageMB = memoryUsageMB,
+                    TotalMemoryMB = totalMemoryMB,
+                    ActiveThreads = activeThreads,
+                    ActiveDbConnections = activeDbConnections,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+                dbContext.ResourceUsageMetrics.Add(resourceMetric);
+                await dbContext.SaveChangesAsync();
+
+                _logger.LogDebug("MetricsService", $"Recorded resource usage: CPU {cpuUsagePercent:F1}%, Memory {memoryUsageMB:F0}MB");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("MetricsService", "Error recording resource usage metric", ex);
+            }
+        }
+
+        /// <summary>
+        /// Record uptime/availability metric
+        /// </summary>
+        public async Task RecordUptimeMetricAsync(bool isAvailable, double? healthCheckResponseTimeMs = null, string? details = null)
+        {
+            try
+            {
+                var uptimeMetric = new UptimeMetric
+                {
+                    IsAvailable = isAvailable,
+                    HealthCheckResponseTimeMs = healthCheckResponseTimeMs,
+                    Details = details,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+                dbContext.UptimeMetrics.Add(uptimeMetric);
+                await dbContext.SaveChangesAsync();
+
+                _logger.LogDebug("MetricsService", $"Recorded uptime metric: Available={isAvailable}, ResponseTime={healthCheckResponseTimeMs}ms");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("MetricsService", "Error recording uptime metric", ex);
+            }
+        }
+
+        /// <summary>
+        /// Gets performance statistics for different operation types
+        /// </summary>
+        public async Task<Dictionary<string, object>> GetPerformanceStatsAsync(DateTime? since = null)
+        {
+            try
+            {
+                using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+                var query = dbContext.PerformanceMetrics.AsQueryable();
+                
+                if (since.HasValue)
+                {
+                    query = query.Where(x => x.CreatedAt >= since.Value);
+                }
+
+                var stats = await query
+                    .GroupBy(x => x.OperationType)
+                    .Select(g => new { 
+                        OperationType = g.Key, 
+                        Count = g.Count(),
+                        AvgResponseTime = g.Average(x => x.ResponseTimeMs),
+                        MinResponseTime = g.Min(x => x.ResponseTimeMs),
+                        MaxResponseTime = g.Max(x => x.ResponseTimeMs),
+                        SuccessRate = g.Count(x => x.Success) * 100.0 / g.Count()
+                    })
+                    .ToDictionaryAsync(x => x.OperationType, x => (object)new {
+                        x.Count,
+                        x.AvgResponseTime,
+                        x.MinResponseTime,
+                        x.MaxResponseTime,
+                        x.SuccessRate
+                    });
+
+                stats.Add("avg", new
+                {
+                    OperationType = "avg",
+                    Count = query.Count(),
+                    AvgResponseTime = query.Average(x => x.ResponseTimeMs),
+                    MinResponseTime = query.Min(x => x.ResponseTimeMs),
+                    MaxResponseTime = query.Max(x => x.ResponseTimeMs),
+                    SuccessRate = query.Count(x => x.Success) * 100.0 / query.Count()
+                });
+
+                return stats;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("MetricsService", "Error getting performance stats", ex);
+                return new Dictionary<string, object>();
+            }
+        }
+
+        /// <summary>
+        /// Gets average response times for login/logout operations
+        /// </summary>
+        public async Task<(double averageLoginTime, double averageLogoutTime, double averageOAuthTime, double average)> GetAuthenticationPerformanceAsync(DateTime? since = null)
+        {
+            try
+            {
+                using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+                var query = dbContext.PerformanceMetrics.AsQueryable();
+                
+                if (since.HasValue)
+                {
+                    query = query.Where(x => x.CreatedAt >= since.Value);
+                }
+
+                var loginAvg = await query
+                    .Where(x => x.OperationType == "login")
+                    .AverageAsync(x => (double?)x.ResponseTimeMs) ?? 0;
+
+                var logoutAvg = await query
+                    .Where(x => x.OperationType == "logout")
+                    .AverageAsync(x => (double?)x.ResponseTimeMs) ?? 0;
+
+                var oauthAvg = await query
+                    .Where(x => x.OperationType.StartsWith("oauth_"))
+                    .AverageAsync(x => (double?)x.ResponseTimeMs) ?? 0;
+
+                var avg = await query
+                    .AverageAsync(x => (double?)x.ResponseTimeMs) ?? 0;
+
+                return (Math.Round(loginAvg, 2), Math.Round(logoutAvg, 2), Math.Round(oauthAvg, 2), Math.Round(avg, 2));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("MetricsService", "Error getting authentication performance", ex);
+                return (0, 0, 0, 0);
+            }
+        }
+
+        /// <summary>
+        /// Gets current system resource usage
+        /// </summary>
+        public async Task<ResourceUsageMetric?> GetCurrentResourceUsageAsync()
+        {
+            try
+            {
+                using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+                return await dbContext.ResourceUsageMetrics
+                    .OrderByDescending(x => x.CreatedAt)
+                    .FirstOrDefaultAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("MetricsService", "Error getting current resource usage", ex);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Gets uptime percentage for a time period
+        /// </summary>
+        public async Task<double> GetUptimePercentageAsync(DateTime since, DateTime until)
+        {
+            try
+            {
+                using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+                var totalChecks = await dbContext.UptimeMetrics
+                    .Where(x => x.CreatedAt >= since && x.CreatedAt <= until)
+                    .CountAsync();
+
+                if (totalChecks == 0) return 100.0; // Assume 100% if no data
+
+                var availableChecks = await dbContext.UptimeMetrics
+                    .Where(x => x.CreatedAt >= since && x.CreatedAt <= until && x.IsAvailable)
+                    .CountAsync();
+
+                return Math.Round((double)availableChecks / totalChecks * 100, 2);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("MetricsService", "Error getting uptime percentage", ex);
+                return 0;
             }
         }
 

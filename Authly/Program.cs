@@ -324,6 +324,9 @@ namespace Authly
             // Register metrics cleanup background service
             _ = builder.Services.AddHostedService<MetricsCleanupService>();
 
+            // Register resource monitoring service (for CPU/Memory metrics)
+            _ = builder.Services.AddHostedService<ResourceMonitoringService>();
+
             // Register Temporary Registration service
             _ = builder.Services.AddSingleton<ITemporaryRegistrationService, TemporaryRegistrationService>();
 
@@ -381,6 +384,8 @@ namespace Authly
                 Predicate = check => check.Tags.Contains("liveness") || check.Name == "liveness",
                 ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
             });
+
+            app.UsePerformanceTracking();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())

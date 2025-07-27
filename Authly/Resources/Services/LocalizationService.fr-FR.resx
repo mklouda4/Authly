@@ -1009,4 +1009,50 @@
   <data name="OAuthClients" xml:space="preserve">
     <value>Clients OAuth</value>
   </data>
+  <!-- Additional Metrics Translations -->
+  <data name="LoginResponseTime" xml:space="preserve">
+    <value>Temps de réponse de connexion</value>
+  </data>
+  <data name="AverageResponseTime" xml:space="preserve">
+    <value>Temps de réponse moyen</value>
+  </data>
+  <data name="SystemUptime" xml:space="preserve">
+    <value>Temps de fonctionnement du système</value>
+  </data>
+  <data name="ServiceAvailability" xml:space="preserve">
+    <value>Disponibilité du service</value>
+  </data>
+  <data name="SystemResources" xml:space="preserve">
+    <value>Ressources système</value>
+  </data>
+  <data name="ResponseTimeChart" xml:space="preserve">
+    <value>Temps de réponse</value>
+  </data>
+  <data name="ThroughputChart" xml:space="preserve">
+    <value>Débit (req/s)</value>
+  </data>
+  <data name="ResourceUsageChart" xml:space="preserve">
+    <value>Utilisation des ressources</value>
+  </data>
+  <data name="ResponseTime" xml:space="preserve">
+    <value>Temps de réponse</value>
+  </data>
+  <data name="RequestsPerSecond" xml:space="preserve">
+    <value>Requêtes par seconde</value>
+  </data>
+  <data name="Memory" xml:space="preserve">
+    <value>Mémoire</value>
+  </data>
+  <data name="Available" xml:space="preserve">
+    <value>Disponible</value>
+  </data>
+  <data name="CpuUsage" xml:space="preserve">
+    <value>Utilisation du CPU</value>
+  </data>
+  <data name="MemoryUsage" xml:space="preserve">
+    <value>Utilisation de la mémoire</value>
+  </data>
+  <data name="ProcessorUsage" xml:space="preserve">
+    <value>Utilisation du processeur</value>
+  </data>
 </root>

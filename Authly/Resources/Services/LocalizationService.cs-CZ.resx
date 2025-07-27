@@ -1008,4 +1008,50 @@
   <data name="OAuthClients" xml:space="preserve">
     <value>OAuth klienti</value>
   </data>
+  <!-- Additional Metrics Translations -->
+  <data name="LoginResponseTime" xml:space="preserve">
+    <value>Doba odezvy přihlášení</value>
+  </data>
+  <data name="AverageResponseTime" xml:space="preserve">
+    <value>Průměrná doba odezvy</value>
+  </data>
+  <data name="SystemUptime" xml:space="preserve">
+    <value>Provozní doba systému</value>
+  </data>
+  <data name="ServiceAvailability" xml:space="preserve">
+    <value>Dostupnost služby</value>
+  </data>
+  <data name="SystemResources" xml:space="preserve">
+    <value>Systémové prostředky</value>
+  </data>
+  <data name="ResponseTimeChart" xml:space="preserve">
+    <value>Doby odezvy</value>
+  </data>
+  <data name="ThroughputChart" xml:space="preserve">
+    <value>Propustnost (req/s)</value>
+  </data>
+  <data name="ResourceUsageChart" xml:space="preserve">
+    <value>Využití prostředků</value>
+  </data>
+  <data name="ResponseTime" xml:space="preserve">
+    <value>Doba odezvy</value>
+  </data>
+  <data name="RequestsPerSecond" xml:space="preserve">
+    <value>Požadavků za sekundu</value>
+  </data>
+  <data name="Memory" xml:space="preserve">
+    <value>Paměť</value>
+  </data>
+  <data name="Available" xml:space="preserve">
+    <value>Dostupné</value>
+  </data>
+  <data name="CpuUsage" xml:space="preserve">
+    <value>Využití CPU</value>
+  </data>
+  <data name="MemoryUsage" xml:space="preserve">
+    <value>Využití paměti</value>
+  </data>
+  <data name="ProcessorUsage" xml:space="preserve">
+    <value>Využití procesoru</value>
+  </data>
 </root>

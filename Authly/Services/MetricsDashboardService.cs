@@ -1,4 +1,4 @@
-using Authly.Services;
+Ôªøusing Authly.Services;
 using Authly.Models;
 
 namespace Authly.Services
@@ -57,7 +57,7 @@ namespace Authly.Services
             {
                 _logger.Log("MetricsDashboardService", "Fetching metrics from database");
 
-                // ZÌsk·me data z datab·ze za poslednÌch 30 dnÌ pro p?ehled
+                // Z√≠sk√°me data z datab√°ze za posledn√≠ch 30 dn√≠ pro p≈ôehled
                 var since = DateTime.UtcNow.AddDays(-30);
                 
                 var (successful, failed, successRate) = await _metricsService.GetLoginAttemptsStatsAsync(since);
@@ -65,6 +65,12 @@ namespace Authly.Services
                 var ipBans = await _metricsService.GetIpBansAsync(since);
                 var activeSessions = await _metricsService.GetActiveUserSessionsAsync();
                 var securityEvents = await _metricsService.GetSecurityEventsByTypeAsync(since);
+
+                // Get performance metrics
+                var performanceStats = await _metricsService.GetPerformanceStatsAsync(since);
+                var (avgLoginTime, avgLogoutTime, avgOAuthTime, average) = await _metricsService.GetAuthenticationPerformanceAsync(since);
+                var currentResourceUsage = await _metricsService.GetCurrentResourceUsageAsync();
+                var uptimePercentage = await _metricsService.GetUptimePercentageAsync(since, DateTime.UtcNow);
 
                 var totalLogins = successful + failed;
 
@@ -84,6 +90,27 @@ namespace Authly.Services
                         activeSessions = activeSessions
                     },
                     ["securityEvents"] = securityEvents,
+                    ["performance"] = new
+                    {
+                        averageTime = average,
+                        averageLoginTime = avgLoginTime,
+                        averageLogoutTime = avgLogoutTime,
+                        averageOAuthTime = avgOAuthTime,
+                        operationStats = performanceStats
+                    },
+                    ["resources"] = new
+                    {
+                        cpuUsagePercent = currentResourceUsage?.CpuUsagePercent ?? 0,
+                        memoryUsageMB = currentResourceUsage?.MemoryUsageMB ?? 0,
+                        memoryUsagePercent = currentResourceUsage?.MemoryUsagePercent ?? 0,
+                        totalMemoryMB = currentResourceUsage?.TotalMemoryMB ?? 0,
+                        activeThreads = currentResourceUsage?.ActiveThreads ?? 0,
+                        activeDbConnections = currentResourceUsage?.ActiveDbConnections ?? 0
+                    },
+                    ["availability"] = new
+                    {
+                        uptimePercentage = uptimePercentage
+                    },
                     ["timestamp"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                     ["period"] = new
                     {
