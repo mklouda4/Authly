@@ -364,3 +364,4 @@ FodyWeavers.xsd
 /Authly/keys
 /Authly/wwwroot/data/authly.db-shm
 /Authly/wwwroot/data/authly.db-wal
+/Authly/wwwroot/data/authly.db
