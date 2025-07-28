@@ -244,16 +244,16 @@ namespace Authly.Middleware
 
         private static string? GetUserId(HttpContext context)
         {
-            return context.User?.Identity?.IsAuthenticated == true 
-                ? context.User.FindFirst("sub")?.Value ?? context.User.FindFirst("id")?.Value
+            return context?.User?.Identity?.IsAuthenticated == true 
+                ? context?.User?.FindFirst("sub")?.Value ?? context?.User?.FindFirst("id")?.Value
                 : null;
         }
 
         private static string? GetIpAddress(HttpContext context)
-            => context.Connection.RemoteIpAddress?.ToString();
+            => context?.Connection?.RemoteIpAddress?.ToString();
 
         private static string? GetUserAgent(HttpContext context) 
-            => context.Request.Headers["User-Agent"].FirstOrDefault();
+            => context?.Request?.Headers?.TryGetValue("User-Agent", out var items) == true ? items.FirstOrDefault() : null;
     }
 
     /// <summary>
