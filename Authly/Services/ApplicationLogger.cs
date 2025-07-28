@@ -61,16 +61,11 @@ namespace Authly.Services
     /// <summary>
     /// Application logger that respects debug configuration
     /// </summary>
-    public class ApplicationLogger : IApplicationLogger
+    public class ApplicationLogger(IOptions<ApplicationOptions> options, ILogger<ApplicationLogger> logger) : IApplicationLogger
     {
-        private readonly ApplicationOptions _options;
-        private readonly ILogger<ApplicationLogger> _logger;
-
-        public ApplicationLogger(IOptions<ApplicationOptions> options, ILogger<ApplicationLogger> logger)
-        {
-            _options = options.Value;
-            _logger = logger;
-        }
+        private readonly ApplicationOptions _options = options.Value;
+        private readonly ConcurrentQueue<LogEntry> _logs = new();
+        private const int MaxLogEntries = 50;
 
         /// <summary>
         /// Indicates if debug logging is enabled in configuration
@@ -82,12 +77,12 @@ namespace Authly.Services
         /// </summary>
         public void Log(string category, string message)
         {
-            if (!IsEnabled) return;
-            
-            var logMessage = $"[{category}] {message}";
-            Console.WriteLine(logMessage);
-            _logger.LogDebug(logMessage);
-
+            if (IsEnabled)
+            {
+                var logMessage = $"[{category}] {message}";
+                Console.WriteLine(logMessage);
+                logger.LogDebug(logMessage);
+            }
             AddLogEntry(category, "DEBUG", message);
         }
 
@@ -96,12 +91,12 @@ namespace Authly.Services
         /// </summary>
         public void LogDebug(string category, string message)
         {
-            if (!IsEnabled) return;
-
-            var logMessage = $"[{category}] DEBUG: {message}";
-            Debug.WriteLine(logMessage);
-            _logger.LogDebug(logMessage);
-
+            if (IsEnabled)
+            {
+                var logMessage = $"[{category}] DEBUG: {message}";
+                Debug.WriteLine(logMessage);
+                logger.LogDebug(logMessage);
+            }
             AddLogEntry(category, "DEBUG", message);
         }
 
@@ -110,22 +105,22 @@ namespace Authly.Services
         /// </summary>
         public void LogError(string category, string message, Exception? exception = null)
         {
-            if (!IsEnabled) return;
-            
-            var logMessage = $"[{category}] ERROR: {message}";
-            Console.WriteLine(logMessage);
-            
-            if (exception != null)
+            if (IsEnabled)
             {
-                Console.WriteLine($"[{category}] Exception: {exception.Message}");
-                Console.WriteLine($"[{category}] StackTrace: {exception.StackTrace}");
-                _logger.LogError(exception, logMessage);
-            }
-            else
-            {
-                _logger.LogError(logMessage);
-            }
+                var logMessage = $"[{category}] ERROR: {message}";
+                Console.WriteLine(logMessage);
 
+                if (exception != null)
+                {
+                    Console.WriteLine($"[{category}] Exception: {exception.Message}");
+                    Console.WriteLine($"[{category}] StackTrace: {exception.StackTrace}");
+                    logger.LogError(exception, logMessage);
+                }
+                else
+                {
+                    logger.LogError(logMessage);
+                }
+            }
             AddLogEntry(category, "ERROR", message, exception);
         }
 
@@ -134,12 +129,12 @@ namespace Authly.Services
         /// </summary>
         public void LogInfo(string category, string message)
         {
-            if (!IsEnabled) return;
-            
-            var logMessage = $"[{category}] INFO: {message}";
-            Console.WriteLine(logMessage);
-            _logger.LogInformation(logMessage);
-
+            if (IsEnabled)
+            {
+                var logMessage = $"[{category}] INFO: {message}";
+                Console.WriteLine(logMessage);
+                logger.LogInformation(logMessage);
+            }
             AddLogEntry(category, "INFO", message);
         }
 
@@ -148,25 +143,29 @@ namespace Authly.Services
         /// </summary>
         public void LogWarning(string category, string message)
         {
-            if (!IsEnabled) return;
-            
-            var logMessage = $"[{category}] WARNING: {message}";
-            Console.WriteLine(logMessage);
-            _logger.LogWarning(logMessage);
-
+            if (IsEnabled)
+            {
+                var logMessage = $"[{category}] WARNING: {message}";
+                Console.WriteLine(logMessage);
+                logger.LogWarning(logMessage);
+            }
             AddLogEntry(category, "WARNING", message);
         }
 
-
-        private readonly ConcurrentQueue<LogEntry> _logs = new();
-        private const int MaxLogEntries = 50;
-
+        /// <summary>
+        /// Event triggered when a new log entry is added
+        /// </summary>
         public event Action<LogEntry>? LogAdded;
 
+        /// <summary>
+        /// Adds a log entry to the internal queue and triggers the LogAdded event.
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="level"></param>
+        /// <param name="message"></param>
+        /// <param name="exception"></param>
         private void AddLogEntry(string category, string level, string message, Exception? exception = null)
         {
-            //if (!IsEnabled) return;
-
             var entry = new LogEntry
             {
                 Timestamp = DateTime.Now,
@@ -178,32 +177,54 @@ namespace Authly.Services
 
             _logs.Enqueue(entry);
 
-            // Odebereme nejstarší záznamy, pokud překročíme limit
             while (_logs.Count > MaxLogEntries)
             {
-                _logs.TryDequeue(out _); // Bezpečně odeber nejstarší
+                _logs.TryDequeue(out _);
             }
 
             LogAdded?.Invoke(entry);
         }
 
+        /// <summary>
+        /// Returns stored logs in reverse order (most recent first).
+        /// </summary>
+        /// <returns></returns>
         public IEnumerable<LogEntry> GetLogs()
-        {
-            return _logs.ToArray().Reverse(); // Nejnovější první pro zobrazení
-        }
+            => _logs.ToArray().Reverse();
 
+        /// <summary>
+        /// Clears all stored logs from the logger.
+        /// </summary>
         public void ClearLogs()
         {
-            while (_logs.TryDequeue(out _)) { } // Vyprázdni queue
+            while (_logs.TryDequeue(out _));
         }
     }
 
+    /// <summary>
+    /// Represents a single log entry in the application logger.
+    /// </summary>
     public class LogEntry
     {
+        /// <summary>
+        /// Timestamp of when the log entry was created.
+        /// </summary>
         public DateTime Timestamp { get; set; }
+        /// <summary>
+        /// Category of the log entry (e.g., "Auth", "Database").
+        /// </summary>
         public string Category { get; set; } = string.Empty;
-        public string Level { get; set; } = "Information";
+        /// <summary>
+        /// Log level of the entry (e.g., "DEBUG", "INFO", "WARNING", "ERROR").
+        /// </summary>
+        public string Level { get; set; } = "INFO";
+        /// <summary>
+        /// Message content of the log entry.
+        /// </summary>
         public string Message { get; set; } = string.Empty;
+        /// <summary>
+        /// Optional exception associated with the log entry, if any.
+        /// </summary>
         public Exception? Exception { get; set; }
     }
 }
