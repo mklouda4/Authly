@@ -403,6 +403,8 @@
     private string errorMessage = string.Empty;
     private DateTime lastUpdated = DateTime.Now;
     private Timer? upTimeTimer;
+    private int counter = 0;
+    private int autoRefreshTreshold = 60;
 
     private LoginMetrics? loginMetrics;
     private SecurityMetrics? securityMetrics;
@@ -505,6 +507,12 @@
         // Start timer that updates every 1000ms
         upTimeTimer = new Timer(async _ =>
         {
+            Interlocked.Increment(ref counter);
+            if (counter >= autoRefreshTreshold)
+            {
+                counter = 0;
+                await InvokeAsync(RefreshData);
+            }
             await InvokeAsync(StateHasChanged);
         }, null, TimeSpan.FromMilliseconds(1000), TimeSpan.FromMilliseconds(1000));
     }
