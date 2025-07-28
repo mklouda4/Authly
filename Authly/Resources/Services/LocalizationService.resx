@@ -1062,4 +1062,52 @@
   <data name="SecondsShort" xml:space="preserve">
     <value>s</value>
   </data>
+  <data name="Logs" xml:space="preserve">
+    <value>Logs</value>
+  </data>
+  <data name="ApplicationLogs" xml:space="preserve">
+    <value>Application Logs</value>
+  </data>
+  <data name="LogsEntriesCount" xml:space="preserve">
+    <value>entries</value>
+  </data>
+  <data name="FilteredBy" xml:space="preserve">
+    <value>Filtered by</value>
+  </data>
+  <data name="AutoScroll" xml:space="preserve">
+    <value>Auto-scroll</value>
+  </data>
+  <data name="LogLevel" xml:space="preserve">
+    <value>Level</value>
+  </data>
+  <data name="AllLevels" xml:space="preserve">
+    <value>All levels</value>
+  </data>
+  <data name="Debug" xml:space="preserve">
+    <value>Debug</value>
+  </data>
+  <data name="Info" xml:space="preserve">
+    <value>Info</value>
+  </data>
+  <data name="Warning" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="NoLogsFound" xml:space="preserve">
+    <value>No logs found</value>
+  </data>
+  <data name="NoLogsFoundDescription" xml:space="preserve">
+    <value>No logs have been recorded yet.</value>
+  </data>
+  <data name="NoLogsForLevel" xml:space="preserve">
+    <value>No logs for level</value>
+  </data>
+  <data name="ShowStackTrace" xml:space="preserve">
+    <value>Show stack trace</value>
+  </data>
+  <data name="Exception" xml:space="preserve">
+    <value>Exception</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
 </root>

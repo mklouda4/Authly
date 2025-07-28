@@ -1062,4 +1062,52 @@
   <data name="SystemState" xml:space="preserve">
     <value>Systemzustand</value>
   </data>
+  <data name="Logs" xml:space="preserve">
+    <value>Logs</value>
+  </data>
+  <data name="ApplicationLogs" xml:space="preserve">
+    <value>Anwendungs-Logs</value>
+  </data>
+  <data name="LogsEntriesCount" xml:space="preserve">
+    <value>Einträge</value>
+  </data>
+  <data name="FilteredBy" xml:space="preserve">
+    <value>Gefiltert nach</value>
+  </data>
+  <data name="AutoScroll" xml:space="preserve">
+    <value>Auto-Scroll</value>
+  </data>
+  <data name="LogLevel" xml:space="preserve">
+    <value>Level</value>
+  </data>
+  <data name="AllLevels" xml:space="preserve">
+    <value>Alle Level</value>
+  </data>
+  <data name="Debug" xml:space="preserve">
+    <value>Debug</value>
+  </data>
+  <data name="Info" xml:space="preserve">
+    <value>Info</value>
+  </data>
+  <data name="Warning" xml:space="preserve">
+    <value>Warnung</value>
+  </data>
+  <data name="NoLogsFound" xml:space="preserve">
+    <value>Keine Logs gefunden</value>
+  </data>
+  <data name="NoLogsFoundDescription" xml:space="preserve">
+    <value>Es wurden noch keine Logs aufgezeichnet.</value>
+  </data>
+  <data name="NoLogsForLevel" xml:space="preserve">
+    <value>Keine Logs für Level</value>
+  </data>
+  <data name="ShowStackTrace" xml:space="preserve">
+    <value>Stack Trace anzeigen</value>
+  </data>
+  <data name="Exception" xml:space="preserve">
+    <value>Ausnahme</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>Löschen</value>
+  </data>
 </root>

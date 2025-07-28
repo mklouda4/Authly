@@ -1062,4 +1062,52 @@
   <data name="SecondsShort" xml:space="preserve">
     <value>s</value>
   </data>
+  <data name="Logs" xml:space="preserve">
+    <value>Logy</value>
+  </data>
+  <data name="ApplicationLogs" xml:space="preserve">
+    <value>Aplikační logy</value>
+  </data>
+  <data name="LogsEntriesCount" xml:space="preserve">
+    <value>záznamů</value>
+  </data>
+  <data name="FilteredBy" xml:space="preserve">
+    <value>Filtrováno podle</value>
+  </data>
+  <data name="AutoScroll" xml:space="preserve">
+    <value>Automatické posouvání</value>
+  </data>
+  <data name="LogLevel" xml:space="preserve">
+    <value>Úroveň</value>
+  </data>
+  <data name="AllLevels" xml:space="preserve">
+    <value>Všechny úrovně</value>
+  </data>
+  <data name="Debug" xml:space="preserve">
+    <value>Debug</value>
+  </data>
+  <data name="Info" xml:space="preserve">
+    <value>Info</value>
+  </data>
+  <data name="Warning" xml:space="preserve">
+    <value>Varování</value>
+  </data>
+  <data name="NoLogsFound" xml:space="preserve">
+    <value>Žádné logy nenalezeny</value>
+  </data>
+  <data name="NoLogsFoundDescription" xml:space="preserve">
+    <value>Zatím nebyly zaznamenány žádné logy.</value>
+  </data>
+  <data name="NoLogsForLevel" xml:space="preserve">
+    <value>Žádné logy pro úroveň</value>
+  </data>
+  <data name="ShowStackTrace" xml:space="preserve">
+    <value>Zobrazit stack trace</value>
+  </data>
+  <data name="Exception" xml:space="preserve">
+    <value>Výjimka</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>Vymazat</value>
+  </data>
 </root>

@@ -1,5 +1,7 @@
 ﻿using Authly.Configuration;
 using Microsoft.Extensions.Options;
+using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 
 namespace Authly.Services
@@ -38,6 +40,22 @@ namespace Authly.Services
         /// Indicates if logging is enabled
         /// </summary>
         bool IsEnabled { get; }
+
+        /// <summary>
+        /// Event triggered when a new log entry is added
+        /// </summary>
+        event Action<LogEntry>? LogAdded;
+        /// <summary>
+        /// Return stored logs
+        /// </summary>
+        /// <returns></returns>
+        IEnumerable<LogEntry> GetLogs();
+
+        /// <summary>
+        /// Clear stored logs
+        /// </summary>
+        /// <returns></returns>
+        void ClearLogs();
     }
 
     /// <summary>
@@ -69,6 +87,8 @@ namespace Authly.Services
             var logMessage = $"[{category}] {message}";
             Console.WriteLine(logMessage);
             _logger.LogDebug(logMessage);
+
+            AddLogEntry(category, "DEBUG", message);
         }
 
         /// <summary>
@@ -81,6 +101,8 @@ namespace Authly.Services
             var logMessage = $"[{category}] DEBUG: {message}";
             Debug.WriteLine(logMessage);
             _logger.LogDebug(logMessage);
+
+            AddLogEntry(category, "DEBUG", message);
         }
 
         /// <summary>
@@ -103,6 +125,8 @@ namespace Authly.Services
             {
                 _logger.LogError(logMessage);
             }
+
+            AddLogEntry(category, "ERROR", message, exception);
         }
 
         /// <summary>
@@ -115,6 +139,8 @@ namespace Authly.Services
             var logMessage = $"[{category}] INFO: {message}";
             Console.WriteLine(logMessage);
             _logger.LogInformation(logMessage);
+
+            AddLogEntry(category, "INFO", message);
         }
 
         /// <summary>
@@ -127,6 +153,57 @@ namespace Authly.Services
             var logMessage = $"[{category}] WARNING: {message}";
             Console.WriteLine(logMessage);
             _logger.LogWarning(logMessage);
+
+            AddLogEntry(category, "WARNING", message);
         }
+
+
+        private readonly ConcurrentQueue<LogEntry> _logs = new();
+        private const int MaxLogEntries = 50;
+
+        public event Action<LogEntry>? LogAdded;
+
+        private void AddLogEntry(string category, string level, string message, Exception? exception = null)
+        {
+            //if (!IsEnabled) return;
+
+            var entry = new LogEntry
+            {
+                Timestamp = DateTime.Now,
+                Category = category,
+                Level = level,
+                Message = message,
+                Exception = exception
+            };
+
+            _logs.Enqueue(entry);
+
+            // Odebereme nejstarší záznamy, pokud překročíme limit
+            while (_logs.Count > MaxLogEntries)
+            {
+                _logs.TryDequeue(out _); // Bezpečně odeber nejstarší
+            }
+
+            LogAdded?.Invoke(entry);
+        }
+
+        public IEnumerable<LogEntry> GetLogs()
+        {
+            return _logs.ToArray().Reverse(); // Nejnovější první pro zobrazení
+        }
+
+        public void ClearLogs()
+        {
+            while (_logs.TryDequeue(out _)) { } // Vyprázdni queue
+        }
+    }
+
+    public class LogEntry
+    {
+        public DateTime Timestamp { get; set; }
+        public string Category { get; set; } = string.Empty;
+        public string Level { get; set; } = "Information";
+        public string Message { get; set; } = string.Empty;
+        public Exception? Exception { get; set; }
     }
 }
