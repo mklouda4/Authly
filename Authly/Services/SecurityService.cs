@@ -34,6 +34,16 @@ namespace Authly.Services
         AuthenticationResult RecordFailedAttempt(User? user, string ipAddress);
 
         /// <summary>
+        /// Records an unauthorized access attempt (redirect to login, 401, 403, etc.)
+        /// </summary>
+        /// <param name="ipAddress">IP address of the attempt</param>
+        /// <param name="path">Path that was accessed</param>
+        /// <param name="statusCode">HTTP status code returned</param>
+        /// <param name="operationType">Type of operation attempted</param>
+        /// <returns>True if IP should be banned</returns>
+        Task<bool> RecordUnauthorizedAccessAsync(string ipAddress, string path, int statusCode, string operationType);
+
+        /// <summary>
         /// Clears failed login attempts for a user after successful login
         /// NOTE: This does NOT clear IP attempts to prevent security bypass
         /// </summary>
@@ -109,6 +119,10 @@ namespace Authly.Services
 
         // In-memory storage for IP attempts with file persistence
         private readonly ConcurrentDictionary<string, IpLoginAttempt> _ipAttempts = new();
+        
+        // In-memory storage for unauthorized access tracking
+        private readonly ConcurrentDictionary<string, UnauthorizedAccessTracker> _unauthorizedAccess = new();
+        
         private readonly string _ipBansFilePath;
         private readonly JsonSerializerOptions _jsonSerializerOptions;
 
@@ -253,6 +267,78 @@ namespace Authly.Services
         }
 
         /// <summary>
+        /// Records an unauthorized access attempt and returns true if IP should be banned
+        /// </summary>
+        public async Task<bool> RecordUnauthorizedAccessAsync(string ipAddress, string path, int statusCode, string operationType)
+        {
+            if (!_ipRateLimitingOptions.Enabled || string.IsNullOrEmpty(ipAddress))
+                return false;
+
+            var now = DateTime.UtcNow;
+            var threshold = _ipRateLimitingOptions.MaxAttemptsPerIp * 2; // 2x the normal threshold
+            
+            var tracker = _unauthorizedAccess.AddOrUpdate(ipAddress,
+                new UnauthorizedAccessTracker
+                {
+                    IpAddress = ipAddress,
+                    AttemptCount = 1,
+                    FirstAttemptUtc = now,
+                    LastAttemptUtc = now,
+                    LastPath = path,
+                    LastStatusCode = statusCode,
+                    LastOperationType = operationType
+                },
+                (key, existing) =>
+                {
+                    // Check if we should reset the sliding window
+                    if (_ipRateLimitingOptions.SlidingWindow && 
+                        existing.FirstAttemptUtc.AddMinutes(_ipRateLimitingOptions.WindowMinutes) < now)
+                    {
+                        existing.AttemptCount = 1;
+                        existing.FirstAttemptUtc = now;
+                    }
+                    else
+                    {
+                        existing.AttemptCount++;
+                    }
+                    
+                    existing.LastAttemptUtc = now;
+                    existing.LastPath = path;
+                    existing.LastStatusCode = statusCode;
+                    existing.LastOperationType = operationType;
+                    return existing;
+                });
+
+            // Log periodic warnings and record security events
+            if (tracker.AttemptCount % 5 == 0 || tracker.AttemptCount >= threshold)
+            {
+                var severity = tracker.AttemptCount >= threshold ? SecurityEventSeverity.High : SecurityEventSeverity.Medium;
+                
+                await _metricsService.RecordSecurityEventAsync(
+                    "unauthorized_access_pattern",
+                    $"IP {ipAddress} made {tracker.AttemptCount} unauthorized access attempts. Last: {operationType} -> {statusCode}",
+                    severity,
+                    ipAddress);
+
+                _logger.LogWarning("SecurityService", 
+                    $"IP {ipAddress} has made {tracker.AttemptCount} unauthorized access attempts. " +
+                    $"Last attempt: {operationType} -> {statusCode} at {path}");
+            }
+
+            // Check if we should ban the IP
+            if (tracker.AttemptCount >= threshold)
+            {
+                _logger.LogWarning("SecurityService", 
+                    $"IP {ipAddress} exceeded unauthorized access threshold ({tracker.AttemptCount}/{threshold}). " +
+                    "Recommending automatic ban.");
+                    
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Clears failed login attempts for a user after successful login
         /// IMPORTANT: This does NOT clear IP attempts to prevent security bypass
         /// </summary>
@@ -355,13 +441,12 @@ namespace Authly.Services
                     
                     SaveIpBansToFile();
                     _logger.Log("SecurityService", $"IP {ipAddress} unbanned successfully");
-                    return true;
                 }
-                else
-                {
-                    _logger.Log("SecurityService", $"IP {ipAddress} was not found in ban list");
-                    return true; // Consider it a success if IP wasn't banned
-                }
+
+                // Also clear unauthorized access tracking
+                _unauthorizedAccess.TryRemove(ipAddress, out _);
+                
+                return true;
             }
             catch (Exception ex)
             {
@@ -618,5 +703,19 @@ namespace Authly.Services
                 return false;
             }
         }
+    }
+
+    /// <summary>
+    /// Tracks unauthorized access attempts from an IP address
+    /// </summary>
+    internal class UnauthorizedAccessTracker
+    {
+        public string IpAddress { get; set; } = string.Empty;
+        public int AttemptCount { get; set; }
+        public DateTime FirstAttemptUtc { get; set; }
+        public DateTime LastAttemptUtc { get; set; }
+        public string LastPath { get; set; } = string.Empty;
+        public int LastStatusCode { get; set; }
+        public string LastOperationType { get; set; } = string.Empty;
     }
 }

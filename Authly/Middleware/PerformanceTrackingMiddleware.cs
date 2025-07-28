@@ -1,29 +1,38 @@
-using Authly.Services;
+﻿using Authly.Services;
 using Authly.Models;
+using Authly.Configuration;
+using Microsoft.Extensions.Options;
 using System.Diagnostics;
 
 namespace Authly.Middleware
 {
     /// <summary>
-    /// Middleware for tracking performance metrics of authentication operations
+    /// Middleware for tracking performance metrics of authentication operations and monitoring unauthorized access
     /// </summary>
     public class PerformanceTrackingMiddleware
     {
         private readonly RequestDelegate _next;
-        private readonly ILogger<PerformanceTrackingMiddleware> _logger;
+        private readonly IApplicationLogger _logger;
+        private readonly IpRateLimitingOptions _ipRateLimitingOptions;
 
-        public PerformanceTrackingMiddleware(RequestDelegate next, ILogger<PerformanceTrackingMiddleware> logger)
+        public PerformanceTrackingMiddleware(
+            RequestDelegate next, 
+            IApplicationLogger logger,
+            IOptions<IpRateLimitingOptions> ipRateLimitingOptions)
         {
             _next = next;
             _logger = logger;
+            _ipRateLimitingOptions = ipRateLimitingOptions.Value;
         }
 
-        public async Task InvokeAsync(HttpContext context, IMetricsService metricsService)
+        public async Task InvokeAsync(HttpContext context, IMetricsService metricsService, ISecurityService securityService)
         {
             var stopwatch = Stopwatch.StartNew();
             var path = context.Request.Path.Value?.ToLowerInvariant() ?? "";
             var method = context.Request.Method;
             var operationType = DetermineOperationType(path, method);
+            var ipAddress = GetIpAddress(context);
+            var isAuthenticated = context.User?.Identity?.IsAuthenticated == true;
             
             // Only track specific authentication-related operations
             if (operationType == null)
@@ -66,6 +75,16 @@ namespace Authly.Middleware
             {
                 context.Response.Body = originalBodyStream;
 
+                // Check for unauthorized access and potential IP ban
+                await CheckUnauthorizedAccessAsync(
+                    context, 
+                    operationType, 
+                    statusCode, 
+                    isAuthenticated, 
+                    ipAddress, 
+                    metricsService, 
+                    securityService);
+
                 // Record performance metric asynchronously
                 _ = Task.Run(async () =>
                 {
@@ -81,16 +100,123 @@ namespace Authly.Middleware
                             requestSize,
                             responseSize,
                             GetUserId(context),
-                            GetIpAddress(context),
+                            ipAddress,
                             GetUserAgent(context)
                         );
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Failed to record performance metric for {OperationType} {Path}", operationType, path);
+                        _logger.LogError("PerformanceTrackingMiddleware", $"Failed to record performance metric for {operationType} {path}", ex);
                     }
                 });
             }
+        }
+
+        /// <summary>
+        /// Checks for unauthorized access patterns and handles potential IP banning
+        /// </summary>
+        private async Task CheckUnauthorizedAccessAsync(
+            HttpContext context,
+            string operationType,
+            int statusCode,
+            bool isAuthenticated,
+            string? ipAddress,
+            IMetricsService metricsService,
+            ISecurityService securityService)
+        {
+            if (!_ipRateLimitingOptions.Enabled || string.IsNullOrEmpty(ipAddress))
+                return;
+
+            try
+            {
+                var path = context.Request.Path.Value?.ToLowerInvariant() ?? "";
+                var isRedirectToLogin = IsRedirectToLogin(statusCode, context);
+                
+                // DŮLEŽITÉ: Pokud jde o redirect z login endpointu, nepočítej to jako unauthorized access
+                // Tyto případy už řeší LocalAuth.HandleLoginAsync()
+                if (operationType == "login" && isRedirectToLogin)
+                {
+                    _logger.LogDebug("PerformanceTrackingMiddleware", "Ignoring redirect from login endpoint - already handled by LocalAuth");
+                    return;
+                }
+                
+                var isUnauthorizedAccess = !isAuthenticated && (
+                    isRedirectToLogin || 
+                    statusCode == 401 || 
+                    statusCode == 403 ||
+                    (operationType != "login" && RequiresAuthentication(path))
+                );
+                var isAuthorizedAccess = !isAuthenticated && statusCode == 200;
+
+                if (isUnauthorizedAccess)
+                {
+                    var shouldBan = await securityService.RecordUnauthorizedAccessAsync(ipAddress, path, statusCode, operationType);
+                    
+                    if (shouldBan)
+                    {
+                        // Use SecurityService to ban the IP
+                        var banResult = securityService.ManualBanIpAddress(ipAddress);
+                        
+                        if (banResult)
+                        {
+                            _logger.LogWarning("PerformanceTrackingMiddleware", $"IP {ipAddress} has been automatically banned for excessive unauthorized access attempts. " +
+                                $"Path: {path}, StatusCode: {statusCode}, OperationType: {operationType}");
+                            // Record security event
+                            await metricsService.RecordSecurityEventAsync(
+                                "automatic_ip_ban",
+                                $"IP automatically banned for excessive unauthorized access attempts. Last attempt: {operationType} -> {statusCode}",
+                                SecurityEventSeverity.High,
+                                ipAddress);
+                        }
+                    }
+                }
+                else if (isAuthenticated && operationType == "login")
+                {
+                    // Note: Unauthorized access tracking is cleared in SecurityService.UnbanIpAddress()
+                    // when IP is manually unbanned, not on successful authentication to prevent bypass
+                    _logger.LogDebug("PerformanceTrackingMiddleware", $"User successfully authenticated from IP {ipAddress}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("PerformanceTrackingMiddleware", $"Error checking unauthorized access for IP {ipAddress}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Determines if the response is a redirect to login
+        /// </summary>
+        private static bool IsRedirectToLogin(int statusCode, HttpContext context)
+        {
+            if (statusCode == 302 || statusCode == 301)
+            {
+                var location = context.Response.Headers["Location"].FirstOrDefault();
+                return !string.IsNullOrEmpty(location) && 
+                       (location.Contains("/login", StringComparison.OrdinalIgnoreCase) ||
+                        location.Contains("/account/login", StringComparison.OrdinalIgnoreCase));
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Determines if the path requires authentication
+        /// </summary>
+        private static bool RequiresAuthentication(string path)
+        {
+            // Protected paths that typically require authentication
+            var protectedPaths = new[]
+            {
+                "/dashboard",
+                "/admin",
+                "/profile",
+                "/settings",
+                "/oauth/authorize",
+                "/oauth/userinfo",
+                "/api/"
+            };
+
+            return protectedPaths.Any(protectedPath => 
+                path.StartsWith(protectedPath, StringComparison.OrdinalIgnoreCase));
         }
 
         private static string? DetermineOperationType(string path, string method)
@@ -104,6 +230,9 @@ namespace Authly.Middleware
                 var p when p.Contains("/oauth/userinfo") => "oauth_userinfo",
                 var p when p.Contains("/oauth/revoke") => "oauth_revoke",
                 var p when p.StartsWith("/api/") => "api_call",
+                var p when p.Contains("/dashboard") => "dashboard_access",
+                var p when p.Contains("/admin") => "admin_access",
+                var p when p.Contains("/profile") => "profile_access",
                 _ => null // Don't track other operations
             };
         }
@@ -116,14 +245,10 @@ namespace Authly.Middleware
         }
 
         private static string? GetIpAddress(HttpContext context)
-        {
-            return context.Connection.RemoteIpAddress?.ToString();
-        }
+            => context.Connection.RemoteIpAddress?.ToString();
 
-        private static string? GetUserAgent(HttpContext context)
-        {
-            return context.Request.Headers["User-Agent"].FirstOrDefault();
-        }
+        private static string? GetUserAgent(HttpContext context) 
+            => context.Request.Headers["User-Agent"].FirstOrDefault();
     }
 
     /// <summary>

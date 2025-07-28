@@ -1,4 +1,4 @@
-using Authly.Models;
+﻿using Authly.Models;
 using Authly.Data;
 using Authly.Authorization.UserStorage;
 using Authly.Configuration;
@@ -159,6 +159,79 @@ namespace Authly.Services
             }
         }
 
+        public async Task<bool> RecordUnauthorizedAccessAsync(string ipAddress, string path, int statusCode, string operationType)
+        {
+            if (!_ipRateLimitingOptions.Enabled || string.IsNullOrEmpty(ipAddress))
+                return false;
+
+            try
+            {
+                var now = DateTime.UtcNow;
+                var threshold = _ipRateLimitingOptions.MaxAttemptsPerIp * 2; // 2x the normal threshold
+                
+                var unauthorizedAttempt = await _context.IpLoginAttempts
+                    .FirstOrDefaultAsync(x => x.IpAddress == ipAddress + "_unauthorized");
+
+                if (unauthorizedAttempt == null)
+                {
+                    unauthorizedAttempt = new IpLoginAttempt
+                    {
+                        IpAddress = ipAddress + "_unauthorized",
+                        FailedAttempts = 1,
+                        FirstAttemptUtc = now,
+                        LastAttemptUtc = now,
+                        IsBanned = false,
+                        BanEndUtc = null
+                    };
+                    _context.IpLoginAttempts.Add(unauthorizedAttempt);
+                }
+                else
+                {
+                    unauthorizedAttempt.FailedAttempts++;
+                    unauthorizedAttempt.LastAttemptUtc = now;
+                }
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogDebug("DatabaseSecurityService", 
+                    $"Recording unauthorized access from IP {ipAddress} ({unauthorizedAttempt.FailedAttempts}/{threshold}). " +
+                    $"Path: {path}, StatusCode: {statusCode}, OperationType: {operationType}");
+
+                // Log periodic warnings and record security events
+                if (unauthorizedAttempt.FailedAttempts % _ipRateLimitingOptions.MaxAttemptsPerIp == 0 || unauthorizedAttempt.FailedAttempts >= threshold)
+                {
+                    var severity = unauthorizedAttempt.FailedAttempts >= threshold ? SecurityEventSeverity.High : SecurityEventSeverity.Medium;
+                    
+                    await _metricsService.RecordSecurityEventAsync(
+                        "unauthorized_access_pattern",
+                        $"IP {ipAddress} made {unauthorizedAttempt.FailedAttempts} unauthorized access attempts. Last: {operationType} -> {statusCode} at {path}",
+                        severity,
+                        ipAddress);
+
+                    _logger.LogWarning("DatabaseSecurityService", 
+                        $"IP {ipAddress} has made {unauthorizedAttempt.FailedAttempts} unauthorized access attempts. " +
+                        $"Last attempt: {operationType} -> {statusCode} at {path}");
+                }
+
+                // Check if we should ban the IP
+                if (unauthorizedAttempt.FailedAttempts >= threshold)
+                {
+                    _logger.LogWarning("DatabaseSecurityService", 
+                        $"IP {ipAddress} exceeded unauthorized access threshold ({unauthorizedAttempt.FailedAttempts}/{threshold}). " +
+                        "Recommending automatic ban.");
+                        
+                    return true;
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("DatabaseSecurityService", $"Error recording unauthorized access: {ex.Message}", ex);
+                return false;
+            }
+        }
+
         public void ClearUserFailedAttempts(User user)
         {
             _logger.Log("DatabaseSecurityService", $"Clearing failed attempts for user {user.UserName}");
@@ -258,14 +331,23 @@ namespace Authly.Services
                     ipAttempt.FailedAttempts = 0;
                     ipAttempt.FirstAttemptUtc = DateTime.UtcNow;
                     ipAttempt.LastAttemptUtc = DateTime.UtcNow;
-                    
-                    _context.SaveChanges();
-
-                    // Record IP unban security event
-                    _metricsService.RecordSecurityEventAsync("ip_unban", $"IP {ipAddress} manually unbanned", SecurityEventSeverity.Low, ipAddress);
-
-                    _logger.Log("DatabaseSecurityService", $"IP {ipAddress} unbanned successfully");
                 }
+
+                var unauthorizedAttempt = _context.IpLoginAttempts
+                    .FirstOrDefault(x => x.IpAddress == ipAddress + "_unauthorized");
+
+                if (unauthorizedAttempt != null)
+                {
+                    _context.IpLoginAttempts.Remove(unauthorizedAttempt);
+                    _logger.Log("DatabaseSecurityService", $"Cleared unauthorized access tracking for IP {ipAddress}");
+                }
+
+                _context.SaveChanges();
+
+                // Record IP unban security event
+                _metricsService.RecordSecurityEventAsync("ip_unban", $"IP {ipAddress} manually unbanned", SecurityEventSeverity.Low, ipAddress);
+
+                _logger.Log("DatabaseSecurityService", $"IP {ipAddress} unbanned successfully");
                 
                 return true;
             }
@@ -282,7 +364,8 @@ namespace Authly.Services
             {
                 var now = DateTime.UtcNow;
                 return _context.IpLoginAttempts
-                    .Where(x => x.FailedAttempts > 0 || (x.IsBanned && x.BanEndUtc > now))
+                    .Where(x => !x.IpAddress.EndsWith("_unauthorized") && // Exclude unauthorized tracking records
+                                (x.FailedAttempts > 0 || (x.IsBanned && x.BanEndUtc > now)))
                     .OrderByDescending(x => x.LastAttemptUtc)
                     .ToList();
             }
@@ -335,13 +418,22 @@ namespace Authly.Services
                 var ipAttempt = _context.IpLoginAttempts
                     .FirstOrDefault(x => x.IpAddress == ipAddress);
 
+                var unauthorizedAttempt = _context.IpLoginAttempts
+                    .FirstOrDefault(x => x.IpAddress == ipAddress + "_unauthorized");
+
+                if (unauthorizedAttempt != null)
+                {
+                    _context.IpLoginAttempts.Remove(unauthorizedAttempt);
+                    _logger.Log("DatabaseSecurityService", $"Cleared unauthorized access tracking for IP {ipAddress}");
+                }
+
                 if (ipAttempt == null)
                 {
                     ipAttempt = new IpLoginAttempt
                     {
                         IpAddress = ipAddress,
-                        FailedAttempts = _ipRateLimitingOptions.MaxAttemptsPerIp,
-                        FirstAttemptUtc = now,
+                        FailedAttempts = unauthorizedAttempt?.FailedAttempts ?? _ipRateLimitingOptions.MaxAttemptsPerIp,
+                        FirstAttemptUtc = unauthorizedAttempt?.FirstAttemptUtc ?? now,
                         LastAttemptUtc = now,
                         IsBanned = true,
                         BanEndUtc = DateTime.MaxValue
@@ -382,7 +474,7 @@ namespace Authly.Services
             {
                 var cutoffDate = DateTime.UtcNow.AddDays(-olderThanDays);
                 
-                // Remove old IP attempts that are not currently banned
+                // Remove old IP attempts that are not currently banned (including unauthorized tracking)
                 var oldIpAttempts = await _context.IpLoginAttempts
                     .Where(ip => ip.FirstAttemptUtc < cutoffDate && 
                                 (!ip.IsBanned || (ip.BanEndUtc.HasValue && ip.BanEndUtc < DateTime.UtcNow)))
@@ -393,7 +485,12 @@ namespace Authly.Services
                     _context.IpLoginAttempts.RemoveRange(oldIpAttempts);
                     await _context.SaveChangesAsync();
 
-                    _logger.Log("DatabaseSecurityService", $"Cleaned up {oldIpAttempts.Count} old IP attempts older than {olderThanDays} days");
+                    var regularAttempts = oldIpAttempts.Count(x => !x.IpAddress.EndsWith("_unauthorized"));
+                    var unauthorizedAttempts = oldIpAttempts.Count(x => x.IpAddress.EndsWith("_unauthorized"));
+
+                    _logger.Log("DatabaseSecurityService", 
+                        $"Cleaned up {regularAttempts} old IP attempts and {unauthorizedAttempts} unauthorized access attempts older than {olderThanDays} days");
+                    
                     return oldIpAttempts.Count;
                 }
 
