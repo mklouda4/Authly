@@ -684,7 +684,6 @@
   <data name="ErrorDisablingTemporaryRegistration" xml:space="preserve">
     <value>Došlo k chybě při zakazování dočasné registrace</value>
   </data>
-  <!-- OAuth Client Management Translations -->
   <data name="OAuthClientManagement" xml:space="preserve">
     <value>Správa OAuth klientů</value>
   </data>
@@ -865,7 +864,6 @@
   <data name="FailedToCopyToClipboard" xml:space="preserve">
     <value>Nepodařilo se zkopírovat do schránky</value>
   </data>
-  <!-- Additional OAuth Client Management Translations -->
   <data name="EditOAuthClient" xml:space="preserve">
     <value>Upravit OAuth klienta</value>
   </data>
@@ -920,7 +918,6 @@
   <data name="TogglePasswordVisibility" xml:space="preserve">
     <value>Přepnout viditelnost hesla</value>
   </data>
-  <!-- Metrics-related translations in Czech -->
   <data name="Metrics" xml:space="preserve">
     <value>Metriky</value>
   </data>
@@ -1008,15 +1005,14 @@
   <data name="OAuthClients" xml:space="preserve">
     <value>OAuth klienti</value>
   </data>
-  <!-- Additional Metrics Translations -->
-  <data name="LoginResponseTime" xml:space="preserve">
-    <value>Doba odezvy přihlášení</value>
-  </data>
   <data name="AverageResponseTime" xml:space="preserve">
     <value>Průměrná doba odezvy</value>
   </data>
   <data name="SystemUptime" xml:space="preserve">
     <value>Provozní doba systému</value>
+  </data>
+  <data name="SystemState" xml:space="preserve">
+    <value>Stav systému</value>
   </data>
   <data name="ServiceAvailability" xml:space="preserve">
     <value>Dostupnost služby</value>
@@ -1053,5 +1049,17 @@
   </data>
   <data name="ProcessorUsage" xml:space="preserve">
     <value>Využití procesoru</value>
+  </data>
+  <data name="DaysShort" xml:space="preserve">
+    <value>d</value>
+  </data>
+  <data name="HoursShort" xml:space="preserve">
+    <value>h</value>
+  </data>
+  <data name="MinutesShort" xml:space="preserve">
+    <value>m</value>
+  </data>
+  <data name="SecondsShort" xml:space="preserve">
+    <value>s</value>
   </data>
 </root>

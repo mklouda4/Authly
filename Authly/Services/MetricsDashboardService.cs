@@ -109,7 +109,8 @@ namespace Authly.Services
                     },
                     ["availability"] = new
                     {
-                        uptimePercentage = uptimePercentage
+                        uptimePercentage = uptimePercentage,
+                        uptime = System.Diagnostics.Process.GetCurrentProcess().StartTime,
                     },
                     ["timestamp"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                     ["period"] = new

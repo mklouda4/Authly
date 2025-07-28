@@ -684,7 +684,6 @@
   <data name="ErrorDisablingTemporaryRegistration" xml:space="preserve">
     <value>Error occurred while disabling temporary registration</value>
   </data>
-  <!-- OAuth Client Management Translations -->
   <data name="OAuthClientManagement" xml:space="preserve">
     <value>OAuth Client Management</value>
   </data>
@@ -865,7 +864,6 @@
   <data name="FailedToCopyToClipboard" xml:space="preserve">
     <value>Failed to copy to clipboard</value>
   </data>
-  <!-- Additional OAuth Client Management Translations -->
   <data name="EditOAuthClient" xml:space="preserve">
     <value>Edit OAuth Client</value>
   </data>
@@ -920,7 +918,6 @@
   <data name="TogglePasswordVisibility" xml:space="preserve">
     <value>Toggle password visibility</value>
   </data>
-  <!-- Metrics-related translations -->
   <data name="Metrics" xml:space="preserve">
     <value>Metrics</value>
   </data>
@@ -1008,12 +1005,11 @@
   <data name="OAuthClients" xml:space="preserve">
     <value>OAuth Clients</value>
   </data>
-  <!-- Performance Metrics Translations -->
-  <data name="LoginResponseTime" xml:space="preserve">
-    <value>Login Response Time</value>
-  </data>
   <data name="AverageResponseTime" xml:space="preserve">
     <value>Average response time</value>
+  </data>
+	<data name="SystemState" xml:space="preserve">
+    <value>System state</value>
   </data>
   <data name="SystemUptime" xml:space="preserve">
     <value>System Uptime</value>
@@ -1045,7 +1041,6 @@
   <data name="Available" xml:space="preserve">
     <value>Available</value>
   </data>
-  <!-- Additional Metrics Translations -->
   <data name="CpuUsage" xml:space="preserve">
     <value>CPU Usage</value>
   </data>
@@ -1054,5 +1049,17 @@
   </data>
   <data name="ProcessorUsage" xml:space="preserve">
     <value>Processor Usage</value>
+  </data>
+  <data name="DaysShort" xml:space="preserve">
+    <value>d</value>
+  </data>
+  <data name="HoursShort" xml:space="preserve">
+    <value>h</value>
+  </data>
+  <data name="MinutesShort" xml:space="preserve">
+    <value>m</value>
+  </data>
+  <data name="SecondsShort" xml:space="preserve">
+    <value>s</value>
   </data>
 </root>

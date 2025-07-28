@@ -918,7 +918,6 @@
   <data name="TogglePasswordVisibility" xml:space="preserve">
     <value>Passwort-Sichtbarkeit umschalten</value>
   </data>
-  <!-- Metrics-related translations in German -->
   <data name="Metrics" xml:space="preserve">
     <value>Metriken</value>
   </data>
@@ -1006,10 +1005,6 @@
   <data name="OAuthClients" xml:space="preserve">
     <value>OAuth-Clients</value>
   </data>
-  <!-- Additional Metrics Translations -->
-  <data name="LoginResponseTime" xml:space="preserve">
-    <value>Anmelde-Antwortzeit</value>
-  </data>
   <data name="AverageResponseTime" xml:space="preserve">
     <value>Durchschnittliche Antwortzeit</value>
   </data>
@@ -1051,5 +1046,20 @@
   </data>
   <data name="ProcessorUsage" xml:space="preserve">
     <value>Prozessornutzung</value>
+  </data>
+  <data name="DaysShort" xml:space="preserve">
+    <value>d</value>
+  </data>
+  <data name="HoursShort" xml:space="preserve">
+    <value>h</value>
+  </data>
+  <data name="MinutesShort" xml:space="preserve">
+    <value>m</value>
+  </data>
+  <data name="SecondsShort" xml:space="preserve">
+    <value>s</value>
+  </data>
+  <data name="SystemState" xml:space="preserve">
+    <value>Systemzustand</value>
   </data>
 </root>

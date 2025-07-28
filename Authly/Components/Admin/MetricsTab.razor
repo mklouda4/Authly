@@ -1,6 +1,7 @@
 ﻿@using Authly.Services
 @using Authly.Models
 @using System.Text.Json
+@using Authly.Extension
 @inherits BaseAdminTab
 
 <div class="tab-content metrics-tab">
@@ -112,7 +113,7 @@
             <!-- Performance Metrics Cards -->
             <div class="metric-card performance-card">
                 <div class="metric-header">
-                    <h3>@LocalizationService.GetString("LoginResponseTime")</h3>
+                    <h3>@LocalizationService.GetString("AverageResponseTime")</h3>
                     <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10" />
                         <polyline points="12,6 12,12 16,14" />
@@ -124,9 +125,9 @@
                 </div>
             </div>
 
-            <div class="metric-card uptime-card">
+            <div class="metric-card up-state-card">
                 <div class="metric-header">
-                    <h3>@LocalizationService.GetString("SystemUptime")</h3>
+                    <h3>@LocalizationService.GetString("SystemState")</h3>
                     <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 2L2 7v10c0 5.55 3.84 9.95 9 11 5.16-1.05 9-5.45 9-11V7l-10-5z" />
                         <path d="M9 12l2 2 4-4" />
@@ -138,7 +139,20 @@
                 </div>
             </div>
 
-            <!-- Separate CPU and Memory Cards -->
+            <div class="metric-card up-time-card">
+                <div class="metric-header">
+                    <h3>@LocalizationService.GetString("SystemUptime")</h3>
+                    <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12,6 12,12 16,14" />
+                    </svg>
+                </div>
+                <div class="metric-value">@(availabilityMetrics?.Uptime?.ToLocalizedString(LocalizationService))</div>
+                <div class="metric-detail">
+                    @LocalizationService.GetString("ServiceAvailability")
+                </div>
+            </div>
+
             <div class="metric-card cpu-card">
                 <div class="metric-header">
                     <h3>@LocalizationService.GetString("CpuUsage")</h3>
@@ -391,6 +405,7 @@
     private bool isRefreshing = false;
     private string errorMessage = string.Empty;
     private DateTime lastUpdated = DateTime.Now;
+    private Timer? upTimeTimer;
 
     private LoginMetrics? loginMetrics;
     private SecurityMetrics? securityMetrics;
@@ -439,11 +454,14 @@
     private class AvailabilityMetrics
     {
         public double UptimePercentage { get; set; }
+        public DateTime? StartTime { get; set; }
+        public TimeSpan? Uptime => DateTime.Now - (StartTime ?? DateTime.Now);
     }
 
     protected override async Task OnInitializedAsync()
     {
         isMetricsEnabled = MetricsDashboardService.IsMetricsEnabled;
+        StartUptimeTimer();
         await base.OnInitializedAsync();
     }
 
@@ -452,6 +470,9 @@
         if (IsVisible && !_previousVisibility)
         {
             await LoadDataIfNeeded();
+
+            upTimeTimer?.Dispose();
+            StartUptimeTimer();
         }
 
         _previousVisibility = IsVisible;
@@ -481,6 +502,15 @@
         }
 
         await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private void StartUptimeTimer()
+    {
+        // Start timer that updates every 1000ms
+        upTimeTimer = new Timer(async _ =>
+        {
+            await InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromMilliseconds(1000), TimeSpan.FromMilliseconds(1000));
     }
 
     protected override async Task LoadDataAsync()
@@ -590,7 +620,8 @@
         {
             availabilityMetrics = new AvailabilityMetrics
             {
-                UptimePercentage = availabilityElement.GetProperty("uptimePercentage").GetDouble()
+                UptimePercentage = availabilityElement.GetProperty("uptimePercentage").GetDouble(),
+                StartTime = availabilityElement.GetProperty("uptime").GetDateTime()
             };
         }
 
@@ -685,6 +716,7 @@
     {
         try
         {
+            upTimeTimer?.Dispose();
             await JSRuntime.InvokeVoidAsync("metricsCharts.destroy");
         }
         catch
@@ -1150,16 +1182,28 @@
         }
 
     /* Uptime card styling */
-    .uptime-card {
+    .up-time-card {
         border-left: 4px solid #8B5CF6;
     }
 
-        .uptime-card .metric-icon {
+        .up-time-card .metric-icon {
             color: #8B5CF6;
         }
 
-        .uptime-card .metric-value {
+        .up-time-card .metric-value {
             color: #8B5CF6;
+        }
+
+    .up-state-card {
+        border-left: 4px solid #10B981;
+    }
+
+        .up-state-card .metric-icon {
+            color: #10B981;
+        }
+
+        .up-state-card .metric-value {
+            color: #10B981;
         }
 
     /* CPU usage card styling */
