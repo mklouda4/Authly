@@ -6,6 +6,7 @@ using Authly.Services;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Swashbuckle.AspNetCore.Annotations;
+using Authly.Extension;
 
 namespace Authly.Controllers
 {
@@ -23,6 +24,7 @@ namespace Authly.Controllers
         private readonly SignInManager<User> _signInManager;
         private readonly IApplicationLogger _logger;
         private readonly ILocalizationService _localizationService;
+        private readonly ISecurityService _securityService;
 
         public OAuthController(
             IOAuthAuthorizationService authorizationService,
@@ -30,7 +32,8 @@ namespace Authly.Controllers
             UserManager<User> userManager,
             SignInManager<User> signInManager,
             IApplicationLogger logger,
-            ILocalizationService localizationService)
+            ILocalizationService localizationService,
+            ISecurityService securityService)
         {
             _authorizationService = authorizationService;
             _clientService = clientService;
@@ -38,6 +41,7 @@ namespace Authly.Controllers
             _signInManager = signInManager;
             _logger = logger;
             _localizationService = localizationService;
+            _securityService = securityService;
         }
 
         /// <summary>
@@ -227,10 +231,22 @@ namespace Authly.Controllers
         {
             try
             {
+                var ipAddress = HttpContext.GetClientIpAddress();
+                
+                // Check if IP is banned before processing
+                if (_securityService.IsIpBanned(ipAddress))
+                {
+                    var banEnd = _securityService.GetIpBanEndTime(ipAddress);
+                    _logger.LogWarning("OAuth", $"IP {ipAddress} is banned until {banEnd} - denying userinfo request");
+                    return Unauthorized(new { error = "ip_banned", error_description = $"IP address banned until {banEnd}" });
+                }
+
                 // Extract access token from Authorization header
                 var authHeader = Request.Headers["Authorization"].ToString();
                 if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
                 {
+                    // Record unauthorized access attempt
+                    _securityService.RecordFailedAttempt(null, ipAddress);
                     return Unauthorized(new { error = "invalid_token", error_description = "Missing or invalid access token" });
                 }
 
@@ -239,8 +255,14 @@ namespace Authly.Controllers
                 
                 if (userInfo == null)
                 {
+                    // Record failed attempt for invalid token
+                    _securityService.RecordFailedAttempt(null, ipAddress);
                     return Unauthorized(new { error = "invalid_token", error_description = "Invalid access token" });
                 }
+
+                // Clear IP ban on successful OAuth authentication
+                _securityService.UnbanIpAddress(ipAddress);
+                _logger.Log("OAuth", $"IP ban cleared for {ipAddress} after successful OAuth userinfo request");
 
                 _logger.Log("OAuth", "UserInfo request completed successfully");
                 return Ok(userInfo);
@@ -271,10 +293,22 @@ namespace Authly.Controllers
         {
             try
             {
+                var ipAddress = HttpContext.GetClientIpAddress();
+                
+                // Check if IP is banned before processing
+                if (_securityService.IsIpBanned(ipAddress))
+                {
+                    var banEnd = _securityService.GetIpBanEndTime(ipAddress);
+                    _logger.LogWarning("OAuth", $"IP {ipAddress} is banned until {banEnd} - denying userinfo/emails request");
+                    return Unauthorized(new { error = "ip_banned", error_description = $"IP address banned until {banEnd}" });
+                }
+
                 // Extract access token from Authorization header
                 var authHeader = Request.Headers["Authorization"].ToString();
                 if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
                 {
+                    // Record unauthorized access attempt
+                    _securityService.RecordFailedAttempt(null, ipAddress);
                     return Unauthorized(new { error = "invalid_token", error_description = "Missing or invalid access token" });
                 }
 
@@ -283,6 +317,8 @@ namespace Authly.Controllers
 
                 if (userInfo == null)
                 {
+                    // Record failed attempt for invalid token
+                    _securityService.RecordFailedAttempt(null, ipAddress);
                     return Unauthorized(new { error = "invalid_token", error_description = "Invalid access token" });
                 }
 
@@ -290,11 +326,17 @@ namespace Authly.Controllers
 
                 if (userNameModel == null)
                 {
+                    // Record failed attempt for invalid token data
+                    _securityService.RecordFailedAttempt(null, ipAddress);
                     return Unauthorized(new { error = "invalid_token", error_description = "Invalid access token" });
                 }
 
                 var email = userNameModel.TryGetValue("email", out var emailValue) ? emailValue?.ToString() : null;
                 var emailVerified = userNameModel.TryGetValue("email_verified", out var emailVerifiedValue) ? emailVerifiedValue?.ToString() : null;
+
+                // Clear IP ban on successful OAuth authentication
+                _securityService.UnbanIpAddress(ipAddress);
+                _logger.Log("OAuth", $"IP ban cleared for {ipAddress} after successful OAuth userinfo/emails request");
 
                 _logger.Log("OAuth", "UserInfoEmails request completed successfully");
                 return Ok(new[]

@@ -319,13 +319,16 @@ namespace Authly.Services
         {
             try
             {
+                bool securityLog = false;
                 _logger.Log("DatabaseSecurityService", $"Manually unbanning IP {ipAddress}");
-                
+
                 var ipAttempt = _context.IpLoginAttempts
                     .FirstOrDefault(x => x.IpAddress == ipAddress);
 
                 if (ipAttempt != null)
                 {
+                    securityLog = ipAttempt.IsBanned;
+
                     ipAttempt.IsBanned = false;
                     ipAttempt.BanEndUtc = null;
                     ipAttempt.FailedAttempts = 0;
@@ -344,9 +347,11 @@ namespace Authly.Services
 
                 _context.SaveChanges();
 
-                // Record IP unban security event
-                _metricsService.RecordSecurityEventAsync("ip_unban", $"IP {ipAddress} manually unbanned", SecurityEventSeverity.Low, ipAddress);
-
+                if (securityLog)
+                {
+                    // Record IP unban security event
+                    _metricsService.RecordSecurityEventAsync("ip_unban", $"IP {ipAddress} manually unbanned", SecurityEventSeverity.Low, ipAddress);
+                }
                 _logger.Log("DatabaseSecurityService", $"IP {ipAddress} unbanned successfully");
                 
                 return true;

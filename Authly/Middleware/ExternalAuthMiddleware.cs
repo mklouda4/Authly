@@ -159,6 +159,8 @@ namespace Authly.Middleware
                 await SetAuthHeadersFromSession(context, authResult, userName, userEmail, userDisplayName, userId);
 
                 appLogger.Log("ExternalAuthMiddleware", $"Auth verification successful for user: {userName} (session auth)");
+                
+                securityService.UnbanIpAddress(ipAddress);
 
                 context.Response.StatusCode = 200;
                 await context.Response.WriteAsync("OK");
@@ -235,6 +237,8 @@ namespace Authly.Middleware
                     authenticationMethod = "session",
                     authenticationTime = authResult.Properties?.IssuedUtc?.ToString("yyyy-MM-ddTHH:mm:ssZ")
                 };
+
+                securityService.UnbanIpAddress(ipAddress);
 
                 await WriteJsonResponseAsync(context, sessionUserInfo);
                 appLogger.Log("ExternalAuthMiddleware", $"User info returned for user: {userName} (session auth)");
@@ -462,8 +466,12 @@ namespace Authly.Middleware
                         return null;
                     }
                     
-                    // User is valid and not locked out - record successful access
+                    // User is valid and not locked out - record successful access and clear IP ban
                     appLogger.Log("ExternalAuthMiddleware", $"Token authentication successful for user: {user.UserName}");
+                    
+                    // Clear IP ban on successful authentication
+                    securityService.UnbanIpAddress(ipAddress);
+                    appLogger.Log("ExternalAuthMiddleware", $"IP ban cleared for {ipAddress} after successful token authentication by user {user.UserName}");
                                         
                     return user;
                 }

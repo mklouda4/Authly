@@ -443,6 +443,9 @@ namespace Authly.Authorization.Facebook
                 // Record successful external authentication
                 _metricsService.RecordLoginAttempt(true, "external_facebook");
 
+                // Unban the IP address if it was previously banned
+                _securityService.UnbanIpAddress(ipAddress);
+
                 // Redirect to dashboard or original return URL
                 context.Response.Redirect(validatedReturnUrl);
             }

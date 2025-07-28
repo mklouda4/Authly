@@ -132,14 +132,19 @@ namespace Authly.Middleware
                 var path = context.Request.Path.Value?.ToLowerInvariant() ?? "";
                 var isRedirectToLogin = IsRedirectToLogin(statusCode, context);
                 
-                // DŮLEŽITÉ: Pokud jde o redirect z login endpointu, nepočítej to jako unauthorized access
-                // Tyto případy už řeší LocalAuth.HandleLoginAsync()
                 if (operationType == "login" && isRedirectToLogin)
                 {
-                    _logger.LogDebug("PerformanceTrackingMiddleware", "Ignoring redirect from login endpoint - already handled by LocalAuth");
                     return;
                 }
-                
+                if (operationType == "logout")
+                {
+                    return;
+                }
+                if ((operationType == "dashboard" || operationType == "dashboard_access") && statusCode == 200)
+                {
+                    return;
+                }
+
                 var isUnauthorizedAccess = !isAuthenticated && (
                     isRedirectToLogin || 
                     statusCode == 401 || 
