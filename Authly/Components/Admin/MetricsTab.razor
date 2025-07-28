@@ -3,6 +3,7 @@
 @using System.Text.Json
 @using Authly.Extension
 @inherits BaseAdminTab
+@implements IAsyncDisposable
 
 <div class="tab-content metrics-tab">
     @if (isLocalLoading)
@@ -405,6 +406,8 @@
     private Timer? upTimeTimer;
     private int counter = 0;
     private int autoRefreshTreshold = 60;
+    private bool _disposed = false;
+    private readonly object _timerLock = new object();
 
     private LoginMetrics? loginMetrics;
     private SecurityMetrics? securityMetrics;
@@ -469,8 +472,14 @@
         {
             await LoadDataIfNeeded();
 
-            upTimeTimer?.Dispose();
+            // Restartuj timer při zobrazení komponenty
+            StopUptimeTimer();
             StartUptimeTimer();
+        }
+        else if (!IsVisible && _previousVisibility)
+        {
+            // Zastav timer když komponenta není viditelná
+            StopUptimeTimer();
         }
 
         _previousVisibility = IsVisible;
@@ -495,7 +504,14 @@
             }
             catch (Exception ex)
             {
-                await JSRuntime.InvokeVoidAsync("console.error", $"OnAfterRenderAsync: Error updating charts: {ex.Message}");
+                try
+                {
+                    await JSRuntime.InvokeVoidAsync("console.error", $"OnAfterRenderAsync: Error updating charts: {ex.Message}");
+                }
+                catch
+                {
+                    // Ignore JS interop errors
+                }
             }
         }
 
@@ -504,17 +520,63 @@
 
     private void StartUptimeTimer()
     {
-        // Start timer that updates every 1000ms
-        upTimeTimer = new Timer(async _ =>
+        if (_disposed) return;
+
+        lock (_timerLock)
         {
-            Interlocked.Increment(ref counter);
-            if (counter >= autoRefreshTreshold)
+            if (_disposed || upTimeTimer != null) return;
+
+            // Start timer that updates every 1000ms
+            upTimeTimer = new Timer(async _ =>
             {
-                counter = 0;
-                await InvokeAsync(RefreshData);
+                if (_disposed) return;
+
+                try
+                {
+                    Interlocked.Increment(ref counter);
+                    if (counter >= autoRefreshTreshold)
+                    {
+                        counter = 0;
+                        if (!_disposed && IsVisible)
+                        {
+                            await InvokeAsync(RefreshData);
+                        }
+                    }
+                    
+                    if (!_disposed && IsVisible)
+                    {
+                        await InvokeAsync(StateHasChanged);
+                    }
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Component was disposed, ignore
+                }
+                catch (Exception)
+                {
+                    // Ignore other timer callback errors to prevent crashes
+                }
+            }, null, TimeSpan.FromMilliseconds(1000), TimeSpan.FromMilliseconds(1000));
+        }
+    }
+
+    private void StopUptimeTimer()
+    {
+        lock (_timerLock)
+        {
+            try
+            {
+                upTimeTimer?.Dispose();
             }
-            await InvokeAsync(StateHasChanged);
-        }, null, TimeSpan.FromMilliseconds(1000), TimeSpan.FromMilliseconds(1000));
+            catch
+            {
+                // Ignore disposal errors
+            }
+            finally
+            {
+                upTimeTimer = null;
+            }
+        }
     }
 
     protected override async Task LoadDataAsync()
@@ -632,6 +694,8 @@
 
     private async Task UpdateCharts()
     {
+        if (_disposed) return;
+
         try
         {
             if (loginMetrics != null)
@@ -669,14 +733,27 @@
                         responseTimeLabel = LocalizationService.GetString("ResponseTime")
                     });
             }
-        } catch (Exception ex) {
-            await JSRuntime.InvokeVoidAsync("console.error", $"Error updating charts: {ex.Message}");
+        } 
+        catch (ObjectDisposedException)
+        {
+            // Component was disposed, ignore
+        }
+        catch (Exception ex) 
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("console.error", $"Error updating charts: {ex.Message}");
+            }
+            catch
+            {
+                // Ignore JS interop errors during disposal
+            }
         }
     }
 
     private async Task RefreshData()
     {
-        if (isRefreshing) return;
+        if (isRefreshing || _disposed) return;
 
         isRefreshing = true;
         _chartsInitialized = false; // Reset flag
@@ -687,16 +764,27 @@
             await LoadDataAsync();
 
             // Po načtení dat počkáme chvilku a pak prekreslíme grafy
-            if (loginMetrics != null && securityMetrics != null && performanceMetrics != null)
+            if (!_disposed && loginMetrics != null && securityMetrics != null && performanceMetrics != null)
             {
                 await Task.Delay(300);
                 await UpdateCharts();
                 _chartsInitialized = true;
             }
         }
+        catch (ObjectDisposedException)
+        {
+            // Component was disposed, ignore
+        }
         catch (Exception ex)
         {
-            await JSRuntime.InvokeVoidAsync("console.error", $"RefreshData error: {ex.Message}");
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("console.error", $"RefreshData error: {ex.Message}");
+            }
+            catch
+            {
+                // Ignore JS interop errors
+            }
             hasError = true;
             errorMessage = ex.Message;
         }
@@ -704,20 +792,42 @@
         {
             counter = 0;
             isRefreshing = false;
-            StateHasChanged();
+            if (!_disposed)
+            {
+                StateHasChanged();
+            }
         }
     }
 
     public async ValueTask DisposeAsync()
     {
+        if (_disposed) return;
+
+        _disposed = true;
+        
+        // Stop timer first
+        StopUptimeTimer();
+
         try
         {
-            upTimeTimer?.Dispose();
+            // Clean up JS charts
             await JSRuntime.InvokeVoidAsync("metricsCharts.destroy");
         }
         catch
         {
             // Ignore JS interop errors during disposal
+        }
+
+        GC.SuppressFinalize(this);
+    }
+
+    // Finalizer jako záloha (shouldn't be needed if DisposeAsync is called properly)
+    ~MetricsTab()
+    {
+        if (!_disposed)
+        {
+            _disposed = true;
+            StopUptimeTimer();
         }
     }
 }
@@ -1014,21 +1124,6 @@
             max-width: 100%;
             box-sizing: border-box;
             overflow: hidden;
-        }
-
-        .chart-header {
-            margin-bottom: 0.75rem;
-        }
-
-            .chart-header h3 {
-                font-size: 0.9rem;
-            }
-
-        canvas {
-            height: 180px !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            box-sizing: border-box;
         }
 
         .warning-card, .error-card {
