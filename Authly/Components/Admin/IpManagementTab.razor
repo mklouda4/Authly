@@ -4,6 +4,44 @@
 @inject IJSRuntime JSRuntime
 
 <div class="admin-section">
+    <!-- Manual IP Blocking Section -->
+    <div class="manual-ip-form" style="margin-bottom: 2rem;">
+        <div class="form-group">
+            <label for="ipAddressInput" class="form-label">@LocalizationService.GetString("IPAddress")</label>
+            <div class="input-group">
+                <input type="text"
+                       id="ipAddressInput"
+                       class="form-input @(string.IsNullOrEmpty(validationError) ? "" : "error")"
+                       @bind="newIpAddress"
+                       @onkeypress="HandleKeyPress"
+                       placeholder="@LocalizationService.GetString("IPAddressPlaceholder")"
+                       disabled="@(IsLoading || isLocalLoading || isProcessingManualBan)" />
+                <button class="btn btn-admin-action btn-danger"
+                        @onclick="BanNewIpAddress"
+                        disabled="@(IsLoading || isLocalLoading || isProcessingManualBan || string.IsNullOrWhiteSpace(newIpAddress))"
+                        title="@LocalizationService.GetString("BlockIP")">
+                    @if (isProcessingManualBan)
+                    {
+                        <div class="btn-spinner"></div>
+                    }
+                    else
+                    {
+                        <svg class="btn-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                        </svg>
+                    }
+                    @LocalizationService.GetString("BlockIP")
+                </button>
+            </div>
+            @if (!string.IsNullOrEmpty(validationError))
+            {
+                <div class="validation-error">@validationError</div>
+            }
+        </div>
+    </div>
+
+    <!-- Existing Banned IPs Section -->
     <h2 class="section-title">@LocalizationService.GetString("BannedIPs")</h2>
     
     @if (isLocalLoading)
@@ -115,6 +153,9 @@
 
 @code {
     private List<IpLoginAttempt> IpBans { get; set; } = new();
+    private string newIpAddress = "";
+    private string validationError = "";
+    private bool isProcessingManualBan = false;
 
     protected override async Task LoadDataAsync()
     {
@@ -186,4 +227,74 @@
                 LocalizationService.GetString("FailedToBanIP"));
         }
     }
+
+    private async Task BanNewIpAddress()
+    {
+        if (string.IsNullOrWhiteSpace(newIpAddress))
+        {
+            validationError = LocalizationService.GetString("IPAddressRequired");
+            return;
+        }
+
+        if (!IsValidIpAddress(newIpAddress.Trim()))
+        {
+            validationError = LocalizationService.GetString("InvalidIPAddress");
+            return;
+        }
+
+        validationError = "";
+        isProcessingManualBan = true;
+        StateHasChanged();
+
+        try
+        {
+            var ipToBlock = newIpAddress.Trim();
+            Logger.Log("IpManagementTab", $"Attempting to manually ban IP: {ipToBlock}");
+
+            var success = SecurityService.ManualBanIpAddress(ipToBlock);
+
+            if (success)
+            {
+                await JSRuntime.InvokeVoidAsync("toastHelper.success", 
+                    LocalizationService.GetString("IPBannedSuccessfully"));
+
+                // Clear the input field
+                newIpAddress = "";
+
+                // Refresh the data to show the newly banned IP
+                await RefreshData();
+                await OnDataChanged.InvokeAsync();
+
+                Logger.Log("IpManagementTab", $"Successfully banned IP: {ipToBlock}");
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                    LocalizationService.GetString("FailedToBanIP"));
+                Logger.LogWarning("IpManagementTab", $"Failed to ban IP: {ipToBlock}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("IpManagementTab", $"Error manually banning IP {newIpAddress}", ex);
+            await JSRuntime.InvokeVoidAsync("toastHelper.error", 
+                LocalizationService.GetString("FailedToBanIP"));
+        }
+        finally
+        {
+            isProcessingManualBan = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(newIpAddress))
+        {
+            await BanNewIpAddress();
+        }
+    }
+
+    private bool IsValidIpAddress(string ipAddress)
+        => System.Net.IPAddress.TryParse(ipAddress, out _);
 }

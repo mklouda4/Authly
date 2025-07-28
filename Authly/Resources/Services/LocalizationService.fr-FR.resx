@@ -1110,4 +1110,28 @@
   <data name="Clear" xml:space="preserve">
     <value>Effacer</value>
   </data>
+  <data name="ManualIPBlocking" xml:space="preserve">
+    <value>Blocage IP manuel</value>
+  </data>
+  <data name="AddIPToBan" xml:space="preserve">
+    <value>Ajouter IP à bloquer</value>
+  </data>
+  <data name="EnterIPAddress" xml:space="preserve">
+    <value>Entrer l'adresse IP à bloquer</value>
+  </data>
+  <data name="IPAddressPlaceholder" xml:space="preserve">
+    <value>ex. 192.168.1.100 ou 10.0.0.5</value>
+  </data>
+  <data name="BlockIP" xml:space="preserve">
+    <value>Bloquer IP</value>
+  </data>
+  <data name="InvalidIPAddress" xml:space="preserve">
+    <value>Format d'adresse IP invalide</value>
+  </data>
+  <data name="IPAddressRequired" xml:space="preserve">
+    <value>L'adresse IP est requise</value>
+  </data>
+  <data name="ManualIPBlockingDescription" xml:space="preserve">
+    <value>Bloquer manuellement une adresse IP pour empêcher toutes les tentatives de connexion depuis cette adresse</value>
+  </data>
 </root>

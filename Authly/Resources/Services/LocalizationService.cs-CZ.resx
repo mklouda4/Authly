@@ -1110,4 +1110,28 @@
   <data name="Clear" xml:space="preserve">
     <value>Vymazat</value>
   </data>
+  <data name="ManualIPBlocking" xml:space="preserve">
+    <value>Ruční blokování IP</value>
+  </data>
+  <data name="AddIPToBan" xml:space="preserve">
+    <value>Přidat IP k zablokování</value>
+  </data>
+  <data name="EnterIPAddress" xml:space="preserve">
+    <value>Zadejte IP adresu k zablokování</value>
+  </data>
+  <data name="IPAddressPlaceholder" xml:space="preserve">
+    <value>např. 192.168.1.100 nebo 10.0.0.5</value>
+  </data>
+  <data name="BlockIP" xml:space="preserve">
+    <value>Zablokovat IP</value>
+  </data>
+  <data name="InvalidIPAddress" xml:space="preserve">
+    <value>Neplatný formát IP adresy</value>
+  </data>
+  <data name="IPAddressRequired" xml:space="preserve">
+    <value>IP adresa je povinná</value>
+  </data>
+  <data name="ManualIPBlockingDescription" xml:space="preserve">
+    <value>Ručně zablokovat IP adresu pro zabránění všech pokusů o přihlášení z této adresy</value>
+  </data>
 </root>
