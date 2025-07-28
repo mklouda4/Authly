@@ -236,8 +236,8 @@ namespace Authly.Services
                     user.LockoutEnd = DateTime.UtcNow.AddMinutes(_userLockoutOptions.LockoutDurationMinutes);
                     _logger.LogWarning("SecurityService", $"User {user.UserName} locked out until {user.LockoutEnd}");
                     
-                    // Record user lockout metric
-                    _metricsService.RecordUserLockout();
+                    // Record user lockout security event
+                    _metricsService.RecordSecurityEventAsync("user_lockout", $"User {user.UserName} locked due to {user.FailedLoginAttempts} failed attempts", SecurityEventSeverity.Medium, ipAddress, user.UserName);
                     
                     return AuthenticationResult.LockedOutResult(user.LockoutEnd.Value);
                 }

@@ -278,7 +278,7 @@
             }
         },
 
-        createSecurityChart: function(securityData, eventsData, labels) {
+        createSecurityChart: function(securityData, labels) {
             const ctx = document.getElementById('securityChart');
             if (!ctx) {
                 console.warn('SecurityChart canvas element not found');
@@ -290,16 +290,13 @@
             }
 
             try {
-                const eventTypes = Object.keys(eventsData);
-                const eventValues = Object.values(eventsData);
-
                 this.securityChart = new Chart(ctx, {
                     type: 'bar',
                     data: {
-                        labels: [labels.userLockoutsLabel, labels.ipBansLabel, ...eventTypes],
+                        labels: [labels.userLockoutsLabel, labels.ipBansLabel],
                         datasets: [{
                             label: labels.countLabel,
-                            data: [securityData.userLockouts, securityData.ipBans, ...eventValues],
+                            data: [securityData.userLockouts, securityData.ipBans],
                             backgroundColor: ['#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#84CC16'],
                             borderWidth: 0
                         }]
@@ -412,7 +409,6 @@
     private PerformanceMetrics? performanceMetrics;
     private ResourceMetrics? resourceMetrics;
     private AvailabilityMetrics? availabilityMetrics;
-    private Dictionary<string, double> securityEvents = new();
 
     private bool _previousVisibility = false;
     private bool _chartsInitialized = false;
@@ -624,15 +620,6 @@
                 StartTime = availabilityElement.GetProperty("uptime").GetDateTime()
             };
         }
-
-        if (root.TryGetProperty("securityEvents", out var eventsElement))
-        {
-            securityEvents.Clear();
-            foreach (var prop in eventsElement.EnumerateObject())
-            {
-                securityEvents[prop.Name] = prop.Value.GetDouble();
-            }
-        }
     }
 
     private async Task UpdateCharts()
@@ -655,7 +642,7 @@
             if (securityMetrics != null)
             {
                 await JSRuntime.InvokeVoidAsync("metricsCharts.createSecurityChart",
-                    securityMetrics, securityEvents, new
+                    securityMetrics, new
                     {
                         userLockoutsLabel = LocalizationService.GetString("UserLockouts"),
                         ipBansLabel = LocalizationService.GetString("IPBans"),

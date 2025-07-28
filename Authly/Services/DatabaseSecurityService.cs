@@ -137,6 +137,9 @@ namespace Authly.Services
                         user.LockoutEnd = DateTime.UtcNow.AddMinutes(_userLockoutOptions.LockoutDurationMinutes);
                         _userStorage.UpdateUser(user);
                         
+                        // Record user lockout security event and metric
+                        _metricsService.RecordSecurityEventAsync("user_lockout", $"User {user.UserName} locked due to {user.FailedLoginAttempts} failed attempts", SecurityEventSeverity.Medium, ipAddress, user.UserName);
+                        
                         _logger.LogWarning("DatabaseSecurityService", $"User {user.UserName} locked out until {user.LockoutEnd}");
                         return AuthenticationResult.LockedOutResult(user.LockoutEnd.Value);
                     }
@@ -226,8 +229,8 @@ namespace Authly.Services
                 
                 _userStorage.UpdateUser(user);
 
-                // Record user lockout metric
-                _metricsService.RecordUserLockout();
+                // Record user unlock security event (not lockout!)
+                _metricsService.RecordSecurityEventAsync("user_unlock", $"User {user.UserName} manually unlocked", SecurityEventSeverity.Low, null, user.UserName);
 
                 _logger.Log("DatabaseSecurityService", $"User {user.UserName} unlocked successfully");
                 return true;
@@ -257,6 +260,10 @@ namespace Authly.Services
                     ipAttempt.LastAttemptUtc = DateTime.UtcNow;
                     
                     _context.SaveChanges();
+
+                    // Record IP unban security event
+                    _metricsService.RecordSecurityEventAsync("ip_unban", $"IP {ipAddress} manually unbanned", SecurityEventSeverity.Low, ipAddress);
+
                     _logger.Log("DatabaseSecurityService", $"IP {ipAddress} unbanned successfully");
                 }
                 
@@ -299,8 +306,8 @@ namespace Authly.Services
                 
                 _userStorage.UpdateUser(user);
 
-                // Record manual lockout metric
-                _metricsService.RecordSecurityEvent("ManualUserLock");
+                // Record manual lockout security event
+                _metricsService.RecordSecurityEventAsync("user_lockout", $"User {user.UserName} manually locked (permanent)", SecurityEventSeverity.High, null, user.UserName);
 
                 _logger.Log("DatabaseSecurityService", $"User {user.UserName} locked permanently");
                 return true;
@@ -351,8 +358,8 @@ namespace Authly.Services
 
                 _context.SaveChanges();
 
-                // Record manual ban metric
-                _metricsService.RecordSecurityEvent("ManualIpBan");
+                // Record manual ban security event
+                _metricsService.RecordSecurityEventAsync("ip_ban", $"IP {ipAddress} manually banned (permanent)", SecurityEventSeverity.High, ipAddress);
 
                 _logger.Log("DatabaseSecurityService", $"IP {ipAddress} banned permanently");
                 return true;
@@ -458,8 +465,8 @@ namespace Authly.Services
                     
                     _context.SaveChanges();
 
-                    // Record IP ban metric
-                    _metricsService.RecordIpBan();
+                    // Record IP ban security event
+                    _metricsService.RecordSecurityEventAsync("ip_ban", $"IP {ipAddress} banned due to {ipAttempt.FailedAttempts} failed attempts", SecurityEventSeverity.Medium, ipAddress);
 
                     return AuthenticationResult.IpBannedResult(ipAttempt.BanEndUtc.Value);
                 }

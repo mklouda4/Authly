@@ -7,12 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="wwwroot\data\authly.db" />
-    <None Include="wwwroot\data\authly.db-shm" />
-    <None Include="wwwroot\data\authly.db-wal" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Localization" Version="8.0.18" />
     <PackageReference Include="Microsoft.Extensions.Localization.Abstractions" Version="8.0.18" />
     <PackageReference Include="Otp.NET" Version="1.4.0" />
