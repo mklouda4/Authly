@@ -16,6 +16,7 @@ A modern, containerized authentication server built with ASP.NET Core 8 and Blaz
 - 🐙 **GitHub OAuth** - Secure GitHub authentication
 - 🔑 **TOTP Support** - Two-factor authentication with authenticator apps
 - 🎛️ **Admin Panel** - Comprehensive administration interface for user and system management
+- 📡 **MQTT Support** - Publish events to MQTT broker
 
 ## 🚀 Quick Start
 
@@ -123,6 +124,17 @@ AUTHLY_IP_RATE_LIMIT_WINDOW=30                # Time window for IP limits (minut
 HTTP_PORT=8080                                 # HTTP port for container
 HTTPS_PORT=8443                                # HTTPS port for container
 METRICS_PORT=9090                              # Metrics port for monitoring
+
+# ===== MQTT Integration =====
+AUTHLY_MQTT_ENABLED=false                     # Enable MQTT client integration
+AUTHLY_MQTT_WEBSOCKET_URI=ws://localhost:8083/mqtt  # WebSocket URI for MQTT over WebSocket
+AUTHLY_MQTT_SERVER=localhost                  # MQTT broker hostname or IP address
+AUTHLY_MQTT_PORT=1883                         # MQTT broker port (1883 for non-TLS, 8883 for TLS)
+AUTHLY_MQTT_USE_TLS=false                     # Enable TLS/SSL encryption for MQTT connection
+AUTHLY_MQTT_CLIENT_ID=authly-server-001       # Unique client identifier for MQTT connection
+AUTHLY_MQTT_USERNAME=mqtt_user                # Username for MQTT broker authentication (optional)
+AUTHLY_MQTT_PASSWORD=mqtt_password            # Password for MQTT broker authentication (optional)
+AUTHLY_MQTT_KEEP_ALIVE_SECONDS=60             # Keep-alive interval in seconds (default: 30)
 ```
 
 ### appsettings.json Alternative
@@ -180,6 +192,17 @@ If you prefer configuration files over environment variables:
       "SlidingWindow": false,
       "WindowMinutes": 30
     }
+  },
+  "Mqtt": {
+    "Enabled": false,
+    "WebSocketUri": "ws://localhost:8083/mqtt",
+    "Server": "localhost",
+    "Port": 1883,
+    "UseTls": false,
+    "ClientId": "authly-server-001",
+    "Username": "mqtt_user",
+    "Password": "mqtt_password",
+    "KeepAliveSeconds": 60
   }
 }
 ```
@@ -558,6 +581,14 @@ http:
           - "X-Original-URL"
           - "X-Original-Method"
 ```
+
+## 📡 MQTT Integration
+Authly supports MQTT integration for real-time event publishing and system monitoring. When enabled, authentication events and system status updates are published to configured MQTT topics.
+
+### MQTT Configuration
+Configure MQTT integration using environment variables or appsettings.json:
+
+⚠️ Important: WebSocket URI takes priority over TCP configuration. If AUTHLY_MQTT_WEBSOCKET_URI is set, the TCP settings (Server, Port, UseTls) are ignored. Configure only one connection method.
 
 ## 🔐 OAuth 2.0 Authorization Server
 
