@@ -1020,23 +1020,6 @@ AUTHLY_MQTT_USERNAME=authly_client
 AUTHLY_MQTT_PASSWORD=secure_password
 ```
 
-### MQTT Topics
-
-Authly publishes events to the following topic structure:
-
-| Topic | Description | Payload Format |
-|-------|-------------|---------------|
-| `authly/events/login/success` | Successful login events | JSON with user info |
-| `authly/events/login/failed` | Failed login attempts | JSON with attempt details |
-| `authly/events/oauth/success` | OAuth authentication success | JSON with provider info |
-| `authly/events/oauth/failed` | OAuth authentication failures | JSON with error details |
-| `authly/events/totp/success` | TOTP verification success | JSON with user info |
-| `authly/events/totp/failed` | TOTP verification failures | JSON with attempt details |
-| `authly/events/lockout/user` | User account lockouts | JSON with lockout info |
-| `authly/events/lockout/ip` | IP address bans | JSON with IP and ban details |
-| `authly/status/health` | System health status | JSON health check results |
-| `authly/status/metrics` | System metrics | JSON performance data |
-
 ### Event Payload Examples
 
 **Login Success Event:**
