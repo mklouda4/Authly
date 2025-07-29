@@ -146,7 +146,7 @@ namespace Authly.Services
 
                     if (statFields.Length >= 17)
                     {
-                        if (long.TryParse(statFields[13], out var utime) &&
+                       if (long.TryParse(statFields[13], out var utime) &&
                             long.TryParse(statFields[14], out var stime))
                         {
                             var totalCpuTicks = utime + stime;
@@ -337,6 +337,13 @@ namespace Authly.Services
         {
             try
             {
+                var envLimit = Environment.GetEnvironmentVariable("AUTHLY_MEMORY_LIMIT_MB");
+                if (!string.IsNullOrEmpty(envLimit) && long.TryParse(envLimit, out var limitMB))
+                {
+                    logger.LogInfo(nameof(ResourceMonitoringService), $"Using environment memory limit: {limitMB} MB");
+                    return limitMB * 1024 * 1024;
+                }
+
                 // Try to detect container limits
                 var containerMemory = GetContainerMemoryLimit();
                 if (containerMemory > 0)
@@ -344,13 +351,20 @@ namespace Authly.Services
                     return containerMemory;
                 }
 
-                if (OperatingSystem.IsWindows())
+                if (OperatingSystem.IsLinux())
+                {
+                    var linuxMemory = GetLinuxPhysicalMemoryDirect();
+                    var memoryGB = linuxMemory / (1024.0 * 1024.0 * 1024.0);
+
+                    if (memoryGB <= 16)
+                    {
+                        return linuxMemory;
+                    }
+                    return GetLinuxPhysicalMemory();
+                }
+                else if (OperatingSystem.IsWindows())
                 {
                     return GetWindowsPhysicalMemory();
-                }
-                else if (OperatingSystem.IsLinux())
-                {
-                    return GetLinuxPhysicalMemory();
                 }
                 else if (OperatingSystem.IsMacOS())
                 {
@@ -366,6 +380,35 @@ namespace Authly.Services
             {
                 logger.LogWarning(nameof(ResourceMonitoringService), "Could not determine total physical memory, using fallback", ex);
                 // Fallback to a reasonable default (8GB)
+                return 8L * 1024 * 1024 * 1024;
+            }
+        }
+
+        private long GetLinuxPhysicalMemoryDirect()
+        {
+            try
+            {
+                var memInfo = File.ReadAllText("/proc/meminfo");
+                var lines = memInfo.Split('\n');
+
+                foreach (var line in lines)
+                {
+                    if (line.StartsWith("MemTotal:"))
+                    {
+                        var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        if (parts.Length >= 2 && long.TryParse(parts[1], out var memKb))
+                        {
+                            var totalBytes = memKb * 1024;
+                            return totalBytes;
+                        }
+                    }
+                }
+
+                throw new Exception("Could not parse /proc/meminfo");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(nameof(ResourceMonitoringService), "Error reading /proc/meminfo directly", ex);
                 return 8L * 1024 * 1024 * 1024;
             }
         }
@@ -427,80 +470,167 @@ namespace Authly.Services
         {
             try
             {
-                // Docker/LXC container using cgroups for memory limits
+                var directMemoryMax = "/sys/fs/cgroup/memory.max";
+                if (File.Exists(directMemoryMax))
+                {
+                    try
+                    {
+                        var content = File.ReadAllText(directMemoryMax).Trim();
+                        
+                        if (content != "max" && long.TryParse(content, out var memoryMax))
+                        {
+                            return memoryMax;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                    }
+                }
 
-                // Cgroups v2 (newer systems)
+                var directMemoryCurrent = "/sys/fs/cgroup/memory.current";
+                if (File.Exists(directMemoryCurrent))
+                {
+                    try
+                    {
+                        var currentContent = File.ReadAllText(directMemoryCurrent).Trim();
+                        if (long.TryParse(currentContent, out var currentMemory))
+                        {
+                            return currentMemory;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                    }
+                }
+
+                var lxcMemoryPath = "/sys/fs/cgroup/.lxc/memory.max";
+                if (File.Exists(lxcMemoryPath))
+                {
+                    try
+                    {
+                        var content = File.ReadAllText(lxcMemoryPath).Trim();
+                        if (content != "max" && long.TryParse(content, out var memoryMax))
+                        {
+                            return memoryMax;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning(nameof(ResourceMonitoringService), $"Error reading {lxcMemoryPath}", ex);
+                    }
+                }
+
                 var cgroupV2Paths = new[]
                 {
                     "/sys/fs/cgroup/memory.max",
-                    "/sys/fs/cgroup/unified/memory.max"
+                    "/sys/fs/cgroup/.lxc/memory.max",
+                    "/sys/fs/cgroup/unified/memory.max",
+                    "/sys/fs/cgroup/system.slice/memory.max",
+                    "/sys/fs/cgroup/user.slice/memory.max"
                 };
 
                 foreach (var path in cgroupV2Paths)
                 {
                     if (File.Exists(path))
                     {
-                        var content = File.ReadAllText(path).Trim();
-                        if (content != "max" && long.TryParse(content, out var memoryMax))
+                        try
                         {
-                            logger.LogInfo(nameof(ResourceMonitoringService),
-                                $"Detected cgroups v2 memory limit: {memoryMax / (1024.0 * 1024.0):F0} MB from {path}");
-                            return memoryMax;
+                            var content = File.ReadAllText(path).Trim();                          
+                            if (content != "max" && long.TryParse(content, out var memoryMax))
+                            {
+                                return memoryMax;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
                         }
                     }
                 }
 
-                // Cgroups v1 (older systems)
                 var cgroupV1Paths = new[]
                 {
                     "/sys/fs/cgroup/memory/memory.limit_in_bytes",
                     "/sys/fs/cgroup/memory/docker/memory.limit_in_bytes",
-                    "/sys/fs/cgroup/memory.limit_in_bytes"
+                    "/sys/fs/cgroup/memory.limit_in_bytes",
+                    "/sys/fs/cgroup/memory/lxc/memory.limit_in_bytes",
+                    "/sys/fs/cgroup/memory/system.slice/memory.limit_in_bytes",
+                    "/sys/fs/cgroup/memory/user.slice/memory.limit_in_bytes"
                 };
 
                 foreach (var path in cgroupV1Paths)
                 {
                     if (File.Exists(path))
                     {
-                        var content = File.ReadAllText(path).Trim();
-                        if (long.TryParse(content, out var memoryLimit))
+                        try
                         {
-                            // Check for "unlimited" (number is too high)
-                            var unrestricted = 9223372036854775807L; // Long.MaxValue
-                            var veryLarge = 1L << 50; // ~1PB - indicator of unlimited limit
+                            var content = File.ReadAllText(path).Trim();
+                            if (long.TryParse(content, out var memoryLimit))
+                            {
+                                // Check for "unlimited" (number is too high)
+                                var unrestricted = 9223372036854775807L; // Long.MaxValue
+                                var veryLarge = 1L << 50; // ~1PB - indicator of unlimited limit
 
-                            if (memoryLimit < veryLarge && memoryLimit != unrestricted)
-                            {
-                                logger.LogInfo(nameof(ResourceMonitoringService),
-                                    $"Detected cgroups v1 memory limit: {memoryLimit / (1024.0 * 1024.0):F0} MB from {path}");
-                                return memoryLimit;
+                                if (memoryLimit < veryLarge && memoryLimit != unrestricted)
+                                {
+                                    return memoryLimit;
+                                }
                             }
-                            else
-                            {
-                                logger.LogDebug(nameof(ResourceMonitoringService),
-                                    $"Found unlimited memory limit in {path}: {memoryLimit}");
-                            }
+                        }
+                        catch (Exception ex)
+                        {
                         }
                     }
                 }
 
-                // If cgroups is available, but no limit set, we assume it's running in a container without a memory limit
-                if (IsRunningInContainer())
+                if (File.Exists("/proc/self/cgroup"))
                 {
-                    logger.LogWarning(nameof(ResourceMonitoringService),
-                        "Running in container but no memory limit detected - container may have unlimited memory");
+                    try
+                    {
+                        var cgroupContent = File.ReadAllText("/proc/self/cgroup");
+                        
+                        if (cgroupContent.Contains("/.lxc"))
+                        {
+                            // LXC specific path
+                            var lxcPath = "/sys/fs/cgroup/.lxc/memory.max";
+                            if (File.Exists(lxcPath))
+                            {
+                                try
+                                {
+                                    var content = File.ReadAllText(lxcPath).Trim();
+                                    if (content != "max" && long.TryParse(content, out var limit))
+                                    {
+                                        return limit;
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                    }
+                }
 
-                    var linuxMemory = GetLinuxPhysicalMemory();
-                    logger.LogInfo(nameof(ResourceMonitoringService),
-                        $"Using host memory as fallback in unlimited container: {linuxMemory / (1024.0 * 1024.0):F0} MB");
-                    return linuxMemory;
+                // If we're in container but no limit found
+                var isContainer = IsRunningInContainer();
+                if (isContainer)
+                {
+                    var containerPhysicalMemory = GetLinuxPhysicalMemoryDirect();
+                    logger.LogWarning(nameof(ResourceMonitoringService),
+                        "Running in container but no cgroups memory limit detected." +
+                        "This usually means the container has unlimited memory access." +
+                        "Will use /proc/meminfo as container memory (might be host memory)" +
+                        $"Using /proc/meminfo as fallback: {containerPhysicalMemory / (1024.0 * 1024.0):F0} MB");
+                    return containerPhysicalMemory;
                 }
 
                 return 0;
             }
             catch (Exception ex)
             {
-                logger.LogWarning(nameof(ResourceMonitoringService), "Error detecting container memory limit", ex);
+                logger.LogError(nameof(ResourceMonitoringService), "Error detecting container memory limit", ex);
                 return 0;
             }
         }
@@ -576,7 +706,18 @@ namespace Authly.Services
                         if (parts.Length >= 2 && long.TryParse(parts[1], out var memKb))
                         {
                             var totalBytes = memKb * 1024;
-                            logger.LogDebug(nameof(ResourceMonitoringService), $"Detected host physical memory: {totalBytes / (1024.0 * 1024.0):F0} MB");
+
+                            var totalGB = totalBytes / (1024.0 * 1024.0 * 1024.0);
+                            var isContainer = IsRunningInContainer();
+
+                            if (isContainer && totalGB > 32)
+                            {
+                                var fallbackMemory = 8L * 1024 * 1024 * 1024; // 8GB
+                                logger.LogWarning(nameof(ResourceMonitoringService),
+                                    $"Using fallback memory limit: {fallbackMemory / (1024.0 * 1024.0):F0} MB instead of host memory");
+                                return fallbackMemory;
+                            }
+
                             return totalBytes;
                         }
                     }
@@ -584,8 +725,9 @@ namespace Authly.Services
 
                 throw new Exception("Could not parse /proc/meminfo");
             }
-            catch
+            catch (Exception ex)
             {
+                logger.LogError(nameof(ResourceMonitoringService), "Error reading /proc/meminfo", ex);
                 return 8L * 1024 * 1024 * 1024;
             }
         }
