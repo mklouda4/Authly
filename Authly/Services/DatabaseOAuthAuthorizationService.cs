@@ -311,7 +311,7 @@ namespace Authly.Services
             }
         }
 
-        public async Task<(bool IsValid, ClaimsPrincipal? Principal)> ValidateAccessTokenAsync(string accessToken)
+        public async Task<(bool IsValid, ClaimsPrincipal? Principal, string? ClientId)> ValidateAccessTokenAsync(string accessToken)
         {
             try
             {
@@ -331,23 +331,25 @@ namespace Authly.Services
                 
                 // Additional validation - check if token is in our store and not revoked
                 var tokenId = principal.FindFirst("jti")?.Value;
+                string? clientId = null;
                 if (!string.IsNullOrEmpty(tokenId))
                 {
                     var storedToken = await _context.OAuthAccessTokens
                         .FirstOrDefaultAsync(t => t.TokenId == tokenId && !t.IsRevoked && !(DateTime.UtcNow > t.ExpiresUtc));
-                    
+
+                    clientId = storedToken?.ClientId;
                     if (storedToken == null)
                     {
-                        return (false, null);
+                        return (false, null, clientId);
                     }
                 }
 
-                return (true, principal);
+                return (true, principal, clientId);
             }
             catch (Exception ex)
             {
                 _logger.LogWarning("DatabaseOAuthAuthorizationService", $"Token validation failed: {ex.Message}");
-                return (false, null);
+                return (false, null, null);
             }
         }
 
@@ -389,7 +391,7 @@ namespace Authly.Services
 
         public async Task<object?> GetUserInfoAsync(string accessToken)
         {
-            var (isValid, principal) = await ValidateAccessTokenAsync(accessToken);
+            var (isValid, principal, clientId) = await ValidateAccessTokenAsync(accessToken);
             if (!isValid || principal == null)
             {
                 return null;
@@ -425,6 +427,17 @@ namespace Authly.Services
                 userInfo["email"] = user.Email!;
                 userInfo["email_verified"] = user.EmailConfirmed;
             }
+            var roles = new List<string>() { "user" };
+            if (user.Administrator)
+            {
+                userInfo["role"] = "admin";
+                roles.Insert(0, "admin");
+            }
+            else
+            {
+                userInfo["role"] = "user";
+            }
+            userInfo["roles"] = roles.ToArray();
 
             return userInfo;
         }

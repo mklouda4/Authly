@@ -37,7 +37,7 @@ namespace Authly.Services
         /// <summary>
         /// Validate access token
         /// </summary>
-        Task<(bool IsValid, ClaimsPrincipal? Principal)> ValidateAccessTokenAsync(string accessToken);
+        Task<(bool IsValid, ClaimsPrincipal? Principal, string? ClientId)> ValidateAccessTokenAsync(string accessToken);
 
         /// <summary>
         /// Revoke token
@@ -328,10 +328,11 @@ namespace Authly.Services
             return (true, tokenResponse, null, null);
         }
 
-        public async Task<(bool IsValid, ClaimsPrincipal? Principal)> ValidateAccessTokenAsync(string accessToken)
+        public async Task<(bool IsValid, ClaimsPrincipal? Principal, string? ClientId)> ValidateAccessTokenAsync(string accessToken)
         {
             try
             {
+                string? clientId = null;
                 var tokenHandler = new JwtSecurityTokenHandler();
                 var validationParameters = new TokenValidationParameters
                 {
@@ -351,18 +352,19 @@ namespace Authly.Services
                 if (!string.IsNullOrEmpty(tokenId))
                 {
                     var storedToken = await GetAccessTokenAsync(tokenId);
+                    clientId = storedToken?.ClientId;
                     if (storedToken == null || storedToken.IsRevoked || storedToken.IsExpired)
                     {
-                        return (false, null);
+                        return (false, null, clientId);
                     }
                 }
 
-                return (true, principal);
+                return (true, principal, clientId);
             }
             catch (Exception ex)
             {
                 _logger.LogWarning("OAuthAuthorizationService", $"Token validation failed: {ex.Message}");
-                return (false, null);
+                return (false, null, null);
             }
         }
 
@@ -396,7 +398,7 @@ namespace Authly.Services
 
         public async Task<object?> GetUserInfoAsync(string accessToken)
         {
-            var (isValid, principal) = await ValidateAccessTokenAsync(accessToken);
+            var (isValid, principal, clientId) = await ValidateAccessTokenAsync(accessToken);
             if (!isValid || principal == null)
             {
                 return null;
@@ -418,7 +420,10 @@ namespace Authly.Services
             
             var userInfo = new Dictionary<string, object>
             {
-                ["sub"] = user.Id!
+                ["sub"] = user.Id!,
+                ["aud"] = clientId ?? string.Empty, // Audience
+                ["iat"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds(), // Issued at
+                ["exp"] = DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds() // Expiration
             };
 
             if (scopes.Contains("profile"))
@@ -432,6 +437,17 @@ namespace Authly.Services
                 userInfo["email"] = user.Email!;
                 userInfo["email_verified"] = user.EmailConfirmed;
             }
+            var roles = new List<string>() { "user" };
+            if (user.Administrator)
+            {
+                userInfo["role"] = "admin";
+                roles.Insert(0, "admin");
+            }
+            else
+            {
+                userInfo["role"] = "user";
+            }
+            userInfo["roles"] = roles.ToArray();
 
             return userInfo;
         }
