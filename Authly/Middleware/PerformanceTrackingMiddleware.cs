@@ -36,6 +36,14 @@ namespace Authly.Middleware
             var userAgent = GetUserAgent(context); 
             var isAuthenticated = context.User?.Identity?.IsAuthenticated == true;
 
+            if (securityService.IsIpBanned(ipAddress))
+            {
+                // If the IP is banned, skip further processing
+                context.Response.StatusCode = 403; // Forbidden
+                await context.Response.WriteAsync("Your IP address has been banned due to suspicious activity.");
+                return;
+            }
+
             // Only track specific authentication-related operations
             if (operationType == null)
             {

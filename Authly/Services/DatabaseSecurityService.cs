@@ -1,9 +1,11 @@
-﻿using Authly.Models;
-using Authly.Data;
-using Authly.Authorization.UserStorage;
+﻿using Authly.Authorization.UserStorage;
 using Authly.Configuration;
+using Authly.Data;
+using Authly.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace Authly.Services
@@ -21,6 +23,9 @@ namespace Authly.Services
         private readonly IMetricsService _metricsService;
         private readonly IMqttService _mqttService;
 
+        private readonly IMemoryCache _memoryCache;
+        private readonly TimeSpan _cacheExpiration = TimeSpan.FromMinutes(60); // Nebo kratší
+
         public DatabaseSecurityService(
             AuthlyDbContext context,
             IApplicationLogger logger,
@@ -28,7 +33,8 @@ namespace Authly.Services
             IOptions<UserLockoutOptions> userLockoutOptions,
             IOptions<IpRateLimitingOptions> ipRateLimitingOptions,             
             IMetricsService metricsService,
-            IMqttService mqttService
+            IMqttService mqttService,
+            IMemoryCache memoryCache
             )
         {
             _context = context;
@@ -38,6 +44,7 @@ namespace Authly.Services
             _ipRateLimitingOptions = ipRateLimitingOptions.Value;
             _metricsService = metricsService;
             _mqttService = mqttService;
+            _memoryCache = memoryCache;
         }
 
         public bool IsUserLockedOut(User user)
@@ -53,41 +60,80 @@ namespace Authly.Services
             if (!_ipRateLimitingOptions.Enabled || string.IsNullOrEmpty(ipAddress))
                 return false;
 
+            string cacheKey = $"ip_ban_{ipAddress}";
+
+            if (_memoryCache.TryGetValue(cacheKey, out IpBanCacheEntry cachedEntry))
+            {
+                if (cachedEntry.IsBanned && cachedEntry.BanEndUtc > DateTime.UtcNow)
+                {
+                    return true;
+                }
+
+                if (cachedEntry.IsBanned && cachedEntry.BanEndUtc <= DateTime.UtcNow)
+                {
+                    _memoryCache.Remove(cacheKey);
+                }
+                else if (!cachedEntry.IsBanned)
+                {
+                    return false;
+                }
+            }
+
             try
             {
                 var ipAttempt = _context.IpLoginAttempts
                     .FirstOrDefault(x => x.IpAddress == ipAddress);
 
-                if (ipAttempt == null)
-                    return false;
+                bool isBanned = false;
+                DateTime? banEndUtc = null;
 
-                var now = DateTime.UtcNow;
-
-                // Check if IP is currently banned
-                if (ipAttempt.IsBanned && ipAttempt.BanEndUtc.HasValue && ipAttempt.BanEndUtc > now)
+                if (ipAttempt != null)
                 {
-                    return true;
-                }
+                    var now = DateTime.UtcNow;
 
-                // Clean up expired bans
-                if (ipAttempt.IsBanned && ipAttempt.BanEndUtc.HasValue && ipAttempt.BanEndUtc <= now)
-                {
-                    ipAttempt.IsBanned = false;
-                    ipAttempt.BanEndUtc = null;
-                    ipAttempt.Note = "Ban expired";
-
-                    // If sliding window is disabled, reset failed attempts after ban expires
-                    if (!_ipRateLimitingOptions.SlidingWindow)
+                    // Check if IP is currently banned
+                    if (ipAttempt.IsBanned && ipAttempt.BanEndUtc.HasValue && ipAttempt.BanEndUtc > now)
                     {
-                        ipAttempt.FailedAttempts = 0;
-                        ipAttempt.FirstAttemptUtc = now;
-                        _logger.Log("DatabaseSecurityService", $"IP {ipAddress} ban expired, failed attempts reset to 0");
+                        isBanned = true;
+                        banEndUtc = ipAttempt.BanEndUtc;
                     }
-                    
-                    _context.SaveChanges();
+
+                    // Clean up expired bans
+                    if (ipAttempt.IsBanned && ipAttempt.BanEndUtc.HasValue && ipAttempt.BanEndUtc <= now)
+                    {
+                        ipAttempt.IsBanned = false;
+                        ipAttempt.BanEndUtc = null;
+                        ipAttempt.Note = "Ban expired";
+
+                        // If sliding window is disabled, reset failed attempts after ban expires
+                        if (!_ipRateLimitingOptions.SlidingWindow)
+                        {
+                            ipAttempt.FailedAttempts = 0;
+                            ipAttempt.FirstAttemptUtc = now;
+                            _logger.Log("DatabaseSecurityService", $"IP {ipAddress} ban expired, failed attempts reset to 0");
+                        }
+
+                        _context.SaveChanges();
+                        isBanned = false;
+                    }
                 }
 
-                return false;
+                // Save to cache
+                var cacheEntry = new IpBanCacheEntry
+                {
+                    IsBanned = isBanned,
+                    BanEndUtc = banEndUtc
+                };
+
+                var cacheOptions = new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = _cacheExpiration,
+                    SlidingExpiration = TimeSpan.FromMinutes(30)
+                };
+
+                _memoryCache.Set(cacheKey, cacheEntry, cacheOptions);
+
+                return isBanned;
             }
             catch (Exception ex)
             {
@@ -95,7 +141,11 @@ namespace Authly.Services
                 return false;
             }
         }
-
+        public class IpBanCacheEntry
+        {
+            public bool IsBanned { get; set; }
+            public DateTime? BanEndUtc { get; set; }
+        }
         public AuthenticationResult RecordFailedAttempt(User? user, string ipAddress)
         {
             _logger.Log("DatabaseSecurityService", $"Recording failed attempt for user {user?.UserName ?? "unknown"} from IP {ipAddress}");
@@ -369,7 +419,9 @@ namespace Authly.Services
                     _mqttService.PublishAsync("authly/ip/unban", new { ipAddress, note = ipAttempt.Note, timestamp = DateTime.UtcNow });
                 }
                 _logger.Log("DatabaseSecurityService", $"IP {ipAddress} unbanned successfully");
-                
+
+                _memoryCache.Remove($"ip_ban_{ipAddress}");
+
                 return true;
             }
             catch (Exception ex)
@@ -483,6 +535,21 @@ namespace Authly.Services
                 _mqttService.Publish("authly/ip/ban", new { ipAddress, permanent = true, note = ipAttempt.Note, timestamp = DateTime.UtcNow });
 
                 _logger.Log("DatabaseSecurityService", $"IP {ipAddress} banned permanently");
+
+                var cacheEntry = new IpBanCacheEntry
+                {
+                    IsBanned = true,
+                    BanEndUtc = ipAttempt.BanEndUtc
+                };
+
+                var cacheOptions = new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = _cacheExpiration,
+                    SlidingExpiration = TimeSpan.FromMinutes(30)
+                };
+
+                _memoryCache.Set($"ip_ban_{ipAddress}", cacheEntry, cacheOptions);
+
                 return true;
             }
             catch (Exception ex)

@@ -341,6 +341,9 @@ namespace Authly
             // Register MQTT service
             _ = builder.Services.AddMqttService();
 
+            // Register memory cache for temporary data
+            _ = builder.Services.AddMemoryCache();
+
             var app = builder.Build();
 
             // Apply database migrations automatically (UPDATED)
