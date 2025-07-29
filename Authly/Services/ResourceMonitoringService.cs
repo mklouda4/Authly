@@ -9,9 +9,18 @@ namespace Authly.Services
     {
         private readonly TimeSpan _interval = TimeSpan.FromMinutes(5); // Collect metrics every 5 minutes
 
+        // Cache pro CPU měření
+        private DateTime? _lastCpuTime;
+        private TimeSpan? _lastProcessorTime;
+        private double _lastCpuUsage = 0;
+        private long? _lastLinuxCpuTicks;
+
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             logger.LogInfo(nameof(ResourceMonitoringService), "Resource monitoring service started");
+
+            // Zobrazíme info o prostředí při startu
+            LogEnvironmentInfo();
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -46,8 +55,8 @@ namespace Authly.Services
                 // Get current process
                 var currentProcess = Process.GetCurrentProcess();
 
-                // Calculate CPU usage (simplified approach)
-                var cpuUsage = await GetCpuUsageAsync();
+                // Calculate CPU usage podle platformy
+                var cpuUsage = GetCpuUsage();
 
                 // Get memory usage - use actual physical memory
                 var memoryUsageMB = currentProcess.WorkingSet64 / (1024.0 * 1024.0);
@@ -95,34 +104,232 @@ namespace Authly.Services
             }
         }
 
-        private async Task<double> GetCpuUsageAsync()
+        private double GetCpuUsage()
         {
             try
             {
-                // More accurate CPU usage calculation using PerformanceCounter-like approach
-                var currentProcess = Process.GetCurrentProcess();
-                var startTime = DateTime.UtcNow;
-                var startCpuUsage = currentProcess.TotalProcessorTime;
-
-                // Wait a bit to get a meaningful measurement
-                await Task.Delay(500);
-
-                var endTime = DateTime.UtcNow;
-                var endCpuUsage = currentProcess.TotalProcessorTime;
-
-                var cpuUsedMs = (endCpuUsage - startCpuUsage).TotalMilliseconds;
-                var totalMsPassed = (endTime - startTime).TotalMilliseconds;
-
-                if (totalMsPassed <= 0) return 0;
-
-                var cpuUsageTotal = (cpuUsedMs / (Environment.ProcessorCount * totalMsPassed)) * 100;
-
-                return Math.Min(Math.Max(cpuUsageTotal, 0), 100);
+                if (OperatingSystem.IsLinux())
+                {
+                    return GetLinuxCpuUsage();
+                }
+                else if (OperatingSystem.IsWindows())
+                {
+                    return GetWindowsCpuUsage();
+                }
+                else if (OperatingSystem.IsMacOS())
+                {
+                    return GetMacOSCpuUsage();
+                }
+                else
+                {
+                    return GetGenericCpuUsage();
+                }
             }
             catch (Exception ex)
             {
                 logger.LogWarning(nameof(ResourceMonitoringService), "Could not calculate CPU usage accurately", ex);
-                return 0; // Return 0 if we can't calculate CPU usage
+                return _lastCpuUsage;
+            }
+        }
+
+        private double GetLinuxCpuUsage()
+        {
+            try
+            {
+                var currentProcess = Process.GetCurrentProcess();
+                var statPath = $"/proc/{currentProcess.Id}/stat";
+
+                if (File.Exists(statPath))
+                {
+                    var statContent = File.ReadAllText(statPath);
+                    var statFields = statContent.Split(' ');
+
+                    if (statFields.Length >= 17)
+                    {
+                        if (long.TryParse(statFields[13], out var utime) &&
+                            long.TryParse(statFields[14], out var stime))
+                        {
+                            var totalCpuTicks = utime + stime;
+                            var currentTime = DateTime.UtcNow;
+
+                            if (_lastCpuTime != null && _lastLinuxCpuTicks != null)
+                            {
+                                var timeDiff = (currentTime - _lastCpuTime.Value).TotalSeconds;
+                                var cpuTicksDiff = totalCpuTicks - _lastLinuxCpuTicks.Value;
+
+                                if (timeDiff > 0)
+                                {
+                                    var clockTicksPerSecond = GetLinuxClockTicks();
+                                    var cpuUsage = (cpuTicksDiff / (clockTicksPerSecond * timeDiff)) * 100;
+
+                                    cpuUsage = Math.Min(Math.Max(cpuUsage, 0), 100);
+
+                                    _lastCpuTime = currentTime;
+                                    _lastLinuxCpuTicks = totalCpuTicks;
+                                    _lastCpuUsage = cpuUsage;
+
+                                    logger.LogDebug(nameof(ResourceMonitoringService),
+                                        $"Linux CPU calculation: {cpuTicksDiff} ticks in {timeDiff:F2}s = {cpuUsage:F2}%");
+
+                                    return cpuUsage;
+                                }
+                            }
+
+                            _lastCpuTime = currentTime;
+                            _lastLinuxCpuTicks = totalCpuTicks;
+                            return _lastCpuUsage;
+                        }
+                    }
+                }
+
+                logger.LogDebug(nameof(ResourceMonitoringService), "Linux /proc/stat not available, using generic method");
+                return GetGenericCpuUsage();
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(nameof(ResourceMonitoringService), "Linux CPU measurement failed", ex);
+                return GetGenericCpuUsage();
+            }
+        }
+
+        private long GetLinuxClockTicks()
+        {
+            try
+            {
+                return 100; // Standard Linux value
+            }
+            catch
+            {
+                return 100; // Default fallback
+            }
+        }
+
+        private double GetWindowsCpuUsage()
+        {
+            try
+            {
+                var currentProcess = Process.GetCurrentProcess();
+                var currentTime = DateTime.UtcNow;
+                var currentProcessorTime = currentProcess.TotalProcessorTime;
+
+                if (_lastCpuTime != null && _lastProcessorTime != null)
+                {
+                    var timeDiff = (currentTime - _lastCpuTime.Value).TotalMilliseconds;
+                    var cpuDiff = (currentProcessorTime - _lastProcessorTime.Value).TotalMilliseconds;
+
+                    if (timeDiff > 0)
+                    {
+                        var cpuUsage = (cpuDiff / (Environment.ProcessorCount * timeDiff)) * 100;
+                        cpuUsage = Math.Min(Math.Max(cpuUsage, 0), 100);
+
+                        _lastCpuTime = currentTime;
+                        _lastProcessorTime = currentProcessorTime;
+                        _lastCpuUsage = cpuUsage;
+
+                        logger.LogDebug(nameof(ResourceMonitoringService),
+                            $"Windows CPU calculation: {cpuDiff:F2}ms CPU in {timeDiff:F2}ms real = {cpuUsage:F2}%");
+
+                        return cpuUsage;
+                    }
+                }
+
+                _lastCpuTime = currentTime;
+                _lastProcessorTime = currentProcessorTime;
+                return _lastCpuUsage;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(nameof(ResourceMonitoringService), "Windows CPU measurement failed", ex);
+                return GetGenericCpuUsage();
+            }
+        }
+
+        private double GetMacOSCpuUsage()
+        {
+            try
+            {
+                return GetGenericCpuUsage();
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(nameof(ResourceMonitoringService), "macOS CPU measurement failed", ex);
+                return GetGenericCpuUsage();
+            }
+        }
+
+        private double GetGenericCpuUsage()
+        {
+            try
+            {
+                var currentProcess = Process.GetCurrentProcess();
+                var currentTime = DateTime.UtcNow;
+                var currentProcessorTime = currentProcess.TotalProcessorTime;
+
+                if (_lastCpuTime != null && _lastProcessorTime != null)
+                {
+                    var timeDiff = (currentTime - _lastCpuTime.Value).TotalMilliseconds;
+                    var cpuDiff = (currentProcessorTime - _lastProcessorTime.Value).TotalMilliseconds;
+
+                    if (timeDiff > 0)
+                    {
+                        var cpuUsage = (cpuDiff / (Environment.ProcessorCount * timeDiff)) * 100;
+                        cpuUsage = Math.Min(Math.Max(cpuUsage, 0), 100);
+
+                        _lastCpuTime = currentTime;
+                        _lastProcessorTime = currentProcessorTime;
+                        _lastCpuUsage = cpuUsage;
+
+                        return cpuUsage;
+                    }
+                }
+
+                _lastCpuTime = currentTime;
+                _lastProcessorTime = currentProcessorTime;
+                return _lastCpuUsage;
+            }
+            catch
+            {
+                return _lastCpuUsage;
+            }
+        }
+
+        private void LogEnvironmentInfo()
+        {
+            try
+            {
+                var isContainer = IsRunningInContainer();
+                var containerLimit = GetContainerMemoryLimit();
+                var totalMemory = GetTotalPhysicalMemory();
+
+                logger.LogInfo(nameof(ResourceMonitoringService), "=== Environment Information ===");
+                logger.LogInfo(nameof(ResourceMonitoringService), $"Operating System: {Environment.OSVersion}");
+                logger.LogInfo(nameof(ResourceMonitoringService), $"Processor Count: {Environment.ProcessorCount}");
+                logger.LogInfo(nameof(ResourceMonitoringService), $"Is 64-bit: {Environment.Is64BitOperatingSystem}");
+                logger.LogInfo(nameof(ResourceMonitoringService), $"Running in Container: {isContainer}");
+
+                if (OperatingSystem.IsWindows())
+                    logger.LogInfo(nameof(ResourceMonitoringService), "Platform: Windows");
+                else if (OperatingSystem.IsLinux())
+                    logger.LogInfo(nameof(ResourceMonitoringService), "Platform: Linux");
+                else if (OperatingSystem.IsMacOS())
+                    logger.LogInfo(nameof(ResourceMonitoringService), "Platform: macOS");
+                else
+                    logger.LogInfo(nameof(ResourceMonitoringService), "Platform: Other/Unknown");
+
+                logger.LogInfo(nameof(ResourceMonitoringService),
+                    $"Total Memory: {totalMemory / (1024.0 * 1024.0):F0} MB");
+
+                if (containerLimit > 0)
+                {
+                    logger.LogInfo(nameof(ResourceMonitoringService),
+                        $"Container Memory Limit: {containerLimit / (1024.0 * 1024.0):F0} MB");
+                }
+
+                logger.LogInfo(nameof(ResourceMonitoringService), "===============================");
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(nameof(ResourceMonitoringService), "Could not log environment info", ex);
             }
         }
 
@@ -215,6 +422,7 @@ namespace Authly.Services
                 return 16L * 1024 * 1024 * 1024; // 16GB default
             }
         }
+
         private long GetContainerMemoryLimit()
         {
             try
@@ -276,12 +484,10 @@ namespace Authly.Services
                     }
                 }
 
-                // If cgroups is availaible, but no limit set, we assume it's running in a container without a memory limit
+                // If cgroups is available, but no limit set, we assume it's running in a container without a memory limit
                 if (IsRunningInContainer())
                 {
-                    logger.LogWarning(nameof(ResourceMonitoringService), "Running in container but no memory limit detected");
-
-                    logger.LogWarning(nameof(ResourceMonitoringService), 
+                    logger.LogWarning(nameof(ResourceMonitoringService),
                         "Running in container but no memory limit detected - container may have unlimited memory");
 
                     var linuxMemory = GetLinuxPhysicalMemory();
@@ -303,11 +509,10 @@ namespace Authly.Services
         {
             try
             {
-                // Několik způsobů, jak detekovat kontejner:
-
                 // 1. Exists /.dockerenv file (Docker)
                 if (File.Exists("/.dockerenv"))
                 {
+                    logger.LogDebug(nameof(ResourceMonitoringService), "Detected Docker container via /.dockerenv");
                     return true;
                 }
 
@@ -317,6 +522,8 @@ namespace Authly.Services
                     var cgroup = File.ReadAllText("/proc/1/cgroup");
                     if (cgroup.Contains("docker") || cgroup.Contains("lxc") || cgroup.Contains("kubepods"))
                     {
+                        logger.LogDebug(nameof(ResourceMonitoringService),
+                            $"Detected container via /proc/1/cgroup");
                         return true;
                     }
                 }
@@ -327,6 +534,8 @@ namespace Authly.Services
                     var cgroup = File.ReadAllText("/proc/self/cgroup");
                     if (cgroup.Contains("docker") || cgroup.Contains("lxc") || cgroup.Contains("kubepods"))
                     {
+                        logger.LogDebug(nameof(ResourceMonitoringService),
+                            "Detected container via /proc/self/cgroup");
                         return true;
                     }
                 }
@@ -337,14 +546,17 @@ namespace Authly.Services
                     var mountinfo = File.ReadAllText("/proc/self/mountinfo");
                     if (mountinfo.Contains("docker") || mountinfo.Contains("overlay"))
                     {
+                        logger.LogDebug(nameof(ResourceMonitoringService),
+                            "Detected container via /proc/self/mountinfo");
                         return true;
                     }
                 }
 
                 return false;
             }
-            catch
+            catch (Exception ex)
             {
+                logger.LogDebug(nameof(ResourceMonitoringService), "Error detecting container environment", ex);
                 return false;
             }
         }
@@ -364,7 +576,7 @@ namespace Authly.Services
                         if (parts.Length >= 2 && long.TryParse(parts[1], out var memKb))
                         {
                             var totalBytes = memKb * 1024;
-                            logger.LogInfo(nameof(ResourceMonitoringService), $"Detected host physical memory: {totalBytes / (1024.0 * 1024.0):F0} MB");
+                            logger.LogDebug(nameof(ResourceMonitoringService), $"Detected host physical memory: {totalBytes / (1024.0 * 1024.0):F0} MB");
                             return totalBytes;
                         }
                     }

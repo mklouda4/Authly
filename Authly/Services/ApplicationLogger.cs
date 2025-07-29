@@ -19,7 +19,7 @@ namespace Authly.Services
         /// <summary>
         /// Log an debug message
         /// </summary>
-        void LogDebug(string category, string message);
+        void LogDebug(string category, string message, Exception? exception = null);
 
         /// <summary>
         /// Log an error message with optional exception
@@ -89,7 +89,7 @@ namespace Authly.Services
         /// <summary>
         /// Log an debug message
         /// </summary>
-        public void LogDebug(string category, string message)
+        public void LogDebug(string category, string message, Exception? exception = null)
         {
             if (IsEnabled)
             {
@@ -97,7 +97,7 @@ namespace Authly.Services
                 Debug.WriteLine(logMessage);
                 logger.LogDebug(logMessage);
             }
-            AddLogEntry(category, "DEBUG", message);
+            AddLogEntry(category, "DEBUG", message, exception);
         }
 
         /// <summary>
