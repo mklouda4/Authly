@@ -4,6 +4,7 @@ using Authly.Authorization.UserStorage;
 using Authly.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using System.Threading.Tasks;
 
 namespace Authly.Services
 {
@@ -18,6 +19,7 @@ namespace Authly.Services
         private readonly UserLockoutOptions _userLockoutOptions;
         private readonly IpRateLimitingOptions _ipRateLimitingOptions;
         private readonly IMetricsService _metricsService;
+        private readonly IMqttService _mqttService;
 
         public DatabaseSecurityService(
             AuthlyDbContext context,
@@ -25,7 +27,9 @@ namespace Authly.Services
             IUserStorage userStorage,
             IOptions<UserLockoutOptions> userLockoutOptions,
             IOptions<IpRateLimitingOptions> ipRateLimitingOptions,             
-            IMetricsService metricsService)
+            IMetricsService metricsService,
+            IMqttService mqttService
+            )
         {
             _context = context;
             _logger = logger;
@@ -33,6 +37,7 @@ namespace Authly.Services
             _userLockoutOptions = userLockoutOptions.Value;
             _ipRateLimitingOptions = ipRateLimitingOptions.Value;
             _metricsService = metricsService;
+            _mqttService = mqttService;
         }
 
         public bool IsUserLockedOut(User user)
@@ -139,7 +144,10 @@ namespace Authly.Services
                         
                         // Record user lockout security event and metric
                         _metricsService.RecordSecurityEventAsync("user_lockout", $"User {user.UserName} locked due to {user.FailedLoginAttempts} failed attempts", SecurityEventSeverity.Medium, ipAddress, user.UserName);
-                        
+
+                        _mqttService.PublishAsync("authly/user/lockout", 
+                            new { userId = user.Id, userName = user.UserName, name = user.FullName, lockoutEnd = user.LockoutEnd, failedAttempts = user.FailedLoginAttempts, timestamp = DateTime.UtcNow });
+
                         _logger.LogWarning("DatabaseSecurityService", $"User {user.UserName} locked out until {user.LockoutEnd}");
                         return AuthenticationResult.LockedOutResult(user.LockoutEnd.Value);
                     }
@@ -306,6 +314,9 @@ namespace Authly.Services
                 _metricsService.RecordSecurityEventAsync("user_unlock", $"User {user.UserName} manually unlocked", SecurityEventSeverity.Low, null, user.UserName);
 
                 _logger.Log("DatabaseSecurityService", $"User {user.UserName} unlocked successfully");
+
+                _mqttService.Publish("authly/user/unlock", new { userId = user.Id, userName = user.UserName, name = user.FullName, timestamp = DateTime.UtcNow });
+
                 return true;
             }
             catch (Exception ex)
@@ -351,6 +362,8 @@ namespace Authly.Services
                 {
                     // Record IP unban security event
                     _metricsService.RecordSecurityEventAsync("ip_unban", $"IP {ipAddress} manually unbanned", SecurityEventSeverity.Low, ipAddress);
+
+                    _mqttService.PublishAsync("authly/ip/unban", new { ipAddress, timestamp = DateTime.UtcNow });
                 }
                 _logger.Log("DatabaseSecurityService", $"IP {ipAddress} unbanned successfully");
                 
@@ -396,6 +409,8 @@ namespace Authly.Services
 
                 // Record manual lockout security event
                 _metricsService.RecordSecurityEventAsync("user_lockout", $"User {user.UserName} manually locked (permanent)", SecurityEventSeverity.High, null, user.UserName);
+
+                _mqttService.Publish("authly/user/lock", new { userId = user.Id, userName = user.UserName, name = user.FullName, lockoutEnd = user.LockoutEnd, failedAttempts = user.FailedLoginAttempts, manual = true, timestamp = DateTime.UtcNow });
 
                 _logger.Log("DatabaseSecurityService", $"User {user.UserName} locked permanently");
                 return true;
@@ -457,6 +472,8 @@ namespace Authly.Services
 
                 // Record manual ban security event
                 _metricsService.RecordSecurityEventAsync("ip_ban", $"IP {ipAddress} manually banned (permanent)", SecurityEventSeverity.High, ipAddress);
+
+                _mqttService.Publish("authly/ip/ban", new { ipAddress, permanent = true, timestamp = DateTime.UtcNow });
 
                 _logger.Log("DatabaseSecurityService", $"IP {ipAddress} banned permanently");
                 return true;
@@ -569,6 +586,9 @@ namespace Authly.Services
 
                     // Record IP ban security event
                     _metricsService.RecordSecurityEventAsync("ip_ban", $"IP {ipAddress} banned due to {ipAttempt.FailedAttempts} failed attempts", SecurityEventSeverity.Medium, ipAddress);
+
+                    _mqttService.PublishAsync("authly/ip/ban", 
+                        new { ipAddress, banEnd = ipAttempt.BanEndUtc, failedAttempts = ipAttempt.FailedAttempts, manual = false, timestamp = DateTime.UtcNow });
 
                     return AuthenticationResult.IpBannedResult(ipAttempt.BanEndUtc.Value);
                 }

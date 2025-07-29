@@ -1,6 +1,7 @@
 ﻿using Authly.Authorization.UserStorage;
 using Authly.Extension;
 using Authly.Models;
+using Authly.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
@@ -219,7 +220,8 @@ namespace Authly.Authorization
         ILogger<SignInManager<User>> logger,
         IAuthenticationSchemeProvider schemes,
         IUserConfirmation<User> confirmation,
-        IUserStorage userManagement
+        IUserStorage userManagement,
+        IMqttService mqttService
         )
         : SignInManager<User>(userManager, contextAccessor, claimsFactory, optionsAccessor, logger, schemes, confirmation)
     {
@@ -259,6 +261,9 @@ namespace Authly.Authorization
                 scheme,
                 principal,
                 new AuthenticationProperties() { IsPersistent = isPersistent });
+
+            await PublishEvent("authly/signin", user);
+
             return SignInResult.Success;
         }
         
@@ -267,6 +272,8 @@ namespace Authly.Authorization
         /// </summary>
         public override async Task SignOutAsync()
         {
+            await PublishEvent("authly/signout", GetUserFromPrincipal(Context));
+
             // Sign out user and remove authentication cookie
             await Context.SignOutAsync(scheme);
             await base.SignOutAsync();
@@ -317,6 +324,25 @@ namespace Authly.Authorization
             var principal = new ClaimsPrincipal(identity);
 
             return principal;
+        }
+
+        private Models.User GetUserFromPrincipal(HttpContext context)
+        {
+            var claims = (context?.User?.Claims?.ToList() ?? []);
+            var user = new Models.User()
+            {
+                Id = claims?.FirstOrDefault(c => c.Type == ClaimTypes.UserData)?.Value,
+                UserName = claims?.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value,
+                FullName = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value ?? string.Empty,
+                Email = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value,
+                HasTotp = claims?.FirstOrDefault(c => c.Type == "HasTotp")?.Value == "true",
+            };
+            return user;
+        }
+
+        private async Task PublishEvent(string topic, Models.User user)
+        {
+            await mqttService.PublishAsync(topic, new { userId = user?.Id, userName = user?.UserName, name = user?.FullName, email = user?.Email, timestamp = DateTime.UtcNow });
         }
     }
 

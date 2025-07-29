@@ -333,6 +333,9 @@ namespace Authly
             // Register data services with factory pattern (NEW)
             _ = builder.Services.AddDataServices(builder.Configuration);
 
+
+            builder.Services.AddMqttService();
+
             var app = builder.Build();
 
             // Apply database migrations automatically (UPDATED)
