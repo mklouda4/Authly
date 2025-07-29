@@ -50,6 +50,7 @@ namespace Authly.Services
             {
                 using var scope = _serviceProvider.CreateScope();
                 var metricsService = scope.ServiceProvider.GetRequiredService<IMetricsService>();
+                var mqttService = scope.ServiceProvider.GetRequiredService<IMqttService>();
 
                 // Get current process
                 var currentProcess = Process.GetCurrentProcess();
@@ -83,6 +84,19 @@ namespace Authly.Services
 
                 _logger.LogDebug("Collected resource metrics: CPU {CpuUsage:F1}%, Memory {MemoryUsage:F1}MB/{TotalMemory:F1}MB ({MemoryPercent:F1}%), Threads {ThreadCount}", 
                     cpuUsage, memoryUsageMB, totalMemoryMB, (memoryUsageMB / totalMemoryMB) * 100, activeThreads);
+
+                await mqttService.PublishAsync(
+                    "authly/resource/metrics",
+                    new
+                    {
+                        CpuUsage = cpuUsage,
+                        MemoryUsageMB = memoryUsageMB,
+                        TotalMemoryMB = totalMemoryMB,
+                        MemoryPercent = (memoryUsageMB / totalMemoryMB) * 100,
+                        ActiveThreads = activeThreads,
+                        UptimeHours = uptime.TotalHours
+                    }
+                );
             }
             catch (Exception ex)
             {
