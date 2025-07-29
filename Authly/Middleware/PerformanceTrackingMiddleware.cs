@@ -16,7 +16,7 @@ namespace Authly.Middleware
         private readonly IpRateLimitingOptions _ipRateLimitingOptions;
 
         public PerformanceTrackingMiddleware(
-            RequestDelegate next, 
+            RequestDelegate next,
             IApplicationLogger logger,
             IOptions<IpRateLimitingOptions> ipRateLimitingOptions)
         {
@@ -32,8 +32,10 @@ namespace Authly.Middleware
             var method = context.Request.Method;
             var operationType = DetermineOperationType(path, method);
             var ipAddress = GetIpAddress(context);
+            var userId = GetUserId(context);
+            var userAgent = GetUserAgent(context); 
             var isAuthenticated = context.User?.Identity?.IsAuthenticated == true;
-            
+
             // Only track specific authentication-related operations
             if (operationType == null)
             {
@@ -77,12 +79,12 @@ namespace Authly.Middleware
 
                 // Check for unauthorized access and potential IP ban
                 await CheckUnauthorizedAccessAsync(
-                    context, 
-                    operationType, 
-                    statusCode, 
-                    isAuthenticated, 
-                    ipAddress, 
-                    metricsService, 
+                    context,
+                    operationType,
+                    statusCode,
+                    isAuthenticated,
+                    ipAddress,
+                    metricsService,
                     securityService);
 
                 // Record performance metric asynchronously
@@ -99,9 +101,9 @@ namespace Authly.Middleware
                             statusCode,
                             requestSize,
                             responseSize,
-                            GetUserId(context),
+                            userId,
                             ipAddress,
-                            GetUserAgent(context)
+                            userAgent
                         );
                     }
                     catch (Exception ex)
@@ -131,7 +133,7 @@ namespace Authly.Middleware
             {
                 var path = context.Request.Path.Value?.ToLowerInvariant() ?? "";
                 var isRedirectToLogin = IsRedirectToLogin(statusCode, context);
-                
+
                 if (operationType == "login" && isRedirectToLogin)
                 {
                     return;
@@ -146,8 +148,8 @@ namespace Authly.Middleware
                 }
 
                 var isUnauthorizedAccess = !isAuthenticated && (
-                    isRedirectToLogin || 
-                    statusCode == 401 || 
+                    isRedirectToLogin ||
+                    statusCode == 401 ||
                     statusCode == 403 ||
                     (operationType != "login" && RequiresAuthentication(path))
                 );
@@ -156,12 +158,12 @@ namespace Authly.Middleware
                 if (isUnauthorizedAccess)
                 {
                     var shouldBan = await securityService.RecordUnauthorizedAccessAsync(ipAddress, path, statusCode, operationType);
-                    
+
                     if (shouldBan)
                     {
                         // Use SecurityService to ban the IP
                         var banResult = securityService.ManualBanIpAddress(ipAddress, "DoS");
-                        
+
                         if (banResult)
                         {
                             _logger.LogWarning("PerformanceTrackingMiddleware", $"IP {ipAddress} has been automatically banned for excessive unauthorized access attempts. " +
@@ -196,7 +198,7 @@ namespace Authly.Middleware
             if (statusCode == 302 || statusCode == 301)
             {
                 var location = context.Response.Headers["Location"].FirstOrDefault();
-                return !string.IsNullOrEmpty(location) && 
+                return !string.IsNullOrEmpty(location) &&
                        (location.Contains("/login", StringComparison.OrdinalIgnoreCase) ||
                         location.Contains("/account/login", StringComparison.OrdinalIgnoreCase));
             }
@@ -220,7 +222,7 @@ namespace Authly.Middleware
                 "/api/"
             };
 
-            return protectedPaths.Any(protectedPath => 
+            return protectedPaths.Any(protectedPath =>
                 path.StartsWith(protectedPath, StringComparison.OrdinalIgnoreCase));
         }
 
@@ -244,18 +246,33 @@ namespace Authly.Middleware
 
         private static string? GetUserId(HttpContext context)
         {
-            return context?.User?.Identity?.IsAuthenticated == true 
-                ? context?.User?.FindFirst("sub")?.Value ?? context?.User?.FindFirst("id")?.Value
-                : null;
+            try
+            {
+                return context?.User?.Identity?.IsAuthenticated == true
+                    ? context?.User?.FindFirst("sub")?.Value ?? context?.User?.FindFirst("id")?.Value
+                    : null;
+            }
+            catch
+            {
+                return null; // In case of any error, return null
+            }
         }
 
         private static string? GetIpAddress(HttpContext context)
             => context?.Connection?.RemoteIpAddress?.ToString();
 
-        private static string? GetUserAgent(HttpContext context) 
-            => context?.Request?.Headers?.TryGetValue("User-Agent", out var items) == true ? items.FirstOrDefault() : null;
+        private static string? GetUserAgent(HttpContext context)
+        {
+            try
+            {
+                return context?.Request?.Headers?.TryGetValue("User-Agent", out var items) == true ? items.FirstOrDefault() : null;
+            }
+            catch
+            {
+                return null; // In case of any error, return null
+            }
+        }
     }
-
     /// <summary>
     /// Extension methods for registering the performance tracking middleware
     /// </summary>
