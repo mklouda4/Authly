@@ -16,6 +16,13 @@
                        @onkeypress="HandleKeyPress"
                        placeholder="@LocalizationService.GetString("IPAddressPlaceholder")"
                        disabled="@(IsLoading || isLocalLoading || isProcessingManualBan)" />
+                <input type="text"
+                       id="noteInput"
+                       class="form-input @(string.IsNullOrEmpty(validationError) ? "" : "error")"
+                       @bind="newIpAddressNote"
+                       @onkeypress="HandleKeyPress"
+                       placeholder="@LocalizationService.GetString("Note")"
+                       disabled="@(IsLoading || isLocalLoading || isProcessingManualBan)" />
                 <button class="btn btn-admin-action btn-danger"
                         @onclick="BanNewIpAddress"
                         disabled="@(IsLoading || isLocalLoading || isProcessingManualBan || string.IsNullOrWhiteSpace(newIpAddress))"
@@ -155,6 +162,7 @@
 @code {
     private List<IpLoginAttempt> IpBans { get; set; } = new();
     private string newIpAddress = "";
+    private string newIpAddressNote = "";
     private string validationError = "";
     private bool isProcessingManualBan = false;
 
@@ -252,7 +260,7 @@
             var ipToBlock = newIpAddress.Trim();
             Logger.Log("IpManagementTab", $"Attempting to manually ban IP: {ipToBlock}");
 
-            var success = SecurityService.ManualBanIpAddress(ipToBlock);
+            var success = SecurityService.ManualBanIpAddress(ipToBlock, newIpAddressNote?.Trim());
 
             if (success)
             {
@@ -261,6 +269,7 @@
 
                 // Clear the input field
                 newIpAddress = "";
+                newIpAddressNote = "";
 
                 // Refresh the data to show the newly banned IP
                 await RefreshData();

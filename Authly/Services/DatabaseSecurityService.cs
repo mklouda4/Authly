@@ -450,6 +450,8 @@ namespace Authly.Services
                     _logger.Log("DatabaseSecurityService", $"Cleared unauthorized access tracking for IP {ipAddress}");
                 }
 
+                note = string.IsNullOrEmpty(note) ? null : note;
+
                 if (ipAttempt == null)
                 {
                     ipAttempt = new IpLoginAttempt
