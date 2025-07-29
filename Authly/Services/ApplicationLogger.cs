@@ -34,7 +34,7 @@ namespace Authly.Services
         /// <summary>
         /// Log a warning message
         /// </summary>
-        void LogWarning(string category, string message);
+        void LogWarning(string category, string message, Exception? exception = null);
         
         /// <summary>
         /// Indicates if logging is enabled
@@ -141,7 +141,7 @@ namespace Authly.Services
         /// <summary>
         /// Log a warning message
         /// </summary>
-        public void LogWarning(string category, string message)
+        public void LogWarning(string category, string message, Exception? exception = null)
         {
             if (IsEnabled)
             {
@@ -149,7 +149,7 @@ namespace Authly.Services
                 Console.WriteLine(logMessage);
                 logger.LogWarning(logMessage);
             }
-            AddLogEntry(category, "WARNING", message);
+            AddLogEntry(category, "WARNING", message, exception);
         }
 
         /// <summary>

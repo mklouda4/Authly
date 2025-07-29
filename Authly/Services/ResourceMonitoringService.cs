@@ -1,26 +1,17 @@
-using Authly.Services;
-using System.Diagnostics;
+ï»¿using System.Diagnostics;
 
 namespace Authly.Services
 {
     /// <summary>
     /// Background service for collecting system resource usage metrics
     /// </summary>
-    public class ResourceMonitoringService : BackgroundService
+    public class ResourceMonitoringService(IServiceProvider serviceProvider, IApplicationLogger logger) : BackgroundService
     {
-        private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger<ResourceMonitoringService> _logger;
         private readonly TimeSpan _interval = TimeSpan.FromMinutes(5); // Collect metrics every 5 minutes
-
-        public ResourceMonitoringService(IServiceProvider serviceProvider, ILogger<ResourceMonitoringService> logger)
-        {
-            _serviceProvider = serviceProvider;
-            _logger = logger;
-        }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Resource monitoring service started");
+            logger.LogInfo(nameof(ResourceMonitoringService), "Resource monitoring service started");
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -36,19 +27,19 @@ namespace Authly.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error collecting resource metrics");
+                    logger.LogError(nameof(ResourceMonitoringService), "Error collecting resource metrics", ex);
                     await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken); // Wait before retrying
                 }
             }
 
-            _logger.LogInformation("Resource monitoring service stopped");
+            logger.LogInfo(nameof(ResourceMonitoringService), "Resource monitoring service stopped");
         }
 
         private async Task CollectResourceMetrics()
         {
             try
             {
-                using var scope = _serviceProvider.CreateScope();
+                using var scope = serviceProvider.CreateScope();
                 var metricsService = scope.ServiceProvider.GetRequiredService<IMetricsService>();
                 var mqttService = scope.ServiceProvider.GetRequiredService<IMqttService>();
 
@@ -60,7 +51,7 @@ namespace Authly.Services
 
                 // Get memory usage - use actual physical memory
                 var memoryUsageMB = currentProcess.WorkingSet64 / (1024.0 * 1024.0);
-                
+
                 // Get total physical memory (this is a more accurate approach)
                 var totalMemoryMB = GetTotalPhysicalMemory() / (1024.0 * 1024.0);
 
@@ -77,13 +68,13 @@ namespace Authly.Services
                 // Record uptime metric
                 var uptime = DateTime.UtcNow - currentProcess.StartTime.ToUniversalTime();
                 await metricsService.RecordUptimeMetricAsync(
-                    true, 
-                    null, 
+                    true,
+                    null,
                     $"Service running for {uptime.TotalHours:F1} hours"
                 );
 
-                _logger.LogDebug("Collected resource metrics: CPU {CpuUsage:F1}%, Memory {MemoryUsage:F1}MB/{TotalMemory:F1}MB ({MemoryPercent:F1}%), Threads {ThreadCount}", 
-                    cpuUsage, memoryUsageMB, totalMemoryMB, (memoryUsageMB / totalMemoryMB) * 100, activeThreads);
+                logger.LogDebug(nameof(ResourceMonitoringService),
+                    $"Collected resource metrics: CPU {cpuUsage:F1}%, Memory {memoryUsageMB:F1}MB/{totalMemoryMB:F1}MB ({((memoryUsageMB / totalMemoryMB) * 100):F1}%), Threads {activeThreads}");
 
                 await mqttService.PublishAsync(
                     "authly/resource/metrics",
@@ -100,7 +91,7 @@ namespace Authly.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to collect resource metrics");
+                logger.LogError(nameof(ResourceMonitoringService), "Failed to collect resource metrics", ex);
             }
         }
 
@@ -121,7 +112,7 @@ namespace Authly.Services
 
                 var cpuUsedMs = (endCpuUsage - startCpuUsage).TotalMilliseconds;
                 var totalMsPassed = (endTime - startTime).TotalMilliseconds;
-                
+
                 if (totalMsPassed <= 0) return 0;
 
                 var cpuUsageTotal = (cpuUsedMs / (Environment.ProcessorCount * totalMsPassed)) * 100;
@@ -130,7 +121,7 @@ namespace Authly.Services
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Could not calculate CPU usage accurately");
+                logger.LogWarning(nameof(ResourceMonitoringService), "Could not calculate CPU usage accurately", ex);
                 return 0; // Return 0 if we can't calculate CPU usage
             }
         }
@@ -139,7 +130,13 @@ namespace Authly.Services
         {
             try
             {
-                // Platform-specific memory detection
+                // Try to detect container limits
+                var containerMemory = GetContainerMemoryLimit();
+                if (containerMemory > 0)
+                {
+                    return containerMemory;
+                }
+
                 if (OperatingSystem.IsWindows())
                 {
                     return GetWindowsPhysicalMemory();
@@ -160,7 +157,7 @@ namespace Authly.Services
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Could not determine total physical memory, using fallback");
+                logger.LogWarning(nameof(ResourceMonitoringService), "Could not determine total physical memory, using fallback", ex);
                 // Fallback to a reasonable default (8GB)
                 return 8L * 1024 * 1024 * 1024;
             }
@@ -170,38 +167,26 @@ namespace Authly.Services
         {
             try
             {
-                // Pokusíme se použít PerformanceCounter pro získání celkové pam?ti
                 using var process = Process.GetCurrentProcess();
-                
-                // Pro .NET Core m?žeme použít alternativní p?ístup
-                // Zkusíme ?íst z WMI nebo použít Performance Counters
+
                 try
                 {
-                    // Použití System.Management není dostupné v .NET Core bez NuGet balí?ku
-                    // Místo toho použijeme kombinaci r?zných zdroj? informací
-                    
-                    // 1. Zkusíme ?íst ze /proc/meminfo pro WSL
                     if (File.Exists("/proc/meminfo"))
                     {
                         return GetLinuxPhysicalMemory();
                     }
-                    
-                    // 2. Pro Windows použijeme odhad na základ? Environment prom?nných
+
                     var workingSet = Environment.WorkingSet;
-                    
-                    // Rozumný odhad: pokud aplikace b?ží s X MB, systém má pravd?podobn? alespo? 10-20x více
-                    // Pro 64GB systém by aplikace typicky využívila 100-500MB
-                    var multiplier = workingSet < 500 * 1024 * 1024 ? 128 : 64; // Pokud < 500MB, pak velký systém
+
+                    var multiplier = workingSet < 500 * 1024 * 1024 ? 128 : 64;
                     var estimatedTotal = workingSet * multiplier;
-                    
-                    // Rozumné hranice pro moderní systémy
-                    var minMemory = 4L * 1024 * 1024 * 1024;   // 4GB minimum
-                    var maxMemory = 256L * 1024 * 1024 * 1024; // 256GB maximum
-                    
+
+                    var minMemory = 4L * 1024 * 1024 * 1024;
+                    var maxMemory = 256L * 1024 * 1024 * 1024;
+
                     var result = Math.Min(Math.Max(estimatedTotal, minMemory), maxMemory);
-                    
-                    // Zaokrouhlit na nejbližší "rozumnou" hodnotu (4, 8, 16, 32, 64, 128GB)
-                    var commonSizes = new long[] { 
+
+                    var commonSizes = new long[] {
                         4L * 1024 * 1024 * 1024,   // 4GB
                         8L * 1024 * 1024 * 1024,   // 8GB
                         16L * 1024 * 1024 * 1024,  // 16GB
@@ -210,24 +195,157 @@ namespace Authly.Services
                         128L * 1024 * 1024 * 1024, // 128GB
                         256L * 1024 * 1024 * 1024  // 256GB
                     };
-                    
+
                     foreach (var size in commonSizes)
                     {
                         if (result <= size * 1.2) // 20% tolerance
                             return size;
                     }
-                    
+
                     return result;
                 }
                 catch
                 {
-                    // Fallback na 16GB
+                    // Fallback 16GB
                     return 16L * 1024 * 1024 * 1024;
                 }
             }
             catch
             {
                 return 16L * 1024 * 1024 * 1024; // 16GB default
+            }
+        }
+        private long GetContainerMemoryLimit()
+        {
+            try
+            {
+                // Docker/LXC container using cgroups for memory limits
+
+                // Cgroups v2 (newer systems)
+                var cgroupV2Paths = new[]
+                {
+                    "/sys/fs/cgroup/memory.max",
+                    "/sys/fs/cgroup/unified/memory.max"
+                };
+
+                foreach (var path in cgroupV2Paths)
+                {
+                    if (File.Exists(path))
+                    {
+                        var content = File.ReadAllText(path).Trim();
+                        if (content != "max" && long.TryParse(content, out var memoryMax))
+                        {
+                            logger.LogInfo(nameof(ResourceMonitoringService),
+                                $"Detected cgroups v2 memory limit: {memoryMax / (1024.0 * 1024.0):F0} MB from {path}");
+                            return memoryMax;
+                        }
+                    }
+                }
+
+                // Cgroups v1 (older systems)
+                var cgroupV1Paths = new[]
+                {
+                    "/sys/fs/cgroup/memory/memory.limit_in_bytes",
+                    "/sys/fs/cgroup/memory/docker/memory.limit_in_bytes",
+                    "/sys/fs/cgroup/memory.limit_in_bytes"
+                };
+
+                foreach (var path in cgroupV1Paths)
+                {
+                    if (File.Exists(path))
+                    {
+                        var content = File.ReadAllText(path).Trim();
+                        if (long.TryParse(content, out var memoryLimit))
+                        {
+                            // Check for "unlimited" (number is too high)
+                            var unrestricted = 9223372036854775807L; // Long.MaxValue
+                            var veryLarge = 1L << 50; // ~1PB - indicator of unlimited limit
+
+                            if (memoryLimit < veryLarge && memoryLimit != unrestricted)
+                            {
+                                logger.LogInfo(nameof(ResourceMonitoringService),
+                                    $"Detected cgroups v1 memory limit: {memoryLimit / (1024.0 * 1024.0):F0} MB from {path}");
+                                return memoryLimit;
+                            }
+                            else
+                            {
+                                logger.LogDebug(nameof(ResourceMonitoringService),
+                                    $"Found unlimited memory limit in {path}: {memoryLimit}");
+                            }
+                        }
+                    }
+                }
+
+                // If cgroups is availaible, but no limit set, we assume it's running in a container without a memory limit
+                if (IsRunningInContainer())
+                {
+                    logger.LogWarning(nameof(ResourceMonitoringService), "Running in container but no memory limit detected");
+
+                    logger.LogWarning(nameof(ResourceMonitoringService), 
+                        "Running in container but no memory limit detected - container may have unlimited memory");
+
+                    var linuxMemory = GetLinuxPhysicalMemory();
+                    logger.LogInfo(nameof(ResourceMonitoringService),
+                        $"Using host memory as fallback in unlimited container: {linuxMemory / (1024.0 * 1024.0):F0} MB");
+                    return linuxMemory;
+                }
+
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(nameof(ResourceMonitoringService), "Error detecting container memory limit", ex);
+                return 0;
+            }
+        }
+
+        private bool IsRunningInContainer()
+        {
+            try
+            {
+                // NÄ›kolik zpÅ¯sobÅ¯, jak detekovat kontejner:
+
+                // 1. Exists /.dockerenv file (Docker)
+                if (File.Exists("/.dockerenv"))
+                {
+                    return true;
+                }
+
+                // 2. Check /proc/1/cgroup
+                if (File.Exists("/proc/1/cgroup"))
+                {
+                    var cgroup = File.ReadAllText("/proc/1/cgroup");
+                    if (cgroup.Contains("docker") || cgroup.Contains("lxc") || cgroup.Contains("kubepods"))
+                    {
+                        return true;
+                    }
+                }
+
+                // 3. Check /proc/self/cgroup
+                if (File.Exists("/proc/self/cgroup"))
+                {
+                    var cgroup = File.ReadAllText("/proc/self/cgroup");
+                    if (cgroup.Contains("docker") || cgroup.Contains("lxc") || cgroup.Contains("kubepods"))
+                    {
+                        return true;
+                    }
+                }
+
+                // 4. Check hostname
+                if (File.Exists("/proc/self/mountinfo"))
+                {
+                    var mountinfo = File.ReadAllText("/proc/self/mountinfo");
+                    if (mountinfo.Contains("docker") || mountinfo.Contains("overlay"))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -237,7 +355,7 @@ namespace Authly.Services
             {
                 var memInfo = File.ReadAllText("/proc/meminfo");
                 var lines = memInfo.Split('\n');
-                
+
                 foreach (var line in lines)
                 {
                     if (line.StartsWith("MemTotal:"))
@@ -245,16 +363,18 @@ namespace Authly.Services
                         var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                         if (parts.Length >= 2 && long.TryParse(parts[1], out var memKb))
                         {
-                            return memKb * 1024; // Convert from KB to bytes
+                            var totalBytes = memKb * 1024;
+                            logger.LogInfo(nameof(ResourceMonitoringService), $"Detected host physical memory: {totalBytes / (1024.0 * 1024.0):F0} MB");
+                            return totalBytes;
                         }
                     }
                 }
-                
+
                 throw new Exception("Could not parse /proc/meminfo");
             }
             catch
             {
-                return 8L * 1024 * 1024 * 1024; // 8GB default
+                return 8L * 1024 * 1024 * 1024;
             }
         }
 
@@ -275,7 +395,7 @@ namespace Authly.Services
 
         public override void Dispose()
         {
-            _logger.LogInformation("Disposing resource monitoring service");
+            logger.LogInfo(nameof(ResourceMonitoringService), "Disposing resource monitoring service");
             base.Dispose();
         }
     }
