@@ -338,7 +338,7 @@ namespace Authly.Authorization.Local
                 await _userStorage.UpdateUser(user);
 
                 // Clear IP ban on successful authentication
-                _securityService.UnbanIpAddress(ipAddress);
+                _securityService.UnbanIpAddress(ipAddress, "Auto");
                 _appLogger.Log("LocalAuth", $"IP ban cleared for {ipAddress} after successful authentication by user {username}");
 
                 await _signInManager.PasswordSignInAsync(

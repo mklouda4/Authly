@@ -1008,11 +1008,11 @@
   <data name="AverageResponseTime" xml:space="preserve">
     <value>Průměrná doba odezvy</value>
   </data>
-  <data name="SystemUptime" xml:space="preserve">
-    <value>Provozní doba systému</value>
-  </data>
   <data name="SystemState" xml:space="preserve">
     <value>Stav systému</value>
+  </data>
+  <data name="SystemUptime" xml:space="preserve">
+    <value>Provozní doba systému</value>
   </data>
   <data name="ServiceAvailability" xml:space="preserve">
     <value>Dostupnost služby</value>
@@ -1133,5 +1133,8 @@
   </data>
   <data name="ManualIPBlockingDescription" xml:space="preserve">
     <value>Ručně zablokovat IP adresu pro zabránění všech pokusů o přihlášení z této adresy</value>
+  </data>
+  <data name="Note" xml:space="preserve">
+    <value>Poznámka</value>
   </data>
 </root>

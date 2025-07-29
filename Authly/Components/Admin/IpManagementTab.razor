@@ -94,6 +94,7 @@
                                     <span class="text-muted">-</span>
                                 }
                             </td>
+                            <td data-label="@LocalizationService.GetString("Note")">@ipBan.Note</td>
                             <td data-label="@LocalizationService.GetString("Actions")">
                                 <div class="action-buttons">
                                     @if (ipBan.IsCurrentlyBanned)
@@ -178,7 +179,7 @@
     {
         try
         {
-            var success = SecurityService.UnbanIpAddress(ipAddress);
+            var success = SecurityService.UnbanIpAddress(ipAddress, "Manual");
 
             if (success)
             {

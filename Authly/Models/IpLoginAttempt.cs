@@ -38,6 +38,11 @@ namespace Authly.Models
         public DateTime? BanEndUtc { get; set; }
 
         /// <summary>
+        /// Note
+        /// </summary>
+        public string? Note { get; set; } = string.Empty;
+
+        /// <summary>
         /// Indicates if the IP is currently banned
         /// </summary>
         [JsonIgnore]

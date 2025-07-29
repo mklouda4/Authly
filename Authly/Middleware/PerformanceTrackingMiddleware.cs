@@ -160,7 +160,7 @@ namespace Authly.Middleware
                     if (shouldBan)
                     {
                         // Use SecurityService to ban the IP
-                        var banResult = securityService.ManualBanIpAddress(ipAddress);
+                        var banResult = securityService.ManualBanIpAddress(ipAddress, "DoS");
                         
                         if (banResult)
                         {

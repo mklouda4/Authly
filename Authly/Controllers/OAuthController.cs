@@ -261,7 +261,7 @@ namespace Authly.Controllers
                 }
 
                 // Clear IP ban on successful OAuth authentication
-                _securityService.UnbanIpAddress(ipAddress);
+                _securityService.UnbanIpAddress(ipAddress, "Auto");
                 _logger.Log("OAuth", $"IP ban cleared for {ipAddress} after successful OAuth userinfo request");
 
                 _logger.Log("OAuth", "UserInfo request completed successfully");
@@ -335,7 +335,7 @@ namespace Authly.Controllers
                 var emailVerified = userNameModel.TryGetValue("email_verified", out var emailVerifiedValue) ? emailVerifiedValue?.ToString() : null;
 
                 // Clear IP ban on successful OAuth authentication
-                _securityService.UnbanIpAddress(ipAddress);
+                _securityService.UnbanIpAddress(ipAddress, "Auto");
                 _logger.Log("OAuth", $"IP ban cleared for {ipAddress} after successful OAuth userinfo/emails request");
 
                 _logger.Log("OAuth", "UserInfoEmails request completed successfully");

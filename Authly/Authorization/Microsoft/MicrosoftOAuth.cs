@@ -475,7 +475,7 @@ namespace Authly.Authorization.Microsoft
                 _metricsService.RecordLoginAttempt(true, "external_microsoft");
 
                 // Unban the IP address if it was previously banned
-                _securityService.UnbanIpAddress(ipAddress);
+                _securityService.UnbanIpAddress(ipAddress, "Auto");
 
                 // Redirect to dashboard or original return URL
                 context.Response.Redirect(validatedReturnUrl);

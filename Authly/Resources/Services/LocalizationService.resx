@@ -1008,7 +1008,7 @@
   <data name="AverageResponseTime" xml:space="preserve">
     <value>Average response time</value>
   </data>
-	<data name="SystemState" xml:space="preserve">
+  <data name="SystemState" xml:space="preserve">
     <value>System state</value>
   </data>
   <data name="SystemUptime" xml:space="preserve">
@@ -1110,7 +1110,6 @@
   <data name="Clear" xml:space="preserve">
     <value>Clear</value>
   </data>
-  <!-- New strings for manual IP blocking -->
   <data name="ManualIPBlocking" xml:space="preserve">
     <value>Manual IP Blocking</value>
   </data>
@@ -1134,5 +1133,8 @@
   </data>
   <data name="ManualIPBlockingDescription" xml:space="preserve">
     <value>Manually block an IP address to prevent all login attempts from that address</value>
+  </data>
+  <data name="Note" xml:space="preserve">
+    <value>Note</value>
   </data>
 </root>

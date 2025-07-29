@@ -82,8 +82,9 @@ namespace Authly.Services
         /// Manually unbans an IP address
         /// </summary>
         /// <param name="ipAddress">IP address to unban</param>
+        /// <param name="type">Unban type - Manual/Auto</param>
         /// <returns>True if unban successful</returns>
-        bool UnbanIpAddress(string ipAddress);
+        bool UnbanIpAddress(string ipAddress, string type = "Manual");
 
         /// <summary>
         /// Gets all current IP bans
@@ -103,7 +104,7 @@ namespace Authly.Services
         /// </summary>
         /// <param name="ipAddress">IP address to ban permanently</param>
         /// <returns>True if ban successful</returns>
-        bool ManualBanIpAddress(string ipAddress);
+        bool ManualBanIpAddress(string ipAddress, string note = null);
     }
 
     /// <summary>
@@ -180,7 +181,8 @@ namespace Authly.Services
                 {
                     attempt.IsBanned = false;
                     attempt.BanEndUtc = null;
-                    
+                    attempt.Note = "Ban expired";
+
                     // If sliding window is disabled, reset failed attempts after ban expires
                     // This gives the IP a "clean slate" after serving their ban time
                     if (!_ipRateLimitingOptions.SlidingWindow)
@@ -310,7 +312,7 @@ namespace Authly.Services
                 });
 
             // Log periodic warnings and record security events
-            if (tracker.AttemptCount % 5 == 0 || tracker.AttemptCount >= threshold)
+            if (tracker.AttemptCount % _ipRateLimitingOptions.MaxAttemptsPerIp == 0 || tracker.AttemptCount >= threshold)
             {
                 var severity = tracker.AttemptCount >= threshold ? SecurityEventSeverity.High : SecurityEventSeverity.Medium;
                 
@@ -425,7 +427,7 @@ namespace Authly.Services
         /// <summary>
         /// Manually unbans an IP address
         /// </summary>
-        public bool UnbanIpAddress(string ipAddress)
+        public bool UnbanIpAddress(string ipAddress, string type = "Manual")
         {
             try
             {
@@ -438,7 +440,8 @@ namespace Authly.Services
                     attempt.FailedAttempts = 0;
                     attempt.FirstAttemptUtc = DateTime.UtcNow;
                     attempt.LastAttemptUtc = DateTime.UtcNow;
-                    
+                    attempt.Note = $"{type} unban";
+
                     SaveIpBansToFile();
                     _logger.Log("SecurityService", $"IP {ipAddress} unbanned successfully");
                 }
@@ -488,6 +491,7 @@ namespace Authly.Services
                         existing.FirstAttemptUtc = now;
                         existing.IsBanned = false;
                         existing.BanEndUtc = null;
+                        existing.Note = "Sliding window reset";
                     }
                     else
                     {
@@ -502,6 +506,7 @@ namespace Authly.Services
             if (result.FailedAttempts >= _ipRateLimitingOptions.MaxAttemptsPerIp && !result.IsBanned)
             {
                 result.IsBanned = true;
+                result.Note = "Exceeded max attempts";
                 result.BanEndUtc = DateTime.UtcNow.AddMinutes(_ipRateLimitingOptions.BanDurationMinutes);
                 _logger.LogWarning("SecurityService", $"IP {ipAddress} banned until {result.BanEndUtc}");
                 
@@ -655,7 +660,7 @@ namespace Authly.Services
         /// <summary>
         /// Manually bans an IP address permanently (until manual unban)
         /// </summary>
-        public bool ManualBanIpAddress(string ipAddress)
+        public bool ManualBanIpAddress(string ipAddress, string note = null)
         {
             try
             {
@@ -676,13 +681,15 @@ namespace Authly.Services
                         FirstAttemptUtc = now,
                         LastAttemptUtc = now,
                         IsBanned = true,
-                        BanEndUtc = DateTime.MaxValue // Permanent ban
+                        BanEndUtc = DateTime.MaxValue, // Permanent ban,
+                        Note = note ?? "Manual ban"
                     },
                     (key, existing) =>
                     {
                         existing.IsBanned = true;
                         existing.BanEndUtc = DateTime.MaxValue; // Permanent ban
                         existing.LastAttemptUtc = now;
+                        existing.Note = note ?? "Manual ban";
                         // Keep existing failed attempts or set to max if lower
                         existing.FailedAttempts = Math.Max(existing.FailedAttempts, _ipRateLimitingOptions.MaxAttemptsPerIp);
                         return existing;

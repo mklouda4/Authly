@@ -269,7 +269,6 @@ namespace Authly.Services
         {
             try
             {
-                // Uložit do databáze (vždy)
                 var securityEvent = new SecurityEventMetric
                 {
                     EventType = eventType,
@@ -284,13 +283,11 @@ namespace Authly.Services
                 dbContext.SecurityEventMetrics.Add(securityEvent);
                 await dbContext.SaveChangesAsync();
 
-                // Také aktualizovat Prometheus (pokud je povoleno)
                 if (_options.EnableMetrics)
                 {
                     _securityEventsCounter.WithLabels(eventType).Inc();
                 }
 
-                // Automaticky zaznamenat specifické události
                 if (eventType == "user_lockout")
                 {
                     if (_options.EnableMetrics)

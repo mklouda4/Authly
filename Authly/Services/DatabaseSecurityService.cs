@@ -74,7 +74,8 @@ namespace Authly.Services
                 {
                     ipAttempt.IsBanned = false;
                     ipAttempt.BanEndUtc = null;
-                    
+                    ipAttempt.Note = "Ban expired";
+
                     // If sliding window is disabled, reset failed attempts after ban expires
                     if (!_ipRateLimitingOptions.SlidingWindow)
                     {
@@ -189,7 +190,8 @@ namespace Authly.Services
                         FirstAttemptUtc = now,
                         LastAttemptUtc = now,
                         IsBanned = false,
-                        BanEndUtc = null
+                        BanEndUtc = null,
+                        Note = "DoS"
                     };
                     _context.IpLoginAttempts.Add(unauthorizedAttempt);
                 }
@@ -326,7 +328,7 @@ namespace Authly.Services
             }
         }
 
-        public bool UnbanIpAddress(string ipAddress)
+        public bool UnbanIpAddress(string ipAddress, string type = "Manual")
         {
             try
             {
@@ -345,6 +347,7 @@ namespace Authly.Services
                     ipAttempt.FailedAttempts = 0;
                     ipAttempt.FirstAttemptUtc = DateTime.UtcNow;
                     ipAttempt.LastAttemptUtc = DateTime.UtcNow;
+                    ipAttempt.Note = $"{type} unban";
                 }
 
                 var unauthorizedAttempt = _context.IpLoginAttempts
@@ -363,7 +366,7 @@ namespace Authly.Services
                     // Record IP unban security event
                     _metricsService.RecordSecurityEventAsync("ip_unban", $"IP {ipAddress} manually unbanned", SecurityEventSeverity.Low, ipAddress);
 
-                    _mqttService.PublishAsync("authly/ip/unban", new { ipAddress, timestamp = DateTime.UtcNow });
+                    _mqttService.PublishAsync("authly/ip/unban", new { ipAddress, note = ipAttempt.Note, timestamp = DateTime.UtcNow });
                 }
                 _logger.Log("DatabaseSecurityService", $"IP {ipAddress} unbanned successfully");
                 
@@ -422,7 +425,7 @@ namespace Authly.Services
             }
         }
 
-        public bool ManualBanIpAddress(string ipAddress)
+        public bool ManualBanIpAddress(string ipAddress, string note = null)
         {
             try
             {
@@ -456,7 +459,8 @@ namespace Authly.Services
                         FirstAttemptUtc = unauthorizedAttempt?.FirstAttemptUtc ?? now,
                         LastAttemptUtc = now,
                         IsBanned = true,
-                        BanEndUtc = DateTime.MaxValue
+                        BanEndUtc = DateTime.MaxValue,
+                        Note = note ?? "Manual ban"
                     };
                     _context.IpLoginAttempts.Add(ipAttempt);
                 }
@@ -466,6 +470,7 @@ namespace Authly.Services
                     ipAttempt.BanEndUtc = DateTime.MaxValue;
                     ipAttempt.LastAttemptUtc = now;
                     ipAttempt.FailedAttempts = Math.Max(ipAttempt.FailedAttempts, _ipRateLimitingOptions.MaxAttemptsPerIp);
+                    ipAttempt.Note = note ?? "Manual ban";
                 }
 
                 _context.SaveChanges();
@@ -473,7 +478,7 @@ namespace Authly.Services
                 // Record manual ban security event
                 _metricsService.RecordSecurityEventAsync("ip_ban", $"IP {ipAddress} manually banned (permanent)", SecurityEventSeverity.High, ipAddress);
 
-                _mqttService.Publish("authly/ip/ban", new { ipAddress, permanent = true, timestamp = DateTime.UtcNow });
+                _mqttService.Publish("authly/ip/ban", new { ipAddress, permanent = true, note = ipAttempt.Note, timestamp = DateTime.UtcNow });
 
                 _logger.Log("DatabaseSecurityService", $"IP {ipAddress} banned permanently");
                 return true;
@@ -566,6 +571,7 @@ namespace Authly.Services
                         ipAttempt.FirstAttemptUtc = now;
                         ipAttempt.IsBanned = false;
                         ipAttempt.BanEndUtc = null;
+                        ipAttempt.Note = "Sliding window reset";
                     }
                     else
                     {
@@ -579,6 +585,7 @@ namespace Authly.Services
                 if (ipAttempt.FailedAttempts >= _ipRateLimitingOptions.MaxAttemptsPerIp && !ipAttempt.IsBanned)
                 {
                     ipAttempt.IsBanned = true;
+                    ipAttempt.Note = "Exceeded max attempts";
                     ipAttempt.BanEndUtc = DateTime.UtcNow.AddMinutes(_ipRateLimitingOptions.BanDurationMinutes);
                     _logger.LogWarning("DatabaseSecurityService", $"IP {ipAddress} banned until {ipAttempt.BanEndUtc}");
                     
@@ -588,7 +595,7 @@ namespace Authly.Services
                     _metricsService.RecordSecurityEventAsync("ip_ban", $"IP {ipAddress} banned due to {ipAttempt.FailedAttempts} failed attempts", SecurityEventSeverity.Medium, ipAddress);
 
                     _mqttService.PublishAsync("authly/ip/ban", 
-                        new { ipAddress, banEnd = ipAttempt.BanEndUtc, failedAttempts = ipAttempt.FailedAttempts, manual = false, timestamp = DateTime.UtcNow });
+                        new { ipAddress, banEnd = ipAttempt.BanEndUtc, failedAttempts = ipAttempt.FailedAttempts, note = ipAttempt.Note, manual = false, timestamp = DateTime.UtcNow });
 
                     return AuthenticationResult.IpBannedResult(ipAttempt.BanEndUtc.Value);
                 }

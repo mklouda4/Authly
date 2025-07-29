@@ -160,7 +160,7 @@ namespace Authly.Middleware
 
                 appLogger.Log("ExternalAuthMiddleware", $"Auth verification successful for user: {userName} (session auth)");
                 
-                securityService.UnbanIpAddress(ipAddress);
+                securityService.UnbanIpAddress(ipAddress, "Auto");
 
                 context.Response.StatusCode = 200;
                 await context.Response.WriteAsync("OK");
@@ -238,7 +238,7 @@ namespace Authly.Middleware
                     authenticationTime = authResult.Properties?.IssuedUtc?.ToString("yyyy-MM-ddTHH:mm:ssZ")
                 };
 
-                securityService.UnbanIpAddress(ipAddress);
+                securityService.UnbanIpAddress(ipAddress, "Auto");
 
                 await WriteJsonResponseAsync(context, sessionUserInfo);
                 appLogger.Log("ExternalAuthMiddleware", $"User info returned for user: {userName} (session auth)");
@@ -470,7 +470,7 @@ namespace Authly.Middleware
                     appLogger.Log("ExternalAuthMiddleware", $"Token authentication successful for user: {user.UserName}");
                     
                     // Clear IP ban on successful authentication
-                    securityService.UnbanIpAddress(ipAddress);
+                    securityService.UnbanIpAddress(ipAddress, "Auto");
                     appLogger.Log("ExternalAuthMiddleware", $"IP ban cleared for {ipAddress} after successful token authentication by user {user.UserName}");
                                         
                     return user;
