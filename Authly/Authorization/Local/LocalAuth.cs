@@ -396,8 +396,30 @@ namespace Authly.Authorization.Local
 
                 _appLogger.Log("LocalAuth", "User successfully signed out");
 
-                // Redirect to login page
-                context.Response.Redirect("/login");
+
+                string? returnUrl = null;
+
+                try
+                {
+                    var form = await context.Request.ReadFormAsync();
+                    returnUrl = form["returnUrl"].ToString();
+                }
+                catch
+                {
+                    _appLogger.LogWarning("LocalAuth", "Failed to read returnUrl from form data");
+                    returnUrl = null;
+                }
+                // If no return URL is provided, redirect to login page
+                if (string.IsNullOrEmpty(returnUrl))
+                {
+                    // Redirect to login page
+                    context.Response.Redirect("/login");
+                }
+                else
+                {
+                    var validatedReturnUrl = _urlValidator.ValidateReturnUrl(returnUrl, context.Request.Host.Value);
+                    context.Response.Redirect(validatedReturnUrl);
+                }
             }
             catch (Exception ex)
             {

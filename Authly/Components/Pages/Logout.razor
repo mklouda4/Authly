@@ -21,12 +21,17 @@
         
         <!-- Clean HTML form for logout -->
         <form method="post" action="@Authorization.Local.LocalAuth.LogoutUri" id="logoutForm" style="display: none;">
-            <!-- Empty form - automatically submitted -->
+            @if (!string.IsNullOrEmpty(ReturnUrl))
+            {
+                <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+            }
         </form>
     </div>
 </div>
 
 @code {
+    [Parameter, SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
