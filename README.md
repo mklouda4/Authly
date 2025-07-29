@@ -127,14 +127,19 @@ METRICS_PORT=9090                              # Metrics port for monitoring
 
 # ===== MQTT Integration =====
 AUTHLY_MQTT_ENABLED=false                     # Enable MQTT client integration
-AUTHLY_MQTT_WEBSOCKET_URI=ws://localhost:8083/mqtt  # WebSocket URI for MQTT over WebSocket
-AUTHLY_MQTT_SERVER=localhost                  # MQTT broker hostname or IP address
+
+# Connection Method (choose ONE):
+AUTHLY_MQTT_WEBSOCKET_URI=ws://localhost:8083/mqtt  # WebSocket URI - takes PRIORITY over TCP
+# OR
+AUTHLY_MQTT_SERVER=localhost                  # MQTT broker hostname (used only if WebSocket URI is empty)
 AUTHLY_MQTT_PORT=1883                         # MQTT broker port (1883 for non-TLS, 8883 for TLS)
-AUTHLY_MQTT_USE_TLS=false                     # Enable TLS/SSL encryption for MQTT connection
+AUTHLY_MQTT_USE_TLS=false                     # Enable TLS/SSL encryption for TCP connection
+
+# Authentication & Client Settings:
 AUTHLY_MQTT_CLIENT_ID=authly-server-001       # Unique client identifier for MQTT connection
 AUTHLY_MQTT_USERNAME=mqtt_user                # Username for MQTT broker authentication (optional)
 AUTHLY_MQTT_PASSWORD=mqtt_password            # Password for MQTT broker authentication (optional)
-AUTHLY_MQTT_KEEP_ALIVE_SECONDS=60             # Keep-alive interval in seconds (default: 30)
+AUTHLY_MQTT_KEEP_ALIVE_SECONDS=60             # Keep-alive interval in seconds (default: 60)
 ```
 
 ### appsettings.json Alternative
@@ -303,6 +308,17 @@ Authly features a comprehensive admin panel available at `/admin` for administra
 - **Real-time countdown** for temporary registration
 - **Dynamic configuration** updates
 
+#### 📋 System Logs
+- **Real-time log monitoring** - View latest system activity
+- **Last 50 log entries** - Recent application logs and events
+- **Log level filtering** - Filter by severity (Error, Warning, Info, Debug)
+- **Log management features**:
+  - View detailed log messages
+  - Monitor system health in real-time
+  - Track authentication events
+  - Debug application issues
+  - Export log data
+
 ### Admin Panel Navigation
 
 The admin panel features a tabbed interface with persistent state:
@@ -313,6 +329,7 @@ The admin panel features a tabbed interface with persistent state:
 ├── IP Management      - Monitor and control IP-based security
 ├── Token Management   - Oversee OAuth and access tokens
 ├── OAuth Clients      - Manage external OAuth client applications
+├── System Logs        - View recent application logs (last 50 entries)
 └── Application Settings - Configure system-wide settings
 ```
 
@@ -332,6 +349,89 @@ The admin panel features a tabbed interface with persistent state:
 | **System Configuration** | Control application behavior | Enable/disable features, Set timeouts, Configure limits |
 | **OAuth Management** | Oversee external authentication | Monitor tokens, Revoke access, Audit clients |
 | **Registration Control** | Manage new user registration | Enable permanently, Enable temporarily, Monitor status |
+| **System Logs** | Monitor application logs and events | View logs, Filter by level, Track system health |
+
+### System Log Monitoring
+
+The admin panel includes a dedicated **System Logs** tab that provides real-time access to application logs for debugging and monitoring purposes.
+
+#### Log Features
+
+- **Recent Activity** - Displays the **last 50 log entries** in reverse chronological order
+- **Real-time Updates** - Logs automatically refresh for live monitoring
+- **Log Level Indicators** - Color-coded severity levels for quick identification
+- **Detailed Information** - Full log messages with timestamps and context
+
+#### Log Levels
+
+| Level | Description | Color Indicator |
+|-------|-------------|----------------|
+| **Error** | Application errors and exceptions | 🔴 Red |
+| **Warning** | Warning messages and potential issues | 🟡 Yellow |
+| **Information** | General application information | 🔵 Blue |
+| **Debug** | Detailed debugging information | 🟢 Green |
+
+#### Log Entry Information
+
+Each log entry displays:
+- **Timestamp** - When the event occurred
+- **Log Level** - Severity of the message
+- **Category** - Component or module that generated the log  
+- **Message** - Detailed log message
+- **Exception Details** - Stack traces for errors (when applicable)
+
+#### Common Log Categories
+
+- `Authly.Services.AuthenticationService` - User authentication events
+- `Authly.Services.OAuthService` - OAuth provider interactions
+- `Authly.Services.SecurityService` - Security events and lockouts
+- `Microsoft.AspNetCore.Authentication` - ASP.NET Core authentication
+- `System.Net.Http.HttpClient` - HTTP client requests
+- `Authly.Services.MqttService` - MQTT integration events
+
+#### Using System Logs for Troubleshooting
+
+**Authentication Issues:**
+```
+Look for entries from:
+- Authly.Services.AuthenticationService
+- Microsoft.AspNetCore.Authentication.*
+- Failed login attempts and lockout events
+```
+
+**OAuth Problems:**
+```
+Monitor logs from:
+- Authly.Services.OAuthService  
+- GoogleLogin, MicrosoftLogin, GitHubLogin, FacebookLogin
+- OAuth callback and token exchange errors
+```
+
+**MQTT Integration:**
+```
+Check entries from:
+- Authly.Services.MqttService
+- Connection status and publishing events
+- MQTT broker communication errors
+```
+
+**System Performance:**
+```
+Review logs for:
+- High request volumes
+- Slow response times
+- Resource utilization warnings
+- Health check failures
+```
+
+#### Log Best Practices
+
+- **Regular Monitoring** - Check logs periodically for errors or warnings
+- **Pattern Recognition** - Identify recurring issues or attack patterns
+- **Correlation** - Match log entries with user reports or system behavior
+- **Documentation** - Use logs to document and resolve issues
+
+> **💡 Tip**: The System Logs tab is particularly useful for real-time debugging during development and for monitoring production systems for unusual activity.
 
 ## 🔗 Single Sign-On (SSO)
 
@@ -582,13 +682,426 @@ http:
           - "X-Original-Method"
 ```
 
+## 🐳 Portainer Integration with Authly SSO
+
+This guide shows how to integrate Portainer with Authly for Single Sign-On (SSO) authentication using OAuth 2.0.
+
+### Prerequisites
+
+- Authly server running and accessible
+- Portainer CE/EE instance
+- Administrator access to both systems
+- HTTPS configured for both services (recommended for production)
+
+### Step 1: Configure OAuth Client in Authly
+
+#### 1.1 Access Authly Admin Panel
+
+1. Login to Authly as administrator
+2. Click on **OAuth Clients** tab
+
+#### 1.2 Create New OAuth Client
+
+Click **"Add New Client"** and configure:
+
+**Basic Information**
+- **Client Type**: `Confidential`
+- **Status**: `ENABLED`
+
+**Client Credentials**
+- **Client ID**: (auto-generated, e.g., `_43wapC7S1Pe-_B6uTNfCw`)
+- **Client Secret**: (auto-generated, copy this value)
+
+**Configuration**
+- **Redirect URIs**: `https://portainer.example.com` (your Portainer URL)
+- **Allowed Scopes**: 
+  ```
+  openid
+  profile
+  email
+  ```
+- **Allowed Grant Types**:
+  ```
+  AuthorizationCode
+  RefreshToken
+  ```
+
+**Token Lifetimes**
+- **Access Token Lifetime**: `3600 seconds` (1 hour)
+- **Refresh Token Lifetime**: `86400 seconds` (24 hours)
+
+**Security Settings**
+- **Require PKCE**: `NO` (Portainer doesn't support PKCE)
+
+#### 1.3 OAuth Endpoints Reference
+
+After creating the client, note these endpoints for Portainer configuration:
+
+```
+Authorization URL: https://auth.example.com/oauth/authorize
+Access Token URL: https://auth.example.com/oauth/token
+Resource URL: https://auth.example.com/oauth/userinfo
+Redirect URL: https://portainer.example.com (your Portainer URL)
+Logout URL: https://auth.example.com/logout
+```
+
+### Step 2: Configure Portainer SSO
+
+#### 2.1 Access Portainer Settings
+
+1. Login to Portainer as administrator
+2. Go to **Settings** → **Authentication**
+3. Select **OAuth** authentication method
+
+#### 2.2 OAuth Configuration
+
+Fill in the OAuth configuration form with these values:
+
+**OAuth Provider Settings**
+- **Client ID**: `SovF_LgQkmTruv6EcOZbRA` (from Authly OAuth client)
+- **Client Secret**: `xxxxxxxxxxxxxxxxxxxx` (from Authly OAuth client)
+- **Authorization URL**: `https://auth.example.com/oauth/authorize`
+- **Access Token URL**: `https://auth.example.com/oauth/token`
+- **Resource URL**: `https://auth.example.com/oauth/userinfo`
+- **Redirect URL**: `https://portainer.example.com`
+- **Logout URL**: `https://auth.example.com/logout`
+
+**User Mapping**
+- **User identifier**: `email`
+- **Scopes**: `email openid profile`
+
+**Authentication Settings**
+- **Auth Style**: `Auto Detect`
+
+#### 2.3 SSO Settings
+
+Enable these important settings:
+
+- **Use SSO**: `true` ✅
+- **Automatic user provisioning**: `true` ✅
+
+#### 2.4 Save Configuration
+
+Click **"Save settings"** to apply the OAuth configuration.
+
+### Step 3: Test Integration
+
+#### 3.1 Logout and Test
+
+1. **Logout** from Portainer
+2. Navigate to your Portainer URL
+3. You should see **"Login with OAuth"** option
+4. Click OAuth login button
+5. You'll be redirected to Authly login page
+
+#### 3.2 First Login Flow
+
+1. **Login to Authly** with your credentials
+2. **Grant permissions** if prompted
+3. You'll be redirected back to Portainer
+4. New user account will be **automatically created** in Portainer
+5. You should be logged into Portainer dashboard
+
+#### 3.3 Subsequent Logins
+
+- Users with active Authly sessions will be automatically logged into Portainer
+- No additional authentication required if session is valid
+
+### Step 4: User Management
+
+#### 4.1 Automatic User Provisioning
+
+With **Automatic user provisioning = true**:
+
+- New users are **automatically created** on first login
+- User information is populated from Authly:
+  - **Username**: From Authly preferred_username or email
+  - **Email**: From Authly email claim
+  - **Display Name**: From Authly name claim
+
+#### 4.2 Role Assignment
+
+**Default Role**: New users get default Portainer user role
+
+**Admin Assignment**: 
+- Portainer admins must be assigned manually in Portainer
+- Or configure role mapping based on Authly groups (Portainer EE feature)
+
+#### 4.3 User Synchronization
+
+User information is updated on each login:
+- Email address changes in Authly sync to Portainer
+- Display name updates are reflected
+- Account status (enabled/disabled) is respected
+
+### Step 5: Advanced Configuration
+
+#### 5.1 Custom Scopes (Optional)
+
+You can request additional scopes in Portainer:
+
+```
+email openid profile read
+```
+
+Ensure these scopes are enabled in your Authly OAuth client.
+
+#### 5.2 Role Mapping (Portainer EE)
+
+For Portainer Business Edition, you can configure automatic role assignment:
+
+1. In Authly, add users to groups or roles
+2. Configure role mapping in Portainer OAuth settings
+3. Users will automatically get assigned roles based on Authly groups
+
+#### 5.3 Team Synchronization (Portainer EE)
+
+Configure team membership based on Authly groups:
+
+1. Create teams in Portainer
+2. Map Authly groups to Portainer teams
+3. Users will automatically join teams based on their Authly group membership
+
+### Step 6: Troubleshooting
+
+#### 6.1 Common Issues
+
+**OAuth Redirect Mismatch**:
+```bash
+# Ensure redirect URLs match exactly
+Authly OAuth Client: https://portainer.example.com
+Portainer Redirect URL: https://portainer.example.com
+
+# Fix: Update URLs to match
+```
+
+**Invalid Client Credentials**:
+```bash
+# Verify client ID and secret are correct
+# Check Authly logs for authentication errors
+docker-compose logs authly | grep -i oauth
+```
+
+**Scope Issues**:
+```bash
+# Ensure required scopes are enabled in Authly OAuth client
+# Check Portainer logs for scope-related errors
+```
+
+#### 6.2 Debug Steps
+
+1. **Check Authly Logs**:
+   ```bash
+   # Monitor OAuth flows
+   docker-compose logs -f authly | grep -i oauth
+   ```
+
+2. **Verify OAuth Client**:
+   - Login to Authly admin panel
+   - Check OAuth Clients tab
+   - Verify client is enabled and configured correctly
+
+3. **Test OAuth Endpoints**:
+   ```bash
+   # Test authorization endpoint
+   curl -I "https://auth.example.com/oauth/authorize?client_id=YOUR_CLIENT_ID&response_type=code"
+   
+   # Check discovery endpoint
+   curl "https://auth.example.com/oauth/.well-known/oauth-authorization-server"
+   ```
+
+4. **Check Portainer Logs**:
+   ```bash
+   # Monitor Portainer OAuth integration
+   docker logs portainer | grep -i oauth
+   ```
+
+#### 6.3 Network Issues
+
+**HTTPS Requirements**:
+- Both Authly and Portainer should use HTTPS in production
+- Mixed HTTP/HTTPS can cause authentication issues
+
+**Network Connectivity**:
+- Ensure Portainer can reach Authly OAuth endpoints
+- Check firewall rules and network policies
+
+### Step 7: Security Considerations
+
+#### 7.1 Production Setup
+
+- **Use HTTPS** for both services
+- **Secure client secret** storage
+- **Regular secret rotation**
+- **Monitor failed authentication attempts**
+
+#### 7.2 Access Control
+
+- **Review user permissions** regularly
+- **Disable unused accounts** in Authly
+- **Monitor OAuth token usage** in Authly admin panel
+
+#### 7.3 Session Management
+
+- **Configure appropriate token lifetimes**
+- **Enable session timeout** in Portainer
+- **Monitor active sessions** in both systems
+
+### Summary
+
+After completing this integration:
+
+✅ **Single Sign-On**: Users login once to Authly, access Portainer seamlessly  
+✅ **Automatic Provisioning**: New users are created automatically  
+✅ **Centralized Authentication**: Manage all users in Authly  
+✅ **Enhanced Security**: Leverage Authly's security features (2FA, lockouts, etc.)  
+✅ **Audit Trail**: Track authentication events in Authly logs  
+
+Your Portainer instance is now integrated with Authly for secure, centralized authentication!
+
 ## 📡 MQTT Integration
+
 Authly supports MQTT integration for real-time event publishing and system monitoring. When enabled, authentication events and system status updates are published to configured MQTT topics.
 
 ### MQTT Configuration
+
 Configure MQTT integration using environment variables or appsettings.json:
 
-⚠️ Important: WebSocket URI takes priority over TCP configuration. If AUTHLY_MQTT_WEBSOCKET_URI is set, the TCP settings (Server, Port, UseTls) are ignored. Configure only one connection method.
+> **⚠️ Important**: WebSocket URI takes **priority** over TCP configuration. If `AUTHLY_MQTT_WEBSOCKET_URI` is set, the TCP settings (`Server`, `Port`, `UseTls`) are ignored. Configure **only one connection method**.
+
+**Option 1: WebSocket Connection (Recommended for web integration)**
+```bash
+# Enable MQTT integration
+AUTHLY_MQTT_ENABLED=true
+
+# WebSocket connection (takes priority)
+AUTHLY_MQTT_WEBSOCKET_URI=ws://mqtt.example.com:8083/mqtt
+
+# Authentication and client settings
+AUTHLY_MQTT_CLIENT_ID=authly-prod-001
+AUTHLY_MQTT_USERNAME=authly_client
+AUTHLY_MQTT_PASSWORD=secure_password
+AUTHLY_MQTT_KEEP_ALIVE_SECONDS=60
+```
+
+**Option 2: TCP Connection (Traditional MQTT)**
+```bash
+# Enable MQTT integration
+AUTHLY_MQTT_ENABLED=true
+
+# Leave WebSocket URI empty for TCP connection
+# AUTHLY_MQTT_WEBSOCKET_URI=  # Must be empty or not set
+
+# TCP connection settings
+AUTHLY_MQTT_SERVER=mqtt.example.com
+AUTHLY_MQTT_PORT=1883
+AUTHLY_MQTT_USE_TLS=false
+
+# Authentication and client settings
+AUTHLY_MQTT_CLIENT_ID=authly-prod-001
+AUTHLY_MQTT_USERNAME=authly_client
+AUTHLY_MQTT_PASSWORD=secure_password
+AUTHLY_MQTT_KEEP_ALIVE_SECONDS=60
+```
+
+**Option 3: Secure TCP with TLS**
+```bash
+# Enable MQTT integration
+AUTHLY_MQTT_ENABLED=true
+
+# TCP with TLS encryption
+AUTHLY_MQTT_SERVER=mqtt.example.com
+AUTHLY_MQTT_PORT=8883
+AUTHLY_MQTT_USE_TLS=true
+
+# Authentication
+AUTHLY_MQTT_CLIENT_ID=authly-secure-001
+AUTHLY_MQTT_USERNAME=authly_client
+AUTHLY_MQTT_PASSWORD=secure_password
+```
+
+### MQTT Topics
+
+Authly publishes events to the following topic structure:
+
+| Topic | Description | Payload Format |
+|-------|-------------|---------------|
+| `authly/events/login/success` | Successful login events | JSON with user info |
+| `authly/events/login/failed` | Failed login attempts | JSON with attempt details |
+| `authly/events/oauth/success` | OAuth authentication success | JSON with provider info |
+| `authly/events/oauth/failed` | OAuth authentication failures | JSON with error details |
+| `authly/events/totp/success` | TOTP verification success | JSON with user info |
+| `authly/events/totp/failed` | TOTP verification failures | JSON with attempt details |
+| `authly/events/lockout/user` | User account lockouts | JSON with lockout info |
+| `authly/events/lockout/ip` | IP address bans | JSON with IP and ban details |
+| `authly/status/health` | System health status | JSON health check results |
+| `authly/status/metrics` | System metrics | JSON performance data |
+
+### Event Payload Examples
+
+**Login Success Event:**
+```json
+{
+  "timestamp": "2025-07-29T10:30:00Z",
+  "userId": "user123",
+  "username": "john.doe",
+  "email": "john@example.com"
+}
+```
+
+**OAuth Success Event:**
+```json
+{
+  "timestamp": "2025-07-29T10:30:00Z",
+  "userId": "user123",
+  "username": "john.doe",
+  "email": "john@example.com"
+}
+```
+
+**User Lockout Event:**
+```json
+{
+  "timestamp": "2025-07-29T10:30:00Z",
+  "userId": "user123",
+  "username": "john.doe",
+  "failedAttempts": 3,
+  "lockoutDuration": 30
+}
+```
+
+### MQTT Security
+
+**TLS/SSL Configuration:**
+```bash
+# Enable TLS encryption
+AUTHLY_MQTT_USE_TLS=true
+AUTHLY_MQTT_PORT=8883
+
+# For self-signed certificates, additional configuration may be needed
+```
+
+**Authentication:**
+```bash
+# Username/password authentication
+AUTHLY_MQTT_USERNAME=authly_service
+AUTHLY_MQTT_PASSWORD=strong_secure_password
+
+# Client certificate authentication (advanced)
+# Requires additional configuration in appsettings.json
+```
+
+### MQTT Broker Compatibility
+
+Authly's MQTT client is compatible with:
+
+- **Eclipse Mosquitto** - Open source MQTT broker
+- **HiveMQ** - Enterprise MQTT platform
+- **AWS IoT Core** - Amazon's managed MQTT service  
+- **Azure IoT Hub** - Microsoft's IoT platform
+- **Google Cloud IoT Core** - Google's IoT service
+- **EMQX** - Scalable MQTT broker
+- **VerneMQ** - High-performance MQTT broker
 
 ## 🔐 OAuth 2.0 Authorization Server
 
@@ -1268,9 +1781,9 @@ sudo chown -R $USER:$USER ./data
 chmod 755 ./data
 
 # Or use Docker volume
+docker volume create authly-data
 ```
 
-docker volume create authly-data
 #### Image Issues
 
 ```bash
@@ -1437,4 +1950,4 @@ Additional security recommendations:
 
 **Version**: 1.0.0  
 **ASP.NET Core**: 8.0  
-**Docker Image**: ghcr.io/mklouda4/authly:latest  
+**Docker Image**: ghcr.io/mklouda4/authly:latest
