@@ -146,8 +146,8 @@ namespace Authly.Services
 
                     if (statFields.Length >= 17)
                     {
-                       if (long.TryParse(statFields[13], out var utime) &&
-                            long.TryParse(statFields[14], out var stime))
+                        if (long.TryParse(statFields[13], out var utime) &&
+                             long.TryParse(statFields[14], out var stime))
                         {
                             var totalCpuTicks = utime + stime;
                             var currentTime = DateTime.UtcNow;
@@ -348,6 +348,13 @@ namespace Authly.Services
                 var containerMemory = GetContainerMemoryLimit();
                 if (containerMemory > 0)
                 {
+                    var containerMB = containerMemory / (1024.0 * 1024.0);
+                    if (containerMB < 100) // Lower than 100MB is suspicios
+                    {
+                        var procMemory = GetLinuxPhysicalMemoryDirect();
+                        var procMB = procMemory / (1024.0 * 1024.0);
+                        return procMemory;
+                    }
                     return containerMemory;
                 }
 
@@ -476,7 +483,7 @@ namespace Authly.Services
                     try
                     {
                         var content = File.ReadAllText(directMemoryMax).Trim();
-                        
+
                         if (content != "max" && long.TryParse(content, out var memoryMax))
                         {
                             return memoryMax;
@@ -535,7 +542,7 @@ namespace Authly.Services
                     {
                         try
                         {
-                            var content = File.ReadAllText(path).Trim();                          
+                            var content = File.ReadAllText(path).Trim();
                             if (content != "max" && long.TryParse(content, out var memoryMax))
                             {
                                 return memoryMax;
@@ -587,7 +594,7 @@ namespace Authly.Services
                     try
                     {
                         var cgroupContent = File.ReadAllText("/proc/self/cgroup");
-                        
+
                         if (cgroupContent.Contains("/.lxc"))
                         {
                             // LXC specific path
@@ -709,6 +716,12 @@ namespace Authly.Services
 
                             var totalGB = totalBytes / (1024.0 * 1024.0 * 1024.0);
                             var isContainer = IsRunningInContainer();
+                            var isProxmoxLXC = IsProxmoxLXC();
+
+                            if (isProxmoxLXC)
+                            {
+                                return totalBytes;
+                            }
 
                             if (isContainer && totalGB > 32)
                             {
@@ -729,6 +742,96 @@ namespace Authly.Services
             {
                 logger.LogError(nameof(ResourceMonitoringService), "Error reading /proc/meminfo", ex);
                 return 8L * 1024 * 1024 * 1024;
+            }
+        }
+
+        private bool IsProxmoxLXC()
+        {
+            try
+            {
+                if (File.Exists("/proc/self/cgroup"))
+                {
+                    var cgroupContent = File.ReadAllText("/proc/self/cgroup");
+                    if (cgroupContent.Contains("/.lxc") || cgroupContent.Contains("/lxc/"))
+                    {
+
+                        if (Directory.Exists("/sys/fs/cgroup/.lxc"))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                if (File.Exists("/proc/1/environ"))
+                {
+                    try
+                    {
+                        var environ = File.ReadAllText("/proc/1/environ");
+                        if (environ.Contains("container=lxc"))
+                        {
+                            return true;
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore errors reading environ
+                    }
+                }
+
+                if (File.Exists("/proc/mounts"))
+                {
+                    try
+                    {
+                        var mounts = File.ReadAllText("/proc/mounts");
+                        if (mounts.Contains("lxcfs") || mounts.Contains("/dev/.lxc"))
+                        {
+                            return true;
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore errors reading mounts
+                    }
+                }
+
+                if (File.Exists("/proc/1/comm"))
+                {
+                    try
+                    {
+                        var init = File.ReadAllText("/proc/1/comm").Trim();
+                        if (init == "systemd" || init == "init")
+                        {
+                            if (Directory.Exists("/sys/fs/cgroup/.lxc") ||
+                                (File.Exists("/proc/self/cgroup") && File.ReadAllText("/proc/self/cgroup").Contains("/.lxc")))
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore errors
+                    }
+                }
+
+                // 5. Kontrola hostname patterns (Proxmox často používá specifické názvy)
+                try
+                {
+                    var hostname = Environment.MachineName;
+                    // Přidejte sem specifické pattern pro vaše prostředí pokud potřeba
+                    // např. if (hostname.StartsWith("pve-") || hostname.Contains("proxmox"))
+                }
+                catch
+                {
+                    // Ignore errors
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                logger.LogDebug(nameof(ResourceMonitoringService), "Error detecting Proxmox LXC", ex);
+                return false;
             }
         }
 
