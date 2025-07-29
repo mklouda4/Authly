@@ -41,7 +41,10 @@ namespace Authly.Services
                 }
 
                 // 2. Fall back to system preference
-                var systemPrefersDark = await jsRuntime.InvokeAsync<bool>("window.matchMedia('(prefers-color-scheme: dark)').matches");
+                //var systemPrefersDark = await jsRuntime.InvokeAsync<bool>("window.matchMedia('(prefers-color-scheme: dark)').matches");
+                //return systemPrefersDark ? "dark" : "light";
+
+                var systemPrefersDark = await jsRuntime.InvokeAsync<bool>("themeHelper.getSystemTheme");
                 return systemPrefersDark ? "dark" : "light";
             }
             catch (Exception ex)
