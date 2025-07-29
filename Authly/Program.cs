@@ -16,10 +16,12 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
 using Prometheus;
+using System;
 
 namespace Authly
 {
@@ -154,8 +156,11 @@ namespace Authly
                 options.Cookie.IsEssential = true;
                 options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
             });
-
-            var keyDir = new DirectoryInfo(Environment.GetEnvironmentVariable("AUTHLY_KEY_DIRECTORY") ?? "/app/keys");
+                        
+            var keyDir = new DirectoryInfo(
+                Environment.GetEnvironmentVariable("AUTHLY_KEY_DIRECTORY") ?? 
+                Path.Combine(builder.Environment.WebRootPath ?? builder.Environment.ContentRootPath, "keys")
+            );
             if (builder.Environment.IsDevelopment())
                 keyDir = new DirectoryInfo(Path.Combine(Directory.GetCurrentDirectory(), "keys"));
 
