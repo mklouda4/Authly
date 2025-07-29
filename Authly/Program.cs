@@ -15,11 +15,11 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
 using Prometheus;
-using Microsoft.EntityFrameworkCore;
 
 namespace Authly
 {
@@ -177,7 +177,7 @@ namespace Authly
 
             // Register session tracking service
             _ = builder.Services.AddSingleton<ISessionTrackingService, SessionTrackingService>();
-            
+
             // Register health checks
             _ = builder.Services.AddHealthChecks()
                 .AddCheck<AuthlyHealthCheck>($"{appOptionsBase.Name}_health".ToLower())
@@ -333,8 +333,8 @@ namespace Authly
             // Register data services with factory pattern (NEW)
             _ = builder.Services.AddDataServices(builder.Configuration);
 
-
-            builder.Services.AddMqttService();
+            // Register MQTT service
+            _ = builder.Services.AddMqttService();
 
             var app = builder.Build();
 
@@ -348,7 +348,7 @@ namespace Authly
                     {
                         // Use migrations instead of EnsureCreated for proper schema updates
                         context.Database.Migrate();
-                        
+
                         var logger = scope.ServiceProvider.GetRequiredService<IApplicationLogger>();
                         logger.Log("Program", "Database migrations applied successfully");
                     }
@@ -356,13 +356,13 @@ namespace Authly
                     {
                         var logger = scope.ServiceProvider.GetRequiredService<IApplicationLogger>();
                         logger.LogError("Program", $"Database migration failed: {ex.Message}", ex);
-                        
+
                         // In case of migration failure, try to log more details
                         if (ex.InnerException != null)
                         {
                             logger.LogError("Program", $"Inner exception: {ex.InnerException.Message}", ex.InnerException);
                         }
-                        
+
                         // Don't throw the exception to prevent app startup failure
                         // The app should still start even if migrations fail
                     }
@@ -398,7 +398,7 @@ namespace Authly
                 ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
             });
 
-            app.UsePerformanceTracking();
+            _ = app.UsePerformanceTracking();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
@@ -510,6 +510,17 @@ namespace Authly
                 ["AUTHLY_DB_CLEANUP_KEEP_EXPIRED_AUTH_CODES_HOURS"] = "DatabaseCleanup:KeepExpiredAuthCodesForHours",
                 ["AUTHLY_DB_CLEANUP_KEEP_REVOKED_TOKENS_DAYS"] = "DatabaseCleanup:KeepRevokedTokensForDays",
                 ["AUTHLY_DB_CLEANUP_LOG_STATS"] = "DatabaseCleanup:LogCleanupStats",
+
+                // MQTT settings
+                ["AUTHLY_MQTT_ENABLED"] = "Mqtt:Enabled",
+                ["AUTHLY_MQTT_WEBSOCKET_URI"] = "Mqtt:WebSocketUri",
+                ["AUTHLY_MQTT_SERVER"] = "Mqtt:Server",
+                ["AUTHLY_MQTT_PORT"] = "Mqtt:Port",
+                ["AUTHLY_MQTT_USE_TLS"] = "Mqtt:UseTls",
+                ["AUTHLY_MQTT_CLIENT_ID"] = "Mqtt:ClientId",
+                ["AUTHLY_MQTT_USERNAME"] = "Mqtt:Username",
+                ["AUTHLY_MQTT_PASSWORD"] = "Mqtt:Password",
+                ["AUTHLY_MQTT_KEEP_ALIVE_SECONDS"] = "Mqtt:KeepAliveSeconds",
 
                 // OAuth settings - Google
                 ["GOOGLE_CLIENT_ID"] = "Authentication:Google:ClientId",
