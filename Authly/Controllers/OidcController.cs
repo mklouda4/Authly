@@ -54,7 +54,7 @@ namespace Authly.Controllers
                 {
                     supportedAlgorithms.Add("RS256");
                 }
-                if (sharedKeys.HMAC != null)
+                else if (sharedKeys.HMAC != null)
                 {
                     supportedAlgorithms.Add("HS256");
                 }
