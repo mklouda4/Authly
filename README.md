@@ -1245,7 +1245,7 @@ client_secret=your_client_secret
   "scopes_supported": ["openid", "profile", "email", "read", "write"],
   "token_endpoint_auth_methods_supported": ["client_secret_post", "client_secret_basic"],
   "subject_types_supported": ["public"],
-  "id_token_signing_alg_values_supported": ["HS256"]
+  "id_token_signing_alg_values_supported": ["HS256" or "RS256"]
 }
 ```
 

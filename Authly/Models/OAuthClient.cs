@@ -1,3 +1,4 @@
+using Authly.Controllers;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
@@ -346,6 +347,14 @@ namespace Authly.Models
 
         /// <summary>
         /// OPTIONAL. The identifier of the resource owner (OpenID Connect).
+        /// </summary>
+        [JsonPropertyName("id_token")]
+        public string? IdToken { get; set; }
+    }
+    public class OidcTokenResponse : OAuthTokenResponse
+    {
+        /// <summary>
+        /// REQUIRED. The id token issued by the authorization server.
         /// </summary>
         [JsonPropertyName("id_token")]
         public string? IdToken { get; set; }

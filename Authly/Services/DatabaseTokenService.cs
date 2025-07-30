@@ -5,7 +5,67 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 
 namespace Authly.Services
-{
+{/// <summary>
+ /// Interface for token management service
+ /// </summary>
+    public interface ITokenService
+    {
+        /// <summary>
+        /// Creates a new long-lived token for a user
+        /// </summary>
+        /// <param name="request">Token creation request</param>
+        /// <param name="createdFromIp">IP address creating the token</param>
+        /// <param name="userAgent">User agent string</param>
+        /// <returns>Created token response with token value</returns>
+        Task<CreateTokenResponse?> CreateTokenAsync(CreateTokenRequest request, string? createdFromIp = null, string? userAgent = null);
+
+        /// <summary>
+        /// Validates a token and returns the associated user
+        /// </summary>
+        /// <param name="tokenValue">Token value to validate</param>
+        /// <returns>User associated with the token if valid, null otherwise</returns>
+        Task<User?> ValidateTokenAsync(string tokenValue);
+
+        /// <summary>
+        /// Gets all tokens for a specific user
+        /// </summary>
+        /// <param name="userId">User ID</param>
+        /// <returns>List of tokens for the user</returns>
+        Task<List<Token>> GetUserTokensAsync(string userId);
+
+        /// <summary>
+        /// Gets all tokens in the system (admin only)
+        /// </summary>
+        /// <returns>List of all tokens</returns>
+        Task<List<Token>> GetAllTokensAsync();
+
+        /// <summary>
+        /// Revokes a specific token
+        /// </summary>
+        /// <param name="tokenId">Token ID to revoke</param>
+        /// <returns>True if revoked successfully</returns>
+        Task<bool> RevokeTokenAsync(string tokenId);
+
+        /// <summary>
+        /// Revokes all tokens for a specific user
+        /// </summary>
+        /// <param name="userId">User ID</param>
+        /// <returns>Number of tokens revoked</returns>
+        Task<int> RevokeUserTokensAsync(string userId);
+
+        /// <summary>
+        /// Updates the last used timestamp for a token
+        /// </summary>
+        /// <param name="tokenValue">Token value</param>
+        /// <returns>True if updated successfully</returns>
+        Task<bool> UpdateLastUsedAsync(string tokenValue);
+
+        /// <summary>
+        /// Cleans up expired tokens
+        /// </summary>
+        /// <returns>Number of tokens cleaned up</returns>
+        Task<int> CleanupExpiredTokensAsync();
+    }
     /// <summary>
     /// Database-based token management service for long-lived authentication tokens
     /// </summary>

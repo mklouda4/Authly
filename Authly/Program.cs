@@ -16,12 +16,11 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
 using Prometheus;
-using System;
 
 namespace Authly
 {
@@ -52,9 +51,13 @@ namespace Authly
             // Database cleanup configuration
             _ = builder.Services.Configure<DataCleanupOptions>(
                 builder.Configuration.GetSection(DataCleanupOptions.SectionName));
+            // OIDC configuration
+            _ = builder.Services.Configure<OidcOptions>(
+                builder.Configuration.GetSection("Oidc"));
 
             // Get base application options
             var appOptionsBase = builder.Configuration.GetSection(ApplicationOptions.SectionName).Get<ApplicationOptions>() ?? new ApplicationOptions();
+            var oidcOptions = builder.Configuration.GetSection("Oidc").Get<OidcOptions>() ?? new OidcOptions();
 
             // Configure localization
             _ = builder.Services.AddLocalization(options =>
@@ -156,9 +159,9 @@ namespace Authly
                 options.Cookie.IsEssential = true;
                 options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
             });
-                        
+
             var keyDir = new DirectoryInfo(
-                Environment.GetEnvironmentVariable("AUTHLY_KEY_DIRECTORY") ?? 
+                Environment.GetEnvironmentVariable("AUTHLY_KEY_DIRECTORY") ??
                 Path.Combine(builder.Environment.WebRootPath ?? builder.Environment.ContentRootPath, "keys")
             );
             if (builder.Environment.IsDevelopment())
@@ -274,13 +277,57 @@ namespace Authly
                 .AddDefaultTokenProviders();
 
             // Configure Authentication with External Providers (conditionally)
-            _ = builder.Services.AddAuthentication();
+            var authBuilder = builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = IdentityConstants.ApplicationScheme;
+                options.DefaultChallengeScheme = IdentityConstants.ApplicationScheme;
+            });
             _ = builder.Services
                 .AddLocalAuth()
                 .AddGoogleOAuth()
                 .AddMicrosoftOAuth()
                 .AddGitHubOAuth()
                 .AddFacebookOAuth();
+
+
+            var serviceProvider = builder.Services.BuildServiceProvider();
+            var appLogger = serviceProvider.GetRequiredService<IApplicationLogger>();
+            var sharedRSAKey = new SharedKeys(oidcOptions, appLogger, builder.Configuration);
+            _ = builder.Services.AddSingleton<ISharedKeys>(sharedRSAKey);
+
+            if (oidcOptions.Enabled)
+            {
+                _ = authBuilder.AddJwtBearer("OidcJwt", options =>
+                {
+                    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        ValidIssuer = oidcOptions.Issuer ?? $"https://{builder.Configuration["Application:Domain"]}",
+                        ValidAudience = oidcOptions.Audience ?? $"{appOptionsBase.Name?.ToLower()}-api",
+                        IssuerSigningKey = new RsaSecurityKey(sharedRSAKey.RSA) { KeyId = oidcOptions.SigningKey }
+                    };
+
+                    options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            // JWT authentication for userinfo endpoint
+                            var path = context.Request.Path.Value?.ToLower();
+                            if (path?.StartsWith("/connect/userinfo") == true)
+                            {
+                                return Task.CompletedTask;
+                            }
+
+                            // Skip JWT authentication
+                            context.NoResult();
+                            return Task.CompletedTask;
+                        }
+                    };
+                });
+            }
 
             // Cookie Authentication (will be used instead of Identity.Application)
             _ = builder.Services.ConfigureApplicationCookie(options =>
@@ -318,10 +365,6 @@ namespace Authly
 
             // Register TOTP service
             _ = builder.Services.AddScoped<ITotpService, TotpService>();
-
-            // Register original services (will be replaced by factory)
-            _ = builder.Services.AddScoped<TokenService>();
-            _ = builder.Services.AddScoped<OAuthAuthorizationService>();
 
             // Register database cleanup background service (NEW)
             _ = builder.Services.AddHostedService<DataCleanupService>();
@@ -491,6 +534,13 @@ namespace Authly
                 ["AUTHLY_DATA_STORAGE_TYPE"] = "DataStorage:Type",
                 ["AUTHLY_CONNECTION_STRING"] = "ConnectionStrings:DefaultConnection",
 
+                // OIDC settings
+                ["AUTHLY_OIDC_ENABLED"] = "Oidc:Enabled",
+                ["AUTHLY_OIDC_ISSUER"] = "Oidc:Issuer",
+                ["AUTHLY_OIDC_AUDIENCE"] = "Oidc:Audience",
+                ["AUTHLY_OIDC_RSA_PRIVATE_KEY"] = "Oidc:RsaPrivateKey",
+                ["AUTHLY_OIDC_ID_TOKEN_LIFETIME"] = "Oidc:IdTokenLifetimeMinutes",
+
                 // External authentication settings
                 ["AUTHLY_ENABLE_GOOGLE"] = "Application:ExternalAuth:EnableGoogle",
                 ["AUTHLY_ENABLE_MICROSOFT"] = "Application:ExternalAuth:EnableMicrosoft",
@@ -555,5 +605,16 @@ namespace Authly
                 }
             }
         }
+    }
+    public class OidcOptions
+    {
+        public const string SectionName = "Oidc";
+
+        public bool Enabled { get; set; } = true;
+        public string? Issuer { get; set; } = "https://authly.local";
+        public string? Audience { get; set; } = "authly";
+        public string? SigningKey { get; set; } = "authly-rsa-key-1";
+        public string? RsaPrivateKey { get; set; }
+        public int IdTokenLifetimeMinutes { get; set; } = 30;
     }
 }

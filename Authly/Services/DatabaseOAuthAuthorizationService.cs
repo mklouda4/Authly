@@ -1,4 +1,4 @@
-using Authly.Models;
+﻿using Authly.Models;
 using Authly.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
@@ -7,9 +7,55 @@ using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.Extensions.Options;
 
 namespace Authly.Services
 {
+    /// <summary>
+    /// Interface for OAuth Authorization Server service
+    /// </summary>
+    public interface IOAuthAuthorizationService
+    {
+        /// <summary>
+        /// Handle OAuth authorization request
+        /// </summary>
+        Task<(bool IsValid, string? Error, string? ErrorDescription)> ValidateAuthorizationRequestAsync(OAuthAuthorizationRequest request);
+
+        /// <summary>
+        /// Create authorization code
+        /// </summary>
+        Task<OAuthAuthorizationCode> CreateAuthorizationCodeAsync(string clientId, string userId, string redirectUri, List<string> scopes, string? codeChallenge, string? codeChallengeMethod, string? nonce);
+
+        /// <summary>
+        /// Exchange authorization code for tokens
+        /// </summary>
+        Task<(bool IsValid, OAuthTokenResponse? TokenResponse, string? Error, string? ErrorDescription)> ExchangeAuthorizationCodeAsync(OAuthTokenRequest request);
+
+        /// <summary>
+        /// Refresh access token
+        /// </summary>
+        Task<(bool IsValid, OAuthTokenResponse? TokenResponse, string? Error, string? ErrorDescription)> RefreshTokenAsync(OAuthTokenRequest request);
+
+        /// <summary>
+        /// Validate access token
+        /// </summary>
+        Task<(bool IsValid, ClaimsPrincipal? Principal, string? ClientId)> ValidateAccessTokenAsync(string accessToken);
+
+        /// <summary>
+        /// Revoke token
+        /// </summary>
+        Task<bool> RevokeTokenAsync(string token);
+
+        /// <summary>
+        /// Get user info from access token
+        /// </summary>
+        Task<object?> GetUserInfoAsync(string accessToken);
+
+        /// <summary>
+        /// Clean up expired and used tokens (maintenance operation)
+        /// </summary>
+        Task CleanupExpiredTokensAsync();
+    }
     /// <summary>
     /// Database-based OAuth authorization service
     /// </summary>
@@ -19,36 +65,24 @@ namespace Authly.Services
         private readonly IApplicationLogger _logger;
         private readonly IOAuthClientService _clientService;
         private readonly UserManager<User> _userManager;
-        private static SymmetricSecurityKey _signingKey;
+        private readonly ISharedKeys? _sharedKeys;
+        private readonly IOptions<OidcOptions> _oidcOptions;
 
         public DatabaseOAuthAuthorizationService(
             AuthlyDbContext context, 
             IApplicationLogger logger,
             IOAuthClientService clientService,
             UserManager<User> userManager,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IOptions<OidcOptions> oidcOptions,
+            ISharedKeys sharedKeys)
         {
             _context = context;
             _logger = logger;
             _clientService = clientService;
             _userManager = userManager;
-
-            // Get or generate JWT signing key
-            var signingKeyString = configuration["OAuth:SigningKey"] ?? Environment.GetEnvironmentVariable("OAUTH_SIGNING_KEY");
-            if (string.IsNullOrEmpty(signingKeyString))
-            {
-                // Generate a new key (should be persisted in production)
-                var key = new byte[32];
-                using var rng = RandomNumberGenerator.Create();
-                rng.GetBytes(key);
-                signingKeyString = Convert.ToBase64String(key);
-                _logger.LogWarning("DatabaseOAuthAuthorizationService", "Generated new signing key. In production, persist this key!");
-            }
-
-            _signingKey ??= new SymmetricSecurityKey(Convert.FromBase64String(signingKeyString))
-            {
-                KeyId = "authly-key-1"
-            };
+            _oidcOptions = oidcOptions;
+            _sharedKeys = sharedKeys;
         }
 
         public async Task<(bool IsValid, string? Error, string? ErrorDescription)> ValidateAuthorizationRequestAsync(OAuthAuthorizationRequest request)
@@ -113,7 +147,7 @@ namespace Authly.Services
         }
 
         // Authorization Codes
-        public async Task<string> CreateAuthorizationCodeAsync(string clientId, string userId, string redirectUri, List<string> scopes, string? codeChallenge = null, string? codeChallengeMethod = null, string? nonce = null)
+        public async Task<OAuthAuthorizationCode> CreateAuthorizationCodeAsync(string clientId, string userId, string redirectUri, List<string> scopes, string? codeChallenge = null, string? codeChallengeMethod = null, string? nonce = null)
         {
             try
             {
@@ -136,7 +170,7 @@ namespace Authly.Services
                 await _context.SaveChangesAsync();
 
                 _logger.Log("DatabaseOAuthAuthorizationService", $"Created authorization code for client {clientId}, user {userId}");
-                return code;
+                return authCode;
             }
             catch (Exception ex)
             {
@@ -223,6 +257,22 @@ namespace Authly.Services
                     Scope = string.Join(" ", authCode.Scopes)
                 };
 
+                var isOidcFlow = authCode.Scopes.Contains("openid");
+                if (isOidcFlow)
+                {
+                    var idToken = CreateIdToken(client, user, authCode.Scopes, authCode.Nonce);
+
+                    tokenResponse = new OidcTokenResponse
+                    {
+                        AccessToken = tokenResponse.AccessToken,
+                        IdToken = idToken,
+                        TokenType = tokenResponse.TokenType,
+                        ExpiresIn = tokenResponse.ExpiresIn,
+                        RefreshToken = tokenResponse.RefreshToken,
+                        Scope = tokenResponse.Scope
+                    };
+                }
+
                 _logger.Log("DatabaseOAuthAuthorizationService", $"Exchanged authorization code for tokens: client {request.ClientId}, user {authCode.UserId}");
                 return (true, tokenResponse, null, null);
             }
@@ -301,6 +351,22 @@ namespace Authly.Services
                     Scope = string.Join(" ", scopes)
                 };
 
+                var isOidcFlow = scopes.Contains("openid");
+                if (isOidcFlow)
+                {
+                    var idToken = CreateIdToken(client, user, scopes, null);
+
+                    tokenResponse = new OidcTokenResponse
+                    {
+                        AccessToken = tokenResponse.AccessToken,
+                        IdToken = idToken,
+                        TokenType = tokenResponse.TokenType,
+                        ExpiresIn = tokenResponse.ExpiresIn,
+                        RefreshToken = tokenResponse.RefreshToken,
+                        Scope = tokenResponse.Scope
+                    };
+                }
+
                 _logger.Log("DatabaseOAuthAuthorizationService", $"Refreshed tokens: client {request.ClientId}, user {refreshTokenObj.UserId}");
                 return (true, tokenResponse, null, null);
             }
@@ -319,7 +385,7 @@ namespace Authly.Services
                 var validationParameters = new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = _signingKey,
+                    IssuerSigningKey = GetValidationKey(),
                     ValidateIssuer = false,
                     ValidateAudience = false,
                     ValidateLifetime = true,
@@ -420,6 +486,7 @@ namespace Authly.Services
             {
                 userInfo["name"] = user.FullName;
                 userInfo["preferred_username"] = user.UserName!;
+                userInfo["given_name"] = user.FullName!;
             }
 
             if (scopes.Contains("email"))
@@ -498,6 +565,7 @@ namespace Authly.Services
         // Private helper methods
         private async Task<OAuthAccessToken> CreateAccessTokenAsync(OAuthClient client, User user, List<string> scopes, string? nonce)
         {
+            var isOidcFlow = scopes.Contains("openid");
             var jwtId = Guid.NewGuid().ToString();
 
             var claims = new List<Claim>
@@ -515,11 +583,29 @@ namespace Authly.Services
                 claims.Add(new Claim("nonce", nonce));
             }
 
+            if (isOidcFlow)
+            {
+                claims.Add(new(JwtRegisteredClaimNames.Sub, user.Id!));  // Standard OIDC sub claim
+            }
+            if (scopes.Contains("profile"))
+            {
+                if (!string.IsNullOrEmpty(user.FullName))
+                    claims.Add(new("name", user.FullName));
+                claims.Add(new("preferred_username", user.UserName!));
+            }
+            if (scopes.Contains("email"))
+            {
+                claims.Add(new("email", user.Email!));
+                claims.Add(new("email_verified", user.EmailConfirmed.ToString().ToLower()));
+            }
+
             var tokenDescriptor = new SecurityTokenDescriptor
             {
+                Issuer = _oidcOptions.Value.Issuer,
+                Audience = _oidcOptions.Value.Audience,
                 Subject = new ClaimsIdentity(claims),
                 Expires = DateTime.UtcNow.AddSeconds(client.AccessTokenLifetime),
-                SigningCredentials = new SigningCredentials(_signingKey, SecurityAlgorithms.HmacSha256Signature)
+                SigningCredentials = GetSigningCredentials()
             };
 
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -563,6 +649,49 @@ namespace Authly.Services
             return refreshToken.RefreshToken;
         }
 
+        private string CreateIdToken(OAuthClient client, User user, List<string> scopes, string? nonce)
+        {
+            var claims = new List<Claim>
+            {
+                new(JwtRegisteredClaimNames.Sub, user.Id!),
+                new(JwtRegisteredClaimNames.Aud, client.ClientId),
+                new(JwtRegisteredClaimNames.Iss, _oidcOptions.Value.Issuer!),
+                new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString()),
+                new(JwtRegisteredClaimNames.AuthTime, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString())
+            };
+
+            if (!string.IsNullOrEmpty(nonce))
+            {
+                claims.Add(new Claim("nonce", nonce));
+            }
+
+            if (scopes.Contains("profile"))
+            {
+                if (!string.IsNullOrEmpty(user.FullName))
+                    claims.Add(new("name", user.FullName));
+                claims.Add(new("preferred_username", user.UserName!));
+            }
+
+            if (scopes.Contains("email"))
+            {
+                claims.Add(new("email", user.Email!));
+                claims.Add(new("email_verified", user.EmailConfirmed.ToString().ToLower()));
+            }
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Issuer = _oidcOptions.Value.Issuer,
+                Audience = client.ClientId,
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddMinutes(_oidcOptions.Value.IdTokenLifetimeMinutes),
+                SigningCredentials = GetSigningCredentials()
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
+        }
+
         private static string GenerateAuthorizationCode()
         {
             var bytes = new byte[32];
@@ -599,6 +728,34 @@ namespace Authly.Services
                 // Plain text
                 return codeVerifier == codeChallenge;
             }
+        }
+
+        private SigningCredentials GetSigningCredentials()
+        {
+            if (_sharedKeys.RSAIsAvailable && _sharedKeys.RSA != null)
+            {
+                var rsaKey = new RsaSecurityKey(_sharedKeys.RSA) { KeyId = "authly-rsa-key-1" };
+                return new SigningCredentials(rsaKey, SecurityAlgorithms.RsaSha256);
+            }
+            else if (_sharedKeys.HMAC != null)
+            {
+                return new SigningCredentials(_sharedKeys.HMAC, SecurityAlgorithms.HmacSha256Signature);
+            }
+
+            throw new InvalidOperationException("No signing key available");
+        }
+        private SecurityKey GetValidationKey()
+        {
+            if (_sharedKeys.RSAIsAvailable && _sharedKeys.RSA != null)
+            {
+                return new RsaSecurityKey(_sharedKeys.RSA) { KeyId = _oidcOptions.Value.SigningKey };
+            }
+            else if (_sharedKeys.HMAC != null)
+            {
+                return _sharedKeys.HMAC;
+            }
+
+            throw new InvalidOperationException("No validation key available");
         }
     }
 }

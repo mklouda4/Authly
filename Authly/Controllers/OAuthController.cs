@@ -1,12 +1,11 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
+using Authly.Extension;
 using Authly.Models;
 using Authly.Services;
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
-using Authly.Extension;
 
 namespace Authly.Controllers
 {
@@ -16,33 +15,16 @@ namespace Authly.Controllers
     [Route("oauth")]
     [ApiController]
     [SwaggerTag("OAuth 2.0 Authorization Server")]
-    public class OAuthController : ControllerBase
+    public class OAuthController(
+        IOAuthAuthorizationService authorizationService,
+        IOAuthClientService clientService,
+        UserManager<User> userManager,
+        SignInManager<User> signInManager,
+        IApplicationLogger logger,
+        ILocalizationService localizationService,
+        ISecurityService securityService,
+        ISharedKeys sharedKeys) : ControllerBase
     {
-        private readonly IOAuthAuthorizationService _authorizationService;
-        private readonly IOAuthClientService _clientService;
-        private readonly UserManager<User> _userManager;
-        private readonly SignInManager<User> _signInManager;
-        private readonly IApplicationLogger _logger;
-        private readonly ILocalizationService _localizationService;
-        private readonly ISecurityService _securityService;
-
-        public OAuthController(
-            IOAuthAuthorizationService authorizationService,
-            IOAuthClientService clientService,
-            UserManager<User> userManager,
-            SignInManager<User> signInManager,
-            IApplicationLogger logger,
-            ILocalizationService localizationService,
-            ISecurityService securityService)
-        {
-            _authorizationService = authorizationService;
-            _clientService = clientService;
-            _userManager = userManager;
-            _signInManager = signInManager;
-            _logger = logger;
-            _localizationService = localizationService;
-            _securityService = securityService;
-        }
 
         /// <summary>
         /// OAuth Authorization endpoint - GET /oauth/authorize
@@ -63,13 +45,22 @@ namespace Authly.Controllers
         {
             try
             {
-                _logger.Log("OAuth", $"Authorization request: client_id={request.ClientId}, response_type={request.ResponseType}");
+                var ipAddress = HttpContext.GetClientIpAddress();
+                // Check if IP is banned before processing
+                if (securityService.IsIpBanned(ipAddress))
+                {
+                    var banEnd = securityService.GetIpBanEndTime(ipAddress);
+                    logger.LogWarning("OAuth", $"IP {ipAddress} is banned until {banEnd} - denying userinfo request");
+                    return Unauthorized(new { error = "ip_banned", error_description = $"IP address banned until {banEnd}" });
+                }
+
+                logger.Log("OAuth", $"Authorization request: client_id={request.ClientId}, response_type={request.ResponseType}");
 
                 // Validate the authorization request
-                var (isValid, error, errorDescription) = await _authorizationService.ValidateAuthorizationRequestAsync(request);
+                var (isValid, error, errorDescription) = await authorizationService.ValidateAuthorizationRequestAsync(request);
                 if (!isValid)
                 {
-                    _logger.LogWarning("OAuth", $"Invalid authorization request: {error} - {errorDescription}");
+                    logger.LogWarning("OAuth", $"Invalid authorization request: {error} - {errorDescription}");
                     return BadRequest(new OAuthErrorResponse
                     {
                         Error = error!,
@@ -81,21 +72,21 @@ namespace Authly.Controllers
                 // Check if user is authenticated
                 if (!User.Identity?.IsAuthenticated == true)
                 {
-                    _logger.Log("OAuth", "User not authenticated, redirecting to login");
-                    
+                    logger.Log("OAuth", "User not authenticated, redirecting to login");
+
                     // Store authorization request in session for after login
                     HttpContext.Session.SetString("oauth_pending_request", System.Text.Json.JsonSerializer.Serialize(request));
-                    
+
                     // Redirect to login with return URL
                     var returnUrl = HttpContext.Request.QueryString.ToString();
                     return Redirect($"/login?returnUrl={Uri.EscapeDataString($"/oauth/authorize{returnUrl}")}");
                 }
 
                 // Get current user
-                var currentUser = await _userManager.GetUserAsync(User);
+                var currentUser = await userManager.GetUserAsync(User);
                 if (currentUser == null)
                 {
-                    _logger.LogError("OAuth", "Could not find current user after authentication");
+                    logger.LogError("OAuth", "Could not find current user after authentication");
                     return BadRequest(new OAuthErrorResponse
                     {
                         Error = "server_error",
@@ -105,7 +96,7 @@ namespace Authly.Controllers
                 }
 
                 // Get client details for consent screen
-                var client = await _clientService.GetClientAsync(request.ClientId);
+                var client = await clientService.GetClientAsync(request.ClientId);
                 if (client == null)
                 {
                     return BadRequest(new OAuthErrorResponse
@@ -117,7 +108,7 @@ namespace Authly.Controllers
                 }
 
                 // Parse requested scopes
-                var requestedScopes = string.IsNullOrEmpty(request.Scope) 
+                var requestedScopes = string.IsNullOrEmpty(request.Scope)
                     ? new List<string> { "openid" }
                     : request.Scope.Split(' ').ToList();
 
@@ -127,7 +118,7 @@ namespace Authly.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError("OAuth", $"Error in authorization endpoint: {ex.Message}", ex);
+                logger.LogError("OAuth", $"Error in authorization endpoint: {ex.Message}", ex);
                 return BadRequest(new OAuthErrorResponse
                 {
                     Error = "server_error",
@@ -146,7 +137,7 @@ namespace Authly.Controllers
         /// <response code="400">Invalid request</response>
         [HttpPost("token")]
         [SwaggerOperation(
-            Summary = "OAuth Token Endpoint", 
+            Summary = "OAuth Token Endpoint",
             Description = "Exchanges authorization code for access token or refreshes existing token",
             OperationId = "Token"
         )]
@@ -157,14 +148,23 @@ namespace Authly.Controllers
         {
             try
             {
-                _logger.Log("OAuth", $"Token request: grant_type={request.GrantType}, client_id={request.ClientId}");
+                var ipAddress = HttpContext.GetClientIpAddress();
+                // Check if IP is banned before processing
+                if (securityService.IsIpBanned(ipAddress))
+                {
+                    var banEnd = securityService.GetIpBanEndTime(ipAddress);
+                    logger.LogWarning("OAuth", $"IP {ipAddress} is banned until {banEnd} - denying userinfo request");
+                    return Unauthorized(new { error = "ip_banned", error_description = $"IP address banned until {banEnd}" });
+                }
+
+                logger.Log("OAuth", $"Token request: grant_type={request.GrantType}, client_id={request.ClientId}");
 
                 if (request.GrantType == "authorization_code")
                 {
-                    var (isValid, tokenResponse, error, errorDescription) = await _authorizationService.ExchangeAuthorizationCodeAsync(request);
+                    var (isValid, tokenResponse, error, errorDescription) = await authorizationService.ExchangeAuthorizationCodeAsync(request);
                     if (!isValid)
                     {
-                        _logger.LogWarning("OAuth", $"Authorization code exchange failed: {error} - {errorDescription}");
+                        logger.LogWarning("OAuth", $"Authorization code exchange failed: {error} - {errorDescription}");
                         return BadRequest(new OAuthErrorResponse
                         {
                             Error = error!,
@@ -172,15 +172,15 @@ namespace Authly.Controllers
                         });
                     }
 
-                    _logger.Log("OAuth", $"Token issued for client {request.ClientId}");
+                    logger.Log("OAuth", $"Token issued for client {request.ClientId}");
                     return Ok(tokenResponse);
                 }
                 else if (request.GrantType == "refresh_token")
                 {
-                    var (isValid, tokenResponse, error, errorDescription) = await _authorizationService.RefreshTokenAsync(request);
+                    var (isValid, tokenResponse, error, errorDescription) = await authorizationService.RefreshTokenAsync(request);
                     if (!isValid)
                     {
-                        _logger.LogWarning("OAuth", $"Token refresh failed: {error} - {errorDescription}");
+                        logger.LogWarning("OAuth", $"Token refresh failed: {error} - {errorDescription}");
                         return BadRequest(new OAuthErrorResponse
                         {
                             Error = error!,
@@ -188,12 +188,12 @@ namespace Authly.Controllers
                         });
                     }
 
-                    _logger.Log("OAuth", $"Token refreshed for client {request.ClientId}");
+                    logger.Log("OAuth", $"Token refreshed for client {request.ClientId}");
                     return Ok(tokenResponse);
                 }
                 else
                 {
-                    _logger.LogWarning("OAuth", $"Unsupported grant type: {request.GrantType}");
+                    logger.LogWarning("OAuth", $"Unsupported grant type: {request.GrantType}");
                     return BadRequest(new OAuthErrorResponse
                     {
                         Error = "unsupported_grant_type",
@@ -203,7 +203,7 @@ namespace Authly.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError("OAuth", $"Error in token endpoint: {ex.Message}", ex);
+                logger.LogError("OAuth", $"Error in token endpoint: {ex.Message}", ex);
                 return BadRequest(new OAuthErrorResponse
                 {
                     Error = "server_error",
@@ -232,12 +232,12 @@ namespace Authly.Controllers
             try
             {
                 var ipAddress = HttpContext.GetClientIpAddress();
-                
+
                 // Check if IP is banned before processing
-                if (_securityService.IsIpBanned(ipAddress))
+                if (securityService.IsIpBanned(ipAddress))
                 {
-                    var banEnd = _securityService.GetIpBanEndTime(ipAddress);
-                    _logger.LogWarning("OAuth", $"IP {ipAddress} is banned until {banEnd} - denying userinfo request");
+                    var banEnd = securityService.GetIpBanEndTime(ipAddress);
+                    logger.LogWarning("OAuth", $"IP {ipAddress} is banned until {banEnd} - denying userinfo request");
                     return Unauthorized(new { error = "ip_banned", error_description = $"IP address banned until {banEnd}" });
                 }
 
@@ -246,30 +246,30 @@ namespace Authly.Controllers
                 if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
                 {
                     // Record unauthorized access attempt
-                    _securityService.RecordFailedAttempt(null, ipAddress);
+                    _ = securityService.RecordFailedAttempt(null, ipAddress);
                     return Unauthorized(new { error = "invalid_token", error_description = "Missing or invalid access token" });
                 }
 
                 var accessToken = authHeader.Substring("Bearer ".Length);
-                var userInfo = await _authorizationService.GetUserInfoAsync(accessToken);
-                
+                var userInfo = await authorizationService.GetUserInfoAsync(accessToken);
+
                 if (userInfo == null)
                 {
                     // Record failed attempt for invalid token
-                    _securityService.RecordFailedAttempt(null, ipAddress);
+                    _ = securityService.RecordFailedAttempt(null, ipAddress);
                     return Unauthorized(new { error = "invalid_token", error_description = "Invalid access token" });
                 }
 
                 // Clear IP ban on successful OAuth authentication
-                _securityService.UnbanIpAddress(ipAddress, "Auto");
-                _logger.Log("OAuth", $"IP ban cleared for {ipAddress} after successful OAuth userinfo request");
+                _ = securityService.UnbanIpAddress(ipAddress, "Auto");
+                logger.Log("OAuth", $"IP ban cleared for {ipAddress} after successful OAuth userinfo request");
 
-                _logger.Log("OAuth", "UserInfo request completed successfully");
+                logger.Log("OAuth", "UserInfo request completed successfully");
                 return Ok(userInfo);
             }
             catch (Exception ex)
             {
-                _logger.LogError("OAuth", $"Error in userinfo endpoint: {ex.Message}", ex);
+                logger.LogError("OAuth", $"Error in userinfo endpoint: {ex.Message}", ex);
                 return BadRequest(new { error = "server_error", error_description = "Internal server error" });
             }
         }
@@ -294,12 +294,12 @@ namespace Authly.Controllers
             try
             {
                 var ipAddress = HttpContext.GetClientIpAddress();
-                
+
                 // Check if IP is banned before processing
-                if (_securityService.IsIpBanned(ipAddress))
+                if (securityService.IsIpBanned(ipAddress))
                 {
-                    var banEnd = _securityService.GetIpBanEndTime(ipAddress);
-                    _logger.LogWarning("OAuth", $"IP {ipAddress} is banned until {banEnd} - denying userinfo/emails request");
+                    var banEnd = securityService.GetIpBanEndTime(ipAddress);
+                    logger.LogWarning("OAuth", $"IP {ipAddress} is banned until {banEnd} - denying userinfo/emails request");
                     return Unauthorized(new { error = "ip_banned", error_description = $"IP address banned until {banEnd}" });
                 }
 
@@ -308,17 +308,17 @@ namespace Authly.Controllers
                 if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
                 {
                     // Record unauthorized access attempt
-                    _securityService.RecordFailedAttempt(null, ipAddress);
+                    _ = securityService.RecordFailedAttempt(null, ipAddress);
                     return Unauthorized(new { error = "invalid_token", error_description = "Missing or invalid access token" });
                 }
 
                 var accessToken = authHeader.Substring("Bearer ".Length);
-                var userInfo = await _authorizationService.GetUserInfoAsync(accessToken);
+                var userInfo = await authorizationService.GetUserInfoAsync(accessToken);
 
                 if (userInfo == null)
                 {
                     // Record failed attempt for invalid token
-                    _securityService.RecordFailedAttempt(null, ipAddress);
+                    _ = securityService.RecordFailedAttempt(null, ipAddress);
                     return Unauthorized(new { error = "invalid_token", error_description = "Invalid access token" });
                 }
 
@@ -327,7 +327,7 @@ namespace Authly.Controllers
                 if (userNameModel == null)
                 {
                     // Record failed attempt for invalid token data
-                    _securityService.RecordFailedAttempt(null, ipAddress);
+                    _ = securityService.RecordFailedAttempt(null, ipAddress);
                     return Unauthorized(new { error = "invalid_token", error_description = "Invalid access token" });
                 }
 
@@ -335,10 +335,10 @@ namespace Authly.Controllers
                 var emailVerified = userNameModel.TryGetValue("email_verified", out var emailVerifiedValue) ? emailVerifiedValue?.ToString() : null;
 
                 // Clear IP ban on successful OAuth authentication
-                _securityService.UnbanIpAddress(ipAddress, "Auto");
-                _logger.Log("OAuth", $"IP ban cleared for {ipAddress} after successful OAuth userinfo/emails request");
+                _ = securityService.UnbanIpAddress(ipAddress, "Auto");
+                logger.Log("OAuth", $"IP ban cleared for {ipAddress} after successful OAuth userinfo/emails request");
 
-                _logger.Log("OAuth", "UserInfoEmails request completed successfully");
+                logger.Log("OAuth", "UserInfoEmails request completed successfully");
                 return Ok(new[]
                 {
                     new {
@@ -350,7 +350,7 @@ namespace Authly.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError("OAuth", $"Error in userinfo/emails endpoint: {ex.Message}", ex);
+                logger.LogError("OAuth", $"Error in userinfo/emails endpoint: {ex.Message}", ex);
                 return BadRequest(new { error = "server_error", error_description = "Internal server error" });
             }
         }
@@ -374,17 +374,26 @@ namespace Authly.Controllers
         {
             try
             {
-                _logger.Log("OAuth", "Token revocation request");
+                var ipAddress = HttpContext.GetClientIpAddress();
+                // Check if IP is banned before processing
+                if (securityService.IsIpBanned(ipAddress))
+                {
+                    var banEnd = securityService.GetIpBanEndTime(ipAddress);
+                    logger.LogWarning("OAuth", $"IP {ipAddress} is banned until {banEnd} - denying userinfo request");
+                    return Unauthorized(new { error = "ip_banned", error_description = $"IP address banned until {banEnd}" });
+                }
 
-                var success = await _authorizationService.RevokeTokenAsync(token);
-                
+                logger.Log("OAuth", "Token revocation request");
+
+                var success = await authorizationService.RevokeTokenAsync(token);
+
                 if (success)
                 {
-                    _logger.Log("OAuth", "Token revoked successfully");
+                    logger.Log("OAuth", "Token revoked successfully");
                 }
                 else
                 {
-                    _logger.LogWarning("OAuth", "Token not found for revocation");
+                    logger.LogWarning("OAuth", "Token not found for revocation");
                 }
 
                 // Always return 200 OK as per RFC 7009
@@ -392,7 +401,7 @@ namespace Authly.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError("OAuth", $"Error in revoke endpoint: {ex.Message}", ex);
+                logger.LogError("OAuth", $"Error in revoke endpoint: {ex.Message}", ex);
                 return Ok(); // Still return 200 OK as per spec
             }
         }
@@ -411,8 +420,27 @@ namespace Authly.Controllers
         [SwaggerResponse(200, "OAuth Server Metadata")]
         public IActionResult Discovery()
         {
+            var ipAddress = HttpContext.GetClientIpAddress();
+            // Check if IP is banned before processing
+            if (securityService.IsIpBanned(ipAddress))
+            {
+                var banEnd = securityService.GetIpBanEndTime(ipAddress);
+                logger.LogWarning("OAuth", $"IP {ipAddress} is banned until {banEnd} - denying userinfo request");
+                return Unauthorized(new { error = "ip_banned", error_description = $"IP address banned until {banEnd}" });
+            }
+
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            
+
+            var supportedAlgorithms = new List<string>();
+            if (sharedKeys.RSAIsAvailable)
+            {
+                supportedAlgorithms.Add("RS256");
+            }
+            if (sharedKeys.HMAC != null)
+            {
+                supportedAlgorithms.Add("HS256");
+            }
+
             var metadata = new
             {
                 issuer = baseUrl,
@@ -420,17 +448,17 @@ namespace Authly.Controllers
                 token_endpoint = $"{baseUrl}/oauth/token",
                 userinfo_endpoint = $"{baseUrl}/oauth/userinfo",
                 revocation_endpoint = $"{baseUrl}/oauth/revoke",
-                
+
                 response_types_supported = new[] { "code" },
                 grant_types_supported = new[] { "authorization_code", "refresh_token" },
                 code_challenge_methods_supported = new[] { "S256", "plain" },
-                
-                scopes_supported = _clientService.GetAvailableScopes().Select(s => s.Name).ToArray(),
-                
+
+                scopes_supported = clientService.GetAvailableScopes().Select(s => s.Name).ToArray(),
+
                 token_endpoint_auth_methods_supported = new[] { "client_secret_post", "client_secret_basic" },
-                
+
                 subject_types_supported = new[] { "public" },
-                id_token_signing_alg_values_supported = new[] { "HS256" }
+                id_token_signing_alg_values_supported = supportedAlgorithms.ToArray()
             };
 
             return Ok(metadata);
@@ -458,14 +486,23 @@ namespace Authly.Controllers
         {
             try
             {
-                var client = await _clientService.GetClientAsync(client_id);
+                var ipAddress = HttpContext.GetClientIpAddress();
+                // Check if IP is banned before processing
+                if (securityService.IsIpBanned(ipAddress))
+                {
+                    var banEnd = securityService.GetIpBanEndTime(ipAddress);
+                    logger.LogWarning("OAuth", $"IP {ipAddress} is banned until {banEnd} - denying userinfo request");
+                    return Unauthorized(new { error = "ip_banned", error_description = $"IP address banned until {banEnd}" });
+                }
+
+                var client = await clientService.GetClientAsync(client_id);
                 if (client == null)
                 {
                     return BadRequest("Invalid client");
                 }
 
                 var scopes = scope?.Split(' ') ?? Array.Empty<string>();
-                var scopeDetails = _clientService.GetAvailableScopes()
+                var scopeDetails = clientService.GetAvailableScopes()
                     .Where(s => scopes.Contains(s.Name))
                     .ToList();
 
@@ -480,7 +517,7 @@ namespace Authly.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError("OAuth", $"Error in consent endpoint: {ex.Message}", ex);
+                logger.LogError("OAuth", $"Error in consent endpoint: {ex.Message}", ex);
                 return BadRequest("Error processing consent request");
             }
         }
@@ -509,6 +546,15 @@ namespace Authly.Controllers
         {
             try
             {
+                var ipAddress = HttpContext.GetClientIpAddress();
+                // Check if IP is banned before processing
+                if (securityService.IsIpBanned(ipAddress))
+                {
+                    var banEnd = securityService.GetIpBanEndTime(ipAddress);
+                    logger.LogWarning("OAuth", $"IP {ipAddress} is banned until {banEnd} - denying userinfo request");
+                    return Unauthorized(new { error = "ip_banned", error_description = $"IP address banned until {banEnd}" });
+                }
+
                 if (!approved)
                 {
                     // User denied consent
@@ -528,7 +574,7 @@ namespace Authly.Controllers
                     return BadRequest("No pending authorization request");
                 }
 
-                var currentUser = await _userManager.GetUserAsync(User);
+                var currentUser = await userManager.GetUserAsync(User);
                 if (currentUser == null)
                 {
                     return BadRequest("User not found");
@@ -538,7 +584,7 @@ namespace Authly.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError("OAuth", $"Error in consent post endpoint: {ex.Message}", ex);
+                logger.LogError("OAuth", $"Error in consent post endpoint: {ex.Message}", ex);
                 return BadRequest("Error processing consent");
             }
         }
@@ -549,7 +595,7 @@ namespace Authly.Controllers
             try
             {
                 // Create authorization code
-                var authCode = await _authorizationService.CreateAuthorizationCodeAsync(
+                var authCode = await authorizationService.CreateAuthorizationCodeAsync(
                     request.ClientId,
                     userId,
                     request.RedirectUri,
@@ -562,14 +608,14 @@ namespace Authly.Controllers
                 HttpContext.Session.Remove("oauth_pending_request");
 
                 // Build redirect URL
-                var redirectUrl = $"{request.RedirectUri}?code={Uri.EscapeDataString(authCode)}&state={Uri.EscapeDataString(request.State)}";
-                
-                _logger.Log("OAuth", $"Authorization successful, redirecting to: {request.RedirectUri}");
+                var redirectUrl = $"{request.RedirectUri}?code={Uri.EscapeDataString(authCode.Code)}&state={Uri.EscapeDataString(request.State)}";
+
+                logger.Log("OAuth", $"Authorization successful, redirecting to: {request.RedirectUri}");
                 return Redirect(redirectUrl);
             }
             catch (Exception ex)
             {
-                _logger.LogError("OAuth", $"Error creating authorization response: {ex.Message}", ex);
+                logger.LogError("OAuth", $"Error creating authorization response: {ex.Message}", ex);
                 var errorUrl = $"{request.RedirectUri}?error=server_error&error_description={Uri.EscapeDataString("Internal server error")}&state={Uri.EscapeDataString(request.State)}";
                 return Redirect(errorUrl);
             }

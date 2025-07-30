@@ -1,9 +1,6 @@
 using Authly.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using System;
 
 namespace Authly.Services
 {
@@ -126,9 +123,7 @@ namespace Authly.Services
         {
             return _storageType switch
             {
-                DataStorageType.Database => serviceProvider.GetRequiredService<DatabaseOAuthClientService>(),
-                DataStorageType.JsonFiles => serviceProvider.GetRequiredService<OAuthClientService>(),
-                _ => throw new InvalidOperationException($"Unsupported storage type: {_storageType}")
+                _ => serviceProvider.GetRequiredService<DatabaseOAuthClientService>()
             };
         }
 
@@ -139,9 +134,7 @@ namespace Authly.Services
         {
             return _storageType switch
             {
-                DataStorageType.Database => serviceProvider.GetRequiredService<DatabaseTokenService>(),
-                DataStorageType.JsonFiles => serviceProvider.GetRequiredService<TokenService>(),
-                _ => throw new InvalidOperationException($"Unsupported storage type: {_storageType}")
+                _ => serviceProvider.GetRequiredService<DatabaseTokenService>()
             };
         }
 
@@ -152,9 +145,7 @@ namespace Authly.Services
         {
             return _storageType switch
             {
-                DataStorageType.Database => serviceProvider.GetRequiredService<DatabaseSecurityService>(),
-                DataStorageType.JsonFiles => serviceProvider.GetRequiredService<SecurityService>(),
-                _ => throw new InvalidOperationException($"Unsupported storage type: {_storageType}")
+                _ => serviceProvider.GetRequiredService<DatabaseSecurityService>()
             };
         }
 
@@ -165,9 +156,7 @@ namespace Authly.Services
         {
             return _storageType switch
             {
-                DataStorageType.Database => serviceProvider.GetRequiredService<DatabaseOAuthAuthorizationService>(),
-                DataStorageType.JsonFiles => serviceProvider.GetRequiredService<OAuthAuthorizationService>(),
-                _ => throw new InvalidOperationException($"Unsupported storage type: {_storageType}")
+                _ => serviceProvider.GetRequiredService<DatabaseOAuthAuthorizationService>()
             };
         }
     }
@@ -175,19 +164,12 @@ namespace Authly.Services
     /// <summary>
     /// Simple implementation of IDbContextFactory for singleton registration
     /// </summary>
-    public class SimpleDbContextFactory : IDbContextFactory<AuthlyDbContext>
+    public class SimpleDbContextFactory(string connectionString) : IDbContextFactory<AuthlyDbContext>
     {
-        private readonly string _connectionString;
-
-        public SimpleDbContextFactory(string connectionString)
-        {
-            _connectionString = connectionString;
-        }
-
         public AuthlyDbContext CreateDbContext()
         {
             var optionsBuilder = new DbContextOptionsBuilder<AuthlyDbContext>();
-            optionsBuilder.UseSqlite(_connectionString);
+            optionsBuilder.UseSqlite(connectionString);
 
 #if DEBUG
             optionsBuilder.EnableSensitiveDataLogging()
@@ -222,7 +204,8 @@ namespace Authly.Services
             var connectionString = $"Data Source={dbPath}";
 
             // Register regular DbContext for existing services
-            services.AddDbContext<AuthlyDbContext>((serviceProvider, options) => {
+            services.AddDbContext<AuthlyDbContext>((serviceProvider, options) =>
+            {
                 options.UseSqlite(connectionString);
 
 #if DEBUG
@@ -230,7 +213,7 @@ namespace Authly.Services
                 options.EnableSensitiveDataLogging()
                        .EnableDetailedErrors();
 #endif
-                
+
                 // Configure custom logging for Entity Framework
                 var applicationLogger = serviceProvider.GetService<IApplicationLogger>();
                 if (applicationLogger != null)
@@ -238,16 +221,16 @@ namespace Authly.Services
                     var loggerFactory = LoggerFactory.Create(builder =>
                     {
                         builder.AddProvider(new EntityFrameworkApplicationLoggerProvider(applicationLogger));
-                        
+
                         // Set minimum log level for Entity Framework
                         builder.SetMinimumLevel(LogLevel.Information);
-                        
+
                         // Filter specific Entity Framework categories
                         builder.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Information);
                         builder.AddFilter("Microsoft.EntityFrameworkCore.Infrastructure", LogLevel.Warning);
                         builder.AddFilter("Microsoft.EntityFrameworkCore.Model.Validation", LogLevel.Warning);
                     });
-                    
+
                     options.UseLoggerFactory(loggerFactory);
                 }
             });
@@ -258,13 +241,6 @@ namespace Authly.Services
                 return new SimpleDbContextFactory(connectionString);
             });
 
-            // Register all service implementations
-            // JSON-based services (existing)
-            services.AddScoped<OAuthClientService>();
-            services.AddScoped<TokenService>();
-            services.AddScoped<SecurityService>();
-            services.AddScoped<OAuthAuthorizationService>();
-
             // Database-based services (new)
             services.AddScoped<DatabaseOAuthClientService>();
             services.AddScoped<DatabaseTokenService>();
@@ -272,16 +248,16 @@ namespace Authly.Services
             services.AddScoped<DatabaseOAuthAuthorizationService>();
 
             // Register factory methods for interface resolution (pass serviceProvider to factory methods)
-            services.AddScoped<IOAuthClientService>(provider => 
+            services.AddScoped<IOAuthClientService>(provider =>
                 provider.GetRequiredService<DataServiceFactory>().GetOAuthClientService(provider));
-            
-            services.AddScoped<ITokenService>(provider => 
+
+            services.AddScoped<ITokenService>(provider =>
                 provider.GetRequiredService<DataServiceFactory>().GetTokenService(provider));
-            
-            services.AddScoped<ISecurityService>(provider => 
+
+            services.AddScoped<ISecurityService>(provider =>
                 provider.GetRequiredService<DataServiceFactory>().GetSecurityService(provider));
-            
-            services.AddScoped<IOAuthAuthorizationService>(provider => 
+
+            services.AddScoped<IOAuthAuthorizationService>(provider =>
                 provider.GetRequiredService<DataServiceFactory>().GetOAuthAuthorizationService(provider));
 
             return services;

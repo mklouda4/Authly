@@ -9,7 +9,106 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace Authly.Services
-{
+{/// <summary>
+ /// Interface for security service managing failed login attempts and lockouts
+ /// </summary>
+    public interface ISecurityService
+    {
+        /// <summary>
+        /// Checks if a user is currently locked out
+        /// </summary>
+        /// <param name="user">User to check</param>
+        /// <returns>True if user is locked out</returns>
+        bool IsUserLockedOut(User user);
+
+        /// <summary>
+        /// Checks if an IP address is currently banned
+        /// </summary>
+        /// <param name="ipAddress">IP address to check</param>
+        /// <returns>True if IP is banned</returns>
+        bool IsIpBanned(string ipAddress);
+
+        /// <summary>
+        /// Records a failed login attempt for a user and IP
+        /// </summary>
+        /// <param name="user">User who failed to login (can be null if user not found)</param>
+        /// <param name="ipAddress">IP address of the attempt</param>
+        /// <returns>Authentication result with lockout information</returns>
+        AuthenticationResult RecordFailedAttempt(User? user, string ipAddress);
+
+        /// <summary>
+        /// Records an unauthorized access attempt (redirect to login, 401, 403, etc.)
+        /// </summary>
+        /// <param name="ipAddress">IP address of the attempt</param>
+        /// <param name="path">Path that was accessed</param>
+        /// <param name="statusCode">HTTP status code returned</param>
+        /// <param name="operationType">Type of operation attempted</param>
+        /// <returns>True if IP should be banned</returns>
+        Task<bool> RecordUnauthorizedAccessAsync(string ipAddress, string path, int statusCode, string operationType);
+
+        /// <summary>
+        /// Clears failed login attempts for a user after successful login
+        /// NOTE: This does NOT clear IP attempts to prevent security bypass
+        /// </summary>
+        /// <param name="user">User who successfully logged in</param>
+        void ClearUserFailedAttempts(User user);
+
+        /// <summary>
+        /// Gets the remaining attempts before lockout for a user
+        /// </summary>
+        /// <param name="user">User to check</param>
+        /// <returns>Number of remaining attempts</returns>
+        int GetRemainingAttempts(User user);
+
+        /// <summary>
+        /// Gets the lockout end time for a user
+        /// </summary>
+        /// <param name="user">User to check</param>
+        /// <returns>Lockout end time or null if not locked out</returns>
+        DateTime? GetLockoutEndTime(User user);
+
+        /// <summary>
+        /// Gets the ban end time for an IP address
+        /// </summary>
+        /// <param name="ipAddress">IP address to check</param>
+        /// <returns>Ban end time or null if not banned</returns>
+        DateTime? GetIpBanEndTime(string ipAddress);
+
+        /// <summary>
+        /// Manually unlocks a user
+        /// </summary>
+        /// <param name="user">User to unlock</param>
+        /// <returns>True if unlock successful</returns>
+        bool UnlockUser(User user);
+
+        /// <summary>
+        /// Manually unbans an IP address
+        /// </summary>
+        /// <param name="ipAddress">IP address to unban</param>
+        /// <param name="type">Unban type - Manual/Auto</param>
+        /// <returns>True if unban successful</returns>
+        bool UnbanIpAddress(string ipAddress, string type = "Manual");
+
+        /// <summary>
+        /// Gets all current IP bans
+        /// </summary>
+        /// <returns>List of current IP ban information</returns>
+        List<IpLoginAttempt> GetAllIpBans();
+
+        /// <summary>
+        /// Manually locks a user permanently (until manual unlock)
+        /// </summary>
+        /// <param name="user">User to lock permanently</param>
+        /// <returns>True if lock successful</returns>
+        bool ManualLockUser(User user);
+
+        /// <summary>
+        /// Manually bans an IP address permanently (until manual unban)
+        /// </summary>
+        /// <param name="ipAddress">IP address to ban permanently</param>
+        /// <returns>True if ban successful</returns>
+        bool ManualBanIpAddress(string ipAddress, string note = null);
+    }
     /// <summary>
     /// Database-based security service for IP tracking and user lockouts
     /// </summary>

@@ -6,6 +6,61 @@ using System.Security.Cryptography;
 namespace Authly.Services
 {
     /// <summary>
+    /// Interface for OAuth client management service
+    /// </summary>
+    public interface IOAuthClientService
+    {
+        /// <summary>
+        /// Get all OAuth clients
+        /// </summary>
+        Task<List<OAuthClient>> GetAllClientsAsync();
+
+        /// <summary>
+        /// Get OAuth client by ID
+        /// </summary>
+        Task<OAuthClient?> GetClientAsync(string clientId);
+
+        /// <summary>
+        /// Create new OAuth client
+        /// </summary>
+        Task<OAuthClient> CreateClientAsync(CreateOAuthClientRequest request, string createdBy);
+
+        /// <summary>
+        /// Update OAuth client
+        /// </summary>
+        Task<bool> UpdateClientAsync(OAuthClient client);
+
+        /// <summary>
+        /// Update OAuth client from request
+        /// </summary>
+        Task<bool> UpdateClientAsync(UpdateOAuthClientRequest request, string modifiedBy);
+
+        /// <summary>
+        /// Delete OAuth client
+        /// </summary>
+        Task<bool> DeleteClientAsync(string clientId);
+
+        /// <summary>
+        /// Validate OAuth client credentials
+        /// </summary>
+        Task<bool> ValidateClientCredentialsAsync(string clientId, string? clientSecret);
+
+        /// <summary>
+        /// Check if redirect URI is valid for client
+        /// </summary>
+        Task<bool> IsValidRedirectUriAsync(string clientId, string redirectUri);
+
+        /// <summary>
+        /// Generate new client secret
+        /// </summary>
+        Task<string> RegenerateClientSecretAsync(string clientId);
+
+        /// <summary>
+        /// Get available OAuth scopes
+        /// </summary>
+        List<OAuthScope> GetAvailableScopes();
+    }
+    /// <summary>
     /// Database-based OAuth client management service
     /// </summary>
     public class DatabaseOAuthClientService : IOAuthClientService

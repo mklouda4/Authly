@@ -199,7 +199,7 @@ else
             }
             
             isLoading = false;
-            Logger.Log("AdminPanel", $"Initialization completed - using lazy loading for tab data. Active tab: {activeTab}");
+            //Logger.Log("AdminPanel", $"Initialization completed - using lazy loading for tab data. Active tab: {activeTab}");
         }
         catch (Exception ex)
         {
@@ -227,12 +227,12 @@ else
                 else
                 {
                     activeTab = savedTab;
-                    Logger.Log("AdminPanel", $"Restored active tab from storage: {activeTab}");
+                    //Logger.Log("AdminPanel", $"Restored active tab from storage: {activeTab}");
                 }
             }
             else
             {
-                Logger.Log("AdminPanel", $"Using default tab: {activeTab}");
+                //Logger.Log("AdminPanel", $"Using default tab: {activeTab}");
             }
         }
         catch (Exception ex)
@@ -247,7 +247,7 @@ else
         try
         {
             await JSRuntime.InvokeVoidAsync("localStorage.setItem", ADMIN_TAB_STORAGE_KEY, tab);
-            Logger.Log("AdminPanel", $"Saved active tab to storage: {tab}");
+            //Logger.Log("AdminPanel", $"Saved active tab to storage: {tab}");
         }
         catch (Exception ex)
         {
@@ -262,7 +262,7 @@ else
         {
             // Načteme jen základní seznam uživatelů pro dropdown v token managementu
             availableUsers = await UserStorage.GetAllUsers();
-            Logger.Log("AdminPanel", $"Loaded {availableUsers.Count} users for dropdown");
+            //Logger.Log("AdminPanel", $"Loaded {availableUsers.Count} users for dropdown");
         }
         catch (Exception ex)
         {
@@ -287,7 +287,7 @@ else
 
         activeTab = tab;
         await SaveActiveTabToStorage(tab);
-        Logger.Log("AdminPanel", $"Switched to tab: {tab}");
+        //Logger.Log("AdminPanel", $"Switched to tab: {tab}");
         
         // Vynutí re-render komponenty pro správné zobrazení nové záložky
         StateHasChanged();
@@ -301,6 +301,6 @@ else
             await LoadUsersForDropdown();
         }
         
-        Logger.Log("AdminPanel", $"Data refreshed for tab: {activeTab}");
+        //Logger.Log("AdminPanel", $"Data refreshed for tab: {activeTab}");
     }
 }
