@@ -365,3 +365,4 @@ FodyWeavers.xsd
 /Authly/wwwroot/data/authly.db-shm
 /Authly/wwwroot/data/authly.db-wal
 /Authly/wwwroot/data/authly.db
+/Authly/appsettings.Development.json
