@@ -242,11 +242,7 @@ namespace Authly
                     sp.GetRequiredService<IApplicationLogger>(),
                     sp.GetRequiredService<IApplicationService>()
                 ));
-            _ = builder.Services.AddScoped<IUserStorageFactory, UserStorageFactory>();
-            _ = builder.Services.AddScoped<IUserStorage>(sp => sp.GetRequiredService<IUserStorageFactory>().GetUserStorage());
-
-            // Register IContextProvider
-            _ = builder.Services.AddScoped<IContextProvider, HttpContextProvider>();
+            _ = builder.Services.AddScoped<IUserStorage, InMemoryUserStorage>();
 
             // Register IUrlValidator
             _ = builder.Services.AddSingleton<IUrlValidator, UrlValidator>();
@@ -605,16 +601,5 @@ namespace Authly
                 }
             }
         }
-    }
-    public class OidcOptions
-    {
-        public const string SectionName = "Oidc";
-
-        public bool Enabled { get; set; } = true;
-        public string? Issuer { get; set; } = "https://authly.local";
-        public string? Audience { get; set; } = "authly";
-        public string? SigningKey { get; set; } = "authly-rsa-key-1";
-        public string? RsaPrivateKey { get; set; }
-        public int IdTokenLifetimeMinutes { get; set; } = 30;
     }
 }

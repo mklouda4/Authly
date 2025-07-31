@@ -8,6 +8,7 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.Extensions.Options;
+using Authly.Configuration;
 
 namespace Authly.Services
 {
@@ -169,7 +170,7 @@ namespace Authly.Services
                 _context.OAuthAuthorizationCodes.Add(authCode);
                 await _context.SaveChangesAsync();
 
-                _logger.Log("DatabaseOAuthAuthorizationService", $"Created authorization code for client {clientId}, user {userId}");
+                _logger.LogDebug("DatabaseOAuthAuthorizationService", $"Created authorization code for client {clientId}, user {userId}");
                 return authCode;
             }
             catch (Exception ex)
@@ -273,7 +274,7 @@ namespace Authly.Services
                     };
                 }
 
-                _logger.Log("DatabaseOAuthAuthorizationService", $"Exchanged authorization code for tokens: client {request.ClientId}, user {authCode.UserId}");
+                _logger.LogDebug("DatabaseOAuthAuthorizationService", $"Exchanged authorization code for tokens: client {request.ClientId}, user {authCode.UserId}");
                 return (true, tokenResponse, null, null);
             }
             catch (Exception ex)
@@ -367,7 +368,7 @@ namespace Authly.Services
                     };
                 }
 
-                _logger.Log("DatabaseOAuthAuthorizationService", $"Refreshed tokens: client {request.ClientId}, user {refreshTokenObj.UserId}");
+                _logger.LogDebug("DatabaseOAuthAuthorizationService", $"Refreshed tokens: client {request.ClientId}, user {refreshTokenObj.UserId}");
                 return (true, tokenResponse, null, null);
             }
             catch (Exception ex)
@@ -428,7 +429,7 @@ namespace Authly.Services
             {
                 accessToken.IsRevoked = true;
                 await _context.SaveChangesAsync();
-                _logger.Log("DatabaseOAuthAuthorizationService", $"Revoked access token: {accessToken.TokenId}");
+                _logger.LogDebug("DatabaseOAuthAuthorizationService", $"Revoked access token: {accessToken.TokenId}");
                 return true;
             }
 
@@ -448,7 +449,7 @@ namespace Authly.Services
                 }
                 
                 await _context.SaveChangesAsync();
-                _logger.Log("DatabaseOAuthAuthorizationService", $"Revoked refresh token: {refreshToken.TokenId}");
+                _logger.LogDebug("DatabaseOAuthAuthorizationService", $"Revoked refresh token: {refreshToken.TokenId}");
                 return true;
             }
 

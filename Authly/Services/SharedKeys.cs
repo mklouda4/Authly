@@ -1,4 +1,5 @@
-﻿using Microsoft.IdentityModel.Tokens;
+﻿using Authly.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using System.Security.Cryptography;
 
 namespace Authly.Services

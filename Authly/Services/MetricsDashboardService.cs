@@ -55,7 +55,7 @@ namespace Authly.Services
 
             try
             {
-                _logger.Log("MetricsDashboardService", "Fetching metrics from database");
+                //_logger.Log("MetricsDashboardService", "Fetching metrics from database");
 
                 // Získáme data z databáze za posledních 30 dní pro přehled
                 var since = DateTime.UtcNow.AddDays(-30);
@@ -120,7 +120,7 @@ namespace Authly.Services
                     }
                 };
 
-                _logger.Log("MetricsDashboardService", "Metrics fetched successfully from database");
+                //_logger.Log("MetricsDashboardService", "Metrics fetched successfully from database");
 
                 return parsedMetrics;
             }

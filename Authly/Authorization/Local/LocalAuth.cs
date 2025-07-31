@@ -380,11 +380,11 @@ namespace Authly.Authorization.Local
         {
             try
             {
-                _appLogger.Log("LocalAuth", "Processing logout request");
-
                 // Remove session from tracking before clearing session data
                 var userName = context?.User?.Claims?.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier)?.Value;
                 _sessionTrackingService.RemoveSession(userName);
+
+                _appLogger.Log("LocalAuth", $"Processing {userName} logout request");
 
                 // Clear any temporary session data
                 context.Session.Remove("TotpUsername");

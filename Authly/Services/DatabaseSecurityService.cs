@@ -586,7 +586,7 @@ namespace Authly.Services
                     return false;
                 }
 
-                _logger.Log("DatabaseSecurityService", $"Manually banning IP {ipAddress} permanently");
+                _logger.LogInfo("DatabaseSecurityService", $"Banning IP {ipAddress} permanently");
                 
                 var now = DateTime.UtcNow;
                 var ipAttempt = _context.IpLoginAttempts
@@ -598,7 +598,7 @@ namespace Authly.Services
                 if (unauthorizedAttempt != null)
                 {
                     _context.IpLoginAttempts.Remove(unauthorizedAttempt);
-                    _logger.Log("DatabaseSecurityService", $"Cleared unauthorized access tracking for IP {ipAddress}");
+                    _logger.LogDebug("DatabaseSecurityService", $"Cleared unauthorized access tracking for IP {ipAddress}");
                 }
 
                 note = string.IsNullOrEmpty(note) ? null : note;
@@ -633,7 +633,7 @@ namespace Authly.Services
 
                 _mqttService.Publish("authly/ip/ban", new { ipAddress, permanent = true, note = ipAttempt.Note, timestamp = DateTime.UtcNow });
 
-                _logger.Log("DatabaseSecurityService", $"IP {ipAddress} banned permanently");
+                _logger.LogInfo("DatabaseSecurityService", $"IP {ipAddress} banned permanently");
 
                 var cacheEntry = new IpBanCacheEntry
                 {

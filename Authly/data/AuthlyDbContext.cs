@@ -7,11 +7,8 @@ namespace Authly.Data
     /// <summary>
     /// Database context for Authly application
     /// </summary>
-    public class AuthlyDbContext : DbContext
+    public class AuthlyDbContext(DbContextOptions<AuthlyDbContext> options) : DbContext(options)
     {
-        public AuthlyDbContext(DbContextOptions<AuthlyDbContext> options) : base(options)
-        {
-        }
 
         // Database sets for the entities that replace JSON files
         public DbSet<OAuthClient> OAuthClients { get; set; }

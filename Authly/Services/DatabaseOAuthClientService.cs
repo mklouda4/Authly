@@ -89,7 +89,6 @@ namespace Authly.Services
             try
             {
                 var clients = await _context.OAuthClients.ToListAsync();
-                _logger.Log("DatabaseOAuthClientService", $"Loaded {clients.Count} OAuth clients from database");
                 return clients;
             }
             catch (Exception ex)
@@ -132,7 +131,7 @@ namespace Authly.Services
             _context.OAuthClients.Add(client);
             await _context.SaveChangesAsync();
 
-            _logger.Log("DatabaseOAuthClientService", $"Created OAuth client: {client.ClientId} ({client.ClientName}) by {createdBy}");
+            _logger.LogDebug("DatabaseOAuthClientService", $"Created OAuth client: {client.ClientId} ({client.ClientName}) by {createdBy}");
             return client;
         }
 
@@ -161,7 +160,7 @@ namespace Authly.Services
             existingClient.ModifiedUtc = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            _logger.Log("DatabaseOAuthClientService", $"Updated OAuth client: {client.ClientId}");
+            _logger.LogDebug("DatabaseOAuthClientService", $"Updated OAuth client: {client.ClientId}");
             return true;
         }
 
@@ -190,7 +189,7 @@ namespace Authly.Services
             client.ModifiedUtc = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            _logger.Log("DatabaseOAuthClientService", $"Updated OAuth client: {client.ClientId} by {modifiedBy}");
+            _logger.LogDebug("DatabaseOAuthClientService", $"Updated OAuth client: {client.ClientId} by {modifiedBy}");
             return true;
         }
 
@@ -205,7 +204,7 @@ namespace Authly.Services
             _context.OAuthClients.Remove(client);
             await _context.SaveChangesAsync();
             
-            _logger.Log("DatabaseOAuthClientService", $"Deleted OAuth client: {clientId} ({client.ClientName})");
+            _logger.LogDebug("DatabaseOAuthClientService", $"Deleted OAuth client: {clientId} ({client.ClientName})");
             return true;
         }
 
@@ -251,7 +250,7 @@ namespace Authly.Services
             client.ModifiedUtc = DateTime.UtcNow;
             
             await _context.SaveChangesAsync();
-            _logger.Log("DatabaseOAuthClientService", $"Regenerated client secret for: {clientId}");
+            _logger.LogDebug("DatabaseOAuthClientService", $"Regenerated client secret for: {clientId}");
             
             return newSecret;
         }

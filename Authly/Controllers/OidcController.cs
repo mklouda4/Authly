@@ -1,4 +1,5 @@
 ﻿using Authly.Authorization;
+using Authly.Configuration;
 using Authly.Extension;
 using Authly.Models;
 using Authly.Services;

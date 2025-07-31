@@ -26,7 +26,7 @@
             try
             {
                 CurrentTheme = await ThemeService.GetThemeAsync();
-                Logger.Log("ThemeProvider", $"Loaded global theme: {CurrentTheme}");
+                //Logger.Log("ThemeProvider", $"Loaded global theme: {CurrentTheme}");
                 
                 // Notify all components about theme change
                 OnThemeChanged?.Invoke();

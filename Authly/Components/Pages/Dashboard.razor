@@ -172,7 +172,7 @@ else
     {
         try
         {
-            Logger.Log("AdminPanel", "Starting initialization");
+            //Logger.Log("AdminPanel", "Starting initialization");
 
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             isAuthenticated = authState.User?.Identity?.IsAuthenticated == true;

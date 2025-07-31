@@ -238,8 +238,6 @@ namespace Authly.Authorization.Google
                 var codeChallenge = GenerateCodeChallenge(codeVerifier);
                 var state = Guid.NewGuid().ToString();
 
-                _appLogger.Log("GoogleLogin", $"Generated OAuth state: {state} for IP: {ipAddress}");
-
                 // Store OAuth session data securely
                 context.Session.SetString("oauth_return_url", returnUrl ?? "/dashboard");
                 context.Session.SetString("oauth_provider", ProviderName);
@@ -303,8 +301,6 @@ namespace Authly.Authorization.Google
                 var state = context.Request.Query["state"].ToString();
                 var code = context.Request.Query["code"].ToString();
                 var error = context.Request.Query["error"].ToString();
-
-                _appLogger.Log("GoogleOAuth", $"Processing OAuth callback for IP: {ipAddress}");
 
                 // Handle OAuth errors from Google
                 if (!string.IsNullOrEmpty(error))
@@ -412,8 +408,6 @@ namespace Authly.Authorization.Google
                     return;
                 }
 
-                _appLogger.Log("GoogleOAuth", $"Google OAuth successful for email: {email} from IP: {ipAddress}");
-
                 // Find or create user account
                 var existingUser = await _userStorage.FindUserByName($"{ProviderName}:{email}");
 
@@ -422,7 +416,6 @@ namespace Authly.Authorization.Google
                 {
                     // Use existing user account
                     user = existingUser;
-                    _appLogger.Log("GoogleOAuth", $"Existing user found for email: {email}");
                 }
                 else if (!_temporaryRegistrationService.IsRegistrationAllowed)
                 {

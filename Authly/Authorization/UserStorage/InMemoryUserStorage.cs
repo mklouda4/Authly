@@ -62,7 +62,7 @@ namespace Authly.Authorization.UserStorage
 
                     foreach (var user in users ?? [])
                     {
-                        user.Id = user.UserName.GetDeterministicStringFromString();
+                        user.Id = user.UserName!.GetDeterministicStringFromString();
                         user.NormalizedUserName = user.UserName?.ToUpper();
                         user.Email ??= $"{user.UserName?.ToLower()}@{_applicationService.ApplicationName}.com".ToLower();
                         user.NormalizedEmail = user.Email?.ToUpper() ?? string.Empty;
@@ -72,7 +72,6 @@ namespace Authly.Authorization.UserStorage
 
                     if (users != null && users.Count > 0)
                     {
-                        _appLogger.Log("InMemoryUserStorage", $"Loaded {users.Count} users from file");
                         return users;
                     }
                 }

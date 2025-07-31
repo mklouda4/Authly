@@ -109,7 +109,6 @@ namespace Authly.Services
                     .OrderByDescending(t => t.CreatedUtc)
                     .ToListAsync();
 
-                _logger.Log("DatabaseTokenService", $"Retrieved {tokens.Count} total tokens");
                 return tokens;
             }
             catch (Exception ex)

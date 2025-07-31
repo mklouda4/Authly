@@ -88,8 +88,6 @@ namespace Authly.Services
                     var userId = authState.User.FindFirst(ClaimTypes.UserData)?.Value;
                     var userName = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-                    _logger.LogDebug("AuthService", $"GetCurrentUserAsync - userId: {userId}, userName: {userName}");
-
                     if (!string.IsNullOrEmpty(userId))
                     {
                         var user = await _userStorage.FindUserById(userId);

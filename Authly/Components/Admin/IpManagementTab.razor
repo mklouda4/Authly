@@ -171,9 +171,9 @@
     {
         try
         {
-            Logger.Log("IpManagementTab", "Loading IP bans data");
+           // Logger.Log("IpManagementTab", "Loading IP bans data");
             IpBans = SecurityService.GetAllIpBans();
-            Logger.Log("IpManagementTab", $"Loaded {IpBans.Count} IP bans");
+           // Logger.Log("IpManagementTab", $"Loaded {IpBans.Count} IP bans");
             await Task.CompletedTask;
         }
         catch (Exception ex)
@@ -276,7 +276,7 @@
                 await RefreshData();
                 await OnDataChanged.InvokeAsync();
 
-                Logger.Log("IpManagementTab", $"Successfully banned IP: {ipToBlock}");
+                //Logger.Log("IpManagementTab", $"Successfully banned IP: {ipToBlock}");
             }
             else
             {

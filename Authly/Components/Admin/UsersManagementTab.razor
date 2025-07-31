@@ -143,9 +143,9 @@
     {
         try
         {
-            Logger.Log("UsersManagementTab", "Loading users data");
+            //Logger.Log("UsersManagementTab", "Loading users data");
             Users = await UserStorage.GetAllUsers();
-            Logger.Log("UsersManagementTab", $"Loaded {Users.Count} users");
+            //Logger.Log("UsersManagementTab", $"Loaded {Users.Count} users");
         }
         catch (Exception ex)
         {

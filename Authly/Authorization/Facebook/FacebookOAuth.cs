@@ -214,8 +214,6 @@ namespace Authly.Authorization.Facebook
                 // Generate state parameter for CSRF protection
                 var state = Guid.NewGuid().ToString();
 
-                _appLogger.Log("FacebookLogin", $"Generated OAuth state: {state}, Force account selection: {forceAccountSelection} for IP: {ipAddress}");
-
                 // Store OAuth session data securely
                 context.Session.SetString("oauth_return_url", returnUrl ?? "/dashboard");
                 context.Session.SetString("oauth_provider", ProviderName);
@@ -239,7 +237,6 @@ namespace Authly.Authorization.Facebook
                 if (forceAccountSelection)
                 {
                     facebookUrl += "&auth_type=rerequest";
-                    _appLogger.Log("FacebookLogin", "Adding account re-authentication parameter");
                 }
 
                 _appLogger.Log("FacebookLogin", "Redirecting to Facebook OAuth authorization server");
@@ -291,8 +288,6 @@ namespace Authly.Authorization.Facebook
                 var code = context.Request.Query["code"].ToString();
                 var error = context.Request.Query["error"].ToString();
                 var errorDescription = context.Request.Query["error_description"].ToString();
-
-                _appLogger.Log("FacebookOAuth", $"Processing OAuth callback for IP: {ipAddress}");
 
                 // Handle OAuth errors from Facebook
                 if (!string.IsNullOrEmpty(error))
@@ -396,7 +391,6 @@ namespace Authly.Authorization.Facebook
                 {
                     // Use existing user account
                     user = existingUser;
-                    _appLogger.Log("FacebookOAuth", $"Existing user found for email: {email}");
                 }
                 else if (!_temporaryRegistrationService.IsRegistrationAllowed)
                 {

@@ -240,8 +240,6 @@ namespace Authly.Authorization.Microsoft
                 var codeChallenge = GenerateCodeChallenge(codeVerifier);
                 var state = Guid.NewGuid().ToString();
 
-                _appLogger.Log("MicrosoftLogin", $"Generated OAuth state: {state} for IP: {ipAddress}");
-
                 // Store OAuth session data securely
                 context.Session.SetString("oauth_return_url", returnUrl ?? "/dashboard");
                 context.Session.SetString("oauth_provider", ProviderName);
@@ -264,8 +262,6 @@ namespace Authly.Authorization.Microsoft
                                  $"code_challenge={codeChallenge}&" +
                                  $"code_challenge_method=S256&" +
                                  $"prompt=select_account";
-
-                _appLogger.Log("MicrosoftLogin", "Redirecting to Microsoft OAuth authorization server");
 
                 // Redirect user to Microsoft OAuth
                 context.Response.Redirect(microsoftUrl);
@@ -305,8 +301,6 @@ namespace Authly.Authorization.Microsoft
                 var state = context.Request.Query["state"].ToString();
                 var code = context.Request.Query["code"].ToString();
                 var error = context.Request.Query["error"].ToString();
-
-                _appLogger.Log("MicrosoftOAuth", $"Processing OAuth callback for IP: {ipAddress}");
 
                 // Handle OAuth errors from Microsoft
                 if (!string.IsNullOrEmpty(error))
@@ -417,8 +411,6 @@ namespace Authly.Authorization.Microsoft
                     return;
                 }
 
-                _appLogger.Log("MicrosoftOAuth", $"Microsoft OAuth successful for email: {email} from IP: {ipAddress}");
-
                 // Find or create user account
                 var existingUser = await _userStorage.FindUserByName($"{ProviderName}:{email}");
 
@@ -427,7 +419,6 @@ namespace Authly.Authorization.Microsoft
                 {
                     // Use existing user account
                     user = existingUser;
-                    _appLogger.Log("MicrosoftOAuth", $"Existing user found for email: {email}");
                 }
                 else if (!_temporaryRegistrationService.IsRegistrationAllowed)
                 {

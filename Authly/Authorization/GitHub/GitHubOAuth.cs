@@ -238,8 +238,6 @@ namespace Authly.Authorization.GitHub
                 var codeChallenge = GenerateCodeChallenge(codeVerifier);
                 var state = Guid.NewGuid().ToString();
 
-                _appLogger.Log("GitHubLogin", $"Generated OAuth state: {state} for IP: {ipAddress}");
-
                 // Store OAuth session data securely
                 context.Session.SetString("oauth_return_url", returnUrl ?? "/dashboard");
                 context.Session.SetString("oauth_provider", ProviderName);
@@ -303,8 +301,6 @@ namespace Authly.Authorization.GitHub
                 var state = context.Request.Query["state"].ToString();
                 var code = context.Request.Query["code"].ToString();
                 var error = context.Request.Query["error"].ToString();
-
-                _appLogger.Log("GitHubOAuth", $"Processing OAuth callback for IP: {ipAddress}");
 
                 // Handle OAuth errors from GitHub
                 if (!string.IsNullOrEmpty(error))
@@ -462,8 +458,6 @@ namespace Authly.Authorization.GitHub
                     return;
                 }
 
-                _appLogger.Log("GitHubOAuth", $"GitHub OAuth successful for user: {login} ({email}) from IP: {ipAddress}");
-
                 // Find or create user account
                 var existingUser = await _userStorage.FindUserByName($"{ProviderName}:{email}");
 
@@ -472,7 +466,6 @@ namespace Authly.Authorization.GitHub
                 {
                     // Use existing user account
                     user = existingUser;
-                    _appLogger.Log("GitHubOAuth", $"Existing user found for email: {email}");
                 }
                 else if (!_temporaryRegistrationService.IsRegistrationAllowed)
                 {
