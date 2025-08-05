@@ -1137,4 +1137,22 @@
   <data name="Note" xml:space="preserve">
     <value>Note</value>
   </data>
+  <data name="SearchIPAddress" xml:space="preserve">
+    <value>Search IP addresses...</value>
+  </data>
+  <data name="ItemsPerPage" xml:space="preserve">
+    <value>Items per page</value>
+  </data>
+  <data name="Items" xml:space="preserve">
+    <value>items</value>
+  </data>
+  <data name="AllStatuses" xml:space="preserve">
+    <value>All statuses</value>
+  </data>
+  <data name="Showing" xml:space="preserve">
+    <value>Showing</value>
+  </data>
+  <data name="Of" xml:space="preserve">
+    <value>of</value>
+  </data>
 </root>

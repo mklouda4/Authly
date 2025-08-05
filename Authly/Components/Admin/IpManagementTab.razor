@@ -48,8 +48,35 @@
         </div>
     </div>
 
+    <!-- Search and Filter Controls -->
+    <div style="margin-bottom: 2rem;">
+        <div class="search-filter-row">
+            <div class="search-group">
+                <input type="text" 
+                       class="form-input search-input" 
+                       placeholder="@LocalizationService.GetString("SearchIPAddress")" 
+                       @bind="searchTerm" 
+                       @oninput="OnSearchChanged" />
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
+            </div>
+            
+            <div class="page-size-group">
+                <label>@LocalizationService.GetString("ItemsPerPage"):</label>
+                <select class="form-select page-size-select" @bind:get="pageSize" @bind:set="OnPageSizeChanged">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
     <!-- Existing Banned IPs Section -->
-    <h2 class="section-title">@LocalizationService.GetString("BannedIPs")</h2>
+    <h2 class="section-title">@LocalizationService.GetString("BannedIPs") (@TotalItems @LocalizationService.GetString("Items"))</h2>
     
     @if (isLocalLoading)
     {
@@ -58,24 +85,45 @@
             <p>@LocalizationService.GetString("Loading")</p>
         </div>
     }
-    else if (IpBans.Any())
+    else if (PaginatedIpBans.Any())
     {
         <div class="admin-table">
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>@LocalizationService.GetString("IPAddress")</th>
-                        <th>@LocalizationService.GetString("FailedAttempts")</th>
-                        <th>@LocalizationService.GetString("FirstAttempt")</th>
-                        <th>@LocalizationService.GetString("LastAttempt")</th>
-                        <th>@LocalizationService.GetString("Status")</th>
-                        <th>@LocalizationService.GetString("BanExpires")</th>
-                        <th>@LocalizationService.GetString("Note")</th>
+                        <th @onclick="() => SortBy(nameof(IpLoginAttempt.IpAddress))" class="sortable-header">
+                            @LocalizationService.GetString("IPAddress")
+                            <span class="sort-indicator @GetSortClass(nameof(IpLoginAttempt.IpAddress))"></span>
+                        </th>
+                        <th @onclick="() => SortBy(nameof(IpLoginAttempt.FailedAttempts))" class="sortable-header">
+                            @LocalizationService.GetString("FailedAttempts")
+                            <span class="sort-indicator @GetSortClass(nameof(IpLoginAttempt.FailedAttempts))"></span>
+                        </th>
+                        <th @onclick="() => SortBy(nameof(IpLoginAttempt.FirstAttemptUtc))" class="sortable-header">
+                            @LocalizationService.GetString("FirstAttempt")
+                            <span class="sort-indicator @GetSortClass(nameof(IpLoginAttempt.FirstAttemptUtc))"></span>
+                        </th>
+                        <th @onclick="() => SortBy(nameof(IpLoginAttempt.LastAttemptUtc))" class="sortable-header">
+                            @LocalizationService.GetString("LastAttempt")
+                            <span class="sort-indicator @GetSortClass(nameof(IpLoginAttempt.LastAttemptUtc))"></span>
+                        </th>
+                        <th @onclick="() => SortBy(nameof(IpLoginAttempt.IsCurrentlyBanned))" class="sortable-header">
+                            @LocalizationService.GetString("Status")
+                            <span class="sort-indicator @GetSortClass(nameof(IpLoginAttempt.IsCurrentlyBanned))"></span>
+                        </th>
+                        <th @onclick="() => SortBy(nameof(IpLoginAttempt.BanEndUtc))" class="sortable-header">
+                            @LocalizationService.GetString("BanExpires")
+                            <span class="sort-indicator @GetSortClass(nameof(IpLoginAttempt.BanEndUtc))"></span>
+                        </th>
+                        <th @onclick="() => SortBy(nameof(IpLoginAttempt.Note))" class="sortable-header">
+                            @LocalizationService.GetString("Note")
+                            <span class="sort-indicator @GetSortClass(nameof(IpLoginAttempt.Note))"></span>
+                        </th>
                         <th>@LocalizationService.GetString("Actions")</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var ipBan in IpBans)
+                    @foreach (var ipBan in PaginatedIpBans)
                     {
                         <tr class="@(ipBan.IsCurrentlyBanned ? "banned-row" : "")">
                             <td class="ip-cell" data-label="@LocalizationService.GetString("IPAddress")">@ipBan.IpAddress</td>
@@ -151,6 +199,58 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-container">
+            <div class="pagination-info">
+                @LocalizationService.GetString("Showing") @((CurrentPage - 1) * pageSize + 1) - @Math.Min(CurrentPage * pageSize, TotalItems) @LocalizationService.GetString("Of") @TotalItems @LocalizationService.GetString("Items")
+            </div>
+            
+            <div class="pagination-controls">
+                <button class="btn btn-pagination" 
+                        @onclick="() => GoToPage(1)" 
+                        disabled="@(CurrentPage == 1)">
+                    <svg class="btn-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="19,20 9,12 19,4"></polygon>
+                        <line x1="5" y1="19" x2="5" y2="5"></line>
+                    </svg>
+                </button>
+                
+                <button class="btn btn-pagination" 
+                        @onclick="() => GoToPage(CurrentPage - 1)" 
+                        disabled="@(CurrentPage == 1)">
+                    <svg class="btn-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15,18 9,12 15,6"></polyline>
+                    </svg>
+                </button>
+
+                @for (var i = Math.Max(1, CurrentPage - 2); i <= Math.Min(TotalPages, CurrentPage + 2); i++)
+                {
+                    var pageNumber = i;
+                    <button class="btn btn-pagination @(pageNumber == CurrentPage ? "active" : "")" 
+                            @onclick="() => GoToPage(pageNumber)">
+                        @pageNumber
+                    </button>
+                }
+
+                <button class="btn btn-pagination" 
+                        @onclick="() => GoToPage(CurrentPage + 1)" 
+                        disabled="@(CurrentPage == TotalPages)">
+                    <svg class="btn-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9,18 15,12 9,6"></polyline>
+                    </svg>
+                </button>
+                
+                <button class="btn btn-pagination" 
+                        @onclick="() => GoToPage(TotalPages)" 
+                        disabled="@(CurrentPage == TotalPages)">
+                    <svg class="btn-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5,4 15,12 5,20"></polygon>
+                        <line x1="19" y1="5" x2="19" y2="19"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
     }
     else if (hasLoadedData)
     {
@@ -160,20 +260,177 @@
     }
 </div>
 
+<style>
+    .table-controls {
+        background: var(--bg-card);
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        border: 1px solid var(--border-card);
+    }
+
+    .search-filter-row {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .search-group {
+        position: relative;
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .search-input {
+        padding-right: 2.5rem;
+    }
+
+    .search-icon {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 18px;
+        height: 18px;
+        color: var(--text-muted);
+        pointer-events: none;
+    }
+
+    .filter-group, .page-size-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .page-size-group label {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        white-space: nowrap;
+    }
+
+    .page-size-select {
+        min-width: 80px;
+    }
+
+    .sortable-header {
+        cursor: pointer;
+        user-select: none;
+        position: relative;
+        padding-right: 1.5rem;
+        transition: background-color 0.2s;
+    }
+
+    .sortable-header:hover {
+        background-color: var(--bg-hover);
+    }
+
+    .sort-indicator {
+        position: absolute;
+        right: 0.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        opacity: 0.5;
+    }
+
+    .sort-indicator.asc {
+        border-left: 4px solid transparent;
+        border-right: 4px solid transparent;
+        border-bottom: 6px solid var(--text-primary);
+        opacity: 1;
+    }
+
+    .sort-indicator.desc {
+        border-left: 4px solid transparent;
+        border-right: 4px solid transparent;
+        border-top: 6px solid var(--text-primary);
+        opacity: 1;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+        padding: 1rem;
+        background: var(--bg-card);
+        border-radius: 8px;
+        border: 1px solid var(--border-card);
+    }
+
+    .pagination-info {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+    }
+
+    .pagination-controls {
+        display: flex;
+        gap: 0.25rem;
+        align-items: center;
+    }
+
+    .btn-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border: 1px solid var(--border-card);
+        background: var(--bg-card);
+        color: var(--text-primary);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-pagination:hover:not(:disabled) {
+        background: var(--bg-hover);
+        border-color: var(--border-hover);
+    }
+
+    .btn-pagination.active {
+        background: var(--color-primary);
+        border-color: var(--color-primary);
+        color: white;
+    }
+
+    .btn-pagination:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+</style>
+
 @code {
     private List<IpLoginAttempt> IpBans { get; set; } = new();
+    private List<IpLoginAttempt> FilteredIpBans { get; set; } = new();
+    private List<IpLoginAttempt> PaginatedIpBans { get; set; } = new();
+    
     private string newIpAddress = "";
     private string newIpAddressNote = "";
     private string validationError = "";
     private bool isProcessingManualBan = false;
 
+    // Pagination and sorting properties
+    private string searchTerm = "";
+    private string statusFilter = "";
+    private int pageSize = 10;
+    private int CurrentPage = 1;
+    private string sortColumn = nameof(IpLoginAttempt.LastAttemptUtc);
+    private bool sortAscending = false;
+
+    // Computed properties
+    private int TotalItems => FilteredIpBans.Count;
+    private int TotalPages => (int)Math.Ceiling((double)TotalItems / pageSize);
+
     protected override async Task LoadDataAsync()
     {
         try
         {
-           // Logger.Log("IpManagementTab", "Loading IP bans data");
             IpBans = SecurityService.GetAllIpBans();
-           // Logger.Log("IpManagementTab", $"Loaded {IpBans.Count} IP bans");
+            ApplyFiltersAndPagination();
             await Task.CompletedTask;
         }
         catch (Exception ex)
@@ -182,6 +439,130 @@
             await JSRuntime.InvokeVoidAsync("toastHelper.error", 
                 LocalizationService.GetString("UnexpectedError"));
         }
+    }
+
+    private void ApplyFiltersAndPagination()
+    {
+        // Start with all data
+        FilteredIpBans = IpBans.ToList();
+
+        // Apply search filter
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var search = searchTerm.Trim().ToLowerInvariant();
+            FilteredIpBans = FilteredIpBans
+                .Where(ip => ip.IpAddress.ToLowerInvariant().Contains(search) ||
+                           (!string.IsNullOrEmpty(ip.Note) && ip.Note.ToLowerInvariant().Contains(search)))
+                .ToList();
+        }
+
+        // Apply status filter
+        if (!string.IsNullOrWhiteSpace(statusFilter))
+        {
+            FilteredIpBans = statusFilter switch
+            {
+                "banned" => FilteredIpBans.Where(ip => ip.IsCurrentlyBanned).ToList(),
+                "not-banned" => FilteredIpBans.Where(ip => !ip.IsCurrentlyBanned).ToList(),
+                _ => FilteredIpBans
+            };
+        }
+
+        // Apply sorting
+        FilteredIpBans = sortColumn switch
+        {
+            nameof(IpLoginAttempt.IpAddress) => sortAscending 
+                ? FilteredIpBans.OrderBy(ip => ip.IpAddress).ToList()
+                : FilteredIpBans.OrderByDescending(ip => ip.IpAddress).ToList(),
+            nameof(IpLoginAttempt.FailedAttempts) => sortAscending 
+                ? FilteredIpBans.OrderBy(ip => ip.FailedAttempts).ToList()
+                : FilteredIpBans.OrderByDescending(ip => ip.FailedAttempts).ToList(),
+            nameof(IpLoginAttempt.FirstAttemptUtc) => sortAscending 
+                ? FilteredIpBans.OrderBy(ip => ip.FirstAttemptUtc).ToList()
+                : FilteredIpBans.OrderByDescending(ip => ip.FirstAttemptUtc).ToList(),
+            nameof(IpLoginAttempt.LastAttemptUtc) => sortAscending 
+                ? FilteredIpBans.OrderBy(ip => ip.LastAttemptUtc).ToList()
+                : FilteredIpBans.OrderByDescending(ip => ip.LastAttemptUtc).ToList(),
+            nameof(IpLoginAttempt.IsCurrentlyBanned) => sortAscending 
+                ? FilteredIpBans.OrderBy(ip => ip.IsCurrentlyBanned).ToList()
+                : FilteredIpBans.OrderByDescending(ip => ip.IsCurrentlyBanned).ToList(),
+            nameof(IpLoginAttempt.BanEndUtc) => sortAscending 
+                ? FilteredIpBans.OrderBy(ip => ip.BanEndUtc ?? DateTime.MaxValue).ToList()
+                : FilteredIpBans.OrderByDescending(ip => ip.BanEndUtc ?? DateTime.MinValue).ToList(),
+            nameof(IpLoginAttempt.Note) => sortAscending 
+                ? FilteredIpBans.OrderBy(ip => ip.Note ?? "").ToList()
+                : FilteredIpBans.OrderByDescending(ip => ip.Note ?? "").ToList(),
+            _ => FilteredIpBans.OrderByDescending(ip => ip.LastAttemptUtc).ToList()
+        };
+
+        // Ensure current page is valid
+        if (CurrentPage > TotalPages && TotalPages > 0)
+        {
+            CurrentPage = TotalPages;
+        }
+        else if (CurrentPage < 1)
+        {
+            CurrentPage = 1;
+        }
+
+        // Apply pagination
+        var skip = (CurrentPage - 1) * pageSize;
+        PaginatedIpBans = FilteredIpBans.Skip(skip).Take(pageSize).ToList();
+    }
+
+    private void SortBy(string column)
+    {
+        if (sortColumn == column)
+        {
+            sortAscending = !sortAscending;
+        }
+        else
+        {
+            sortColumn = column;
+            sortAscending = true;
+        }
+        
+        ApplyFiltersAndPagination();
+        StateHasChanged();
+    }
+
+    private string GetSortClass(string column)
+    {
+        if (sortColumn != column) return "";
+        return sortAscending ? "asc" : "desc";
+    }
+
+    private void GoToPage(int page)
+    {
+        if (page >= 1 && page <= TotalPages)
+        {
+            CurrentPage = page;
+            ApplyFiltersAndPagination();
+            StateHasChanged();
+        }
+    }
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? "";
+        CurrentPage = 1; // Reset to first page
+        ApplyFiltersAndPagination();
+        StateHasChanged();
+    }
+
+    private void OnFilterChanged(string value)
+    {
+        statusFilter = value;
+        CurrentPage = 1; // Reset to first page
+        ApplyFiltersAndPagination();
+        StateHasChanged();
+    }
+
+    private void OnPageSizeChanged(int value)
+    {
+        pageSize = value;
+        CurrentPage = 1; // Reset to first page
+        ApplyFiltersAndPagination();
+        StateHasChanged();
     }
 
     private async Task UnbanIp(string ipAddress)
@@ -194,7 +575,7 @@
             {
                 await JSRuntime.InvokeVoidAsync("toastHelper.success", 
                     LocalizationService.GetString("IPUnbannedSuccessfully"));
-                await RefreshData();
+                await RefreshDataAndUpdatePagination();
                 await OnDataChanged.InvokeAsync();
             }
             else
@@ -221,7 +602,7 @@
             {
                 await JSRuntime.InvokeVoidAsync("toastHelper.success", 
                     LocalizationService.GetString("IPBannedSuccessfully"));
-                await RefreshData();
+                await RefreshDataAndUpdatePagination();
                 await OnDataChanged.InvokeAsync();
             }
             else
@@ -273,10 +654,8 @@
                 newIpAddressNote = "";
 
                 // Refresh the data to show the newly banned IP
-                await RefreshData();
+                await RefreshDataAndUpdatePagination();
                 await OnDataChanged.InvokeAsync();
-
-                //Logger.Log("IpManagementTab", $"Successfully banned IP: {ipToBlock}");
             }
             else
             {
@@ -308,4 +687,10 @@
 
     private bool IsValidIpAddress(string ipAddress)
         => System.Net.IPAddress.TryParse(ipAddress, out _);
+
+    private async Task RefreshDataAndUpdatePagination()
+    {
+        await RefreshData();
+        ApplyFiltersAndPagination();
+    }
 }
