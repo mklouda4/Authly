@@ -165,8 +165,9 @@
 
     private void ClearLogs()
     {
-        Logger.ClearLogs();
+        Logger.ClearLogs(selectedLevel);
         logs.Clear();
+        RefreshLogs();
         StateHasChanged();
     }
 

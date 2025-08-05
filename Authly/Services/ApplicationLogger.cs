@@ -55,7 +55,7 @@ namespace Authly.Services
         /// Clear stored logs
         /// </summary>
         /// <returns></returns>
-        void ClearLogs();
+        void ClearLogs(string? level);
     }
 
     /// <summary>
@@ -64,7 +64,7 @@ namespace Authly.Services
     public class ApplicationLogger(IOptions<ApplicationOptions> options, ILogger<ApplicationLogger> logger) : IApplicationLogger
     {
         private readonly ApplicationOptions _options = options.Value;
-        private readonly ConcurrentQueue<LogEntry> _logs = new();
+        private readonly ConcurrentDictionary<string, ConcurrentQueue<LogEntry>> _logsByLevel = new();
         private const int MaxLogEntries = 50;
 
         /// <summary>
@@ -175,6 +175,7 @@ namespace Authly.Services
                 Exception = exception
             };
 
+            var _logs = _logsByLevel.GetOrAdd(level, _ => new ConcurrentQueue<LogEntry>());
             _logs.Enqueue(entry);
 
             while (_logs.Count > MaxLogEntries)
@@ -190,14 +191,17 @@ namespace Authly.Services
         /// </summary>
         /// <returns></returns>
         public IEnumerable<LogEntry> GetLogs()
-            => _logs.ToArray().Reverse();
+            => [.. _logsByLevel.SelectMany(x => x.Value).OrderByDescending(x => x.Timestamp)];
 
         /// <summary>
         /// Clears all stored logs from the logger.
         /// </summary>
-        public void ClearLogs()
+        public void ClearLogs(string? level)
         {
-            while (_logs.TryDequeue(out _));
+            foreach(var levelLogs in _logsByLevel.Where(x => string.IsNullOrEmpty(level) || x.Key.Equals(level)))
+            {
+                while (levelLogs.Value.TryDequeue(out _));
+            }
         }
     }
 
