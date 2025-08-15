@@ -508,7 +508,31 @@ namespace Authly.Services
                     _logger.Log("DatabaseSecurityService", $"Cleared unauthorized access tracking for IP {ipAddress}");
                 }
 
-                _context.SaveChanges();
+                try
+                {
+                    _context.SaveChanges();
+                }
+                catch (DbUpdateConcurrencyException concurrencyEx)
+                {
+                    _logger.LogWarning("DatabaseSecurityService",
+                        $"Concurrency conflict while unbanning IP {ipAddress} - entity may have been modified by another process. " +
+                        "This is usually harmless for unban operations.");
+
+                    foreach (var entry in _context.ChangeTracker.Entries())
+                    {
+                        entry.Reload();
+                    }
+
+                    var currentIpAttempt = _context.IpLoginAttempts
+                        .FirstOrDefault(x => x.IpAddress == ipAddress);
+
+                    if (currentIpAttempt == null || !currentIpAttempt.IsBanned)
+                    {
+                        _logger.Log("DatabaseSecurityService",
+                            $"IP {ipAddress} is already unbanned (possibly by another process) - operation successful");
+                        securityLog = true;
+                    }
+                }
 
                 if (securityLog)
                 {

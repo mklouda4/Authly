@@ -647,12 +647,12 @@ namespace Authly.Services
                 var cutoffDate = DateTime.UtcNow.AddDays(-retentionDays);
 
                 using var dbContext = await _dbContextFactory.CreateDbContextAsync();
-                
+
                 // Smaž staré login attempts
                 var oldLoginAttempts = await dbContext.LoginAttemptMetrics
                     .Where(x => x.CreatedAt < cutoffDate)
                     .CountAsync();
-                
+
                 if (oldLoginAttempts > 0)
                 {
                     await dbContext.LoginAttemptMetrics
@@ -664,7 +664,7 @@ namespace Authly.Services
                 var oldSecurityEvents = await dbContext.SecurityEventMetrics
                     .Where(x => x.CreatedAt < cutoffDate && x.Severity != SecurityEventSeverity.Critical)
                     .CountAsync();
-                
+
                 if (oldSecurityEvents > 0)
                 {
                     await dbContext.SecurityEventMetrics
@@ -672,32 +672,25 @@ namespace Authly.Services
                         .ExecuteDeleteAsync();
                 }
 
-                // Smaž staré session metrics (nech jen jeden záznam za den pro historii)
-                var oldSessions = await dbContext.ActiveSessionMetrics
+                var sessionsToDelete = (await dbContext.ActiveSessionMetrics
                     .Where(x => x.CreatedAt < cutoffDate)
+                    .ToListAsync())
                     .GroupBy(x => x.CreatedAt.Date)
                     .Where(g => g.Count() > 1)
                     .SelectMany(g => g.OrderByDescending(x => x.CreatedAt).Skip(1))
-                    .CountAsync();
+                    .ToList();
 
-                if (oldSessions > 0)
+                var oldSessions = sessionsToDelete.Count;
+                if (sessionsToDelete.Any())
                 {
-                    var sessionsToDelete = await dbContext.ActiveSessionMetrics
-                        .Where(x => x.CreatedAt < cutoffDate)
-                        .GroupBy(x => x.CreatedAt.Date)
-                        .Where(g => g.Count() > 1)
-                        .SelectMany(g => g.OrderByDescending(x => x.CreatedAt).Skip(1))
-                        .ToListAsync();
-
                     dbContext.ActiveSessionMetrics.RemoveRange(sessionsToDelete);
                     await dbContext.SaveChangesAsync();
                 }
 
-                // Smaž staré performance metrics
                 var oldPerformanceMetrics = await dbContext.PerformanceMetrics
                     .Where(x => x.CreatedAt < cutoffDate)
                     .CountAsync();
-                
+
                 if (oldPerformanceMetrics > 0)
                 {
                     await dbContext.PerformanceMetrics
@@ -705,44 +698,34 @@ namespace Authly.Services
                         .ExecuteDeleteAsync();
                 }
 
-                // Smaž staré resource usage metrics (nech jen jeden záznam za den pro historii)
-                var oldResourceMetrics = await dbContext.ResourceUsageMetrics
+                var resourcesToDelete = (await dbContext.ResourceUsageMetrics
                     .Where(x => x.CreatedAt < cutoffDate)
+                    .ToListAsync())
                     .GroupBy(x => x.CreatedAt.Date)
                     .Where(g => g.Count() > 1)
                     .SelectMany(g => g.OrderByDescending(x => x.CreatedAt).Skip(1))
-                    .CountAsync();
+                    .ToList();
 
-                if (oldResourceMetrics > 0)
+                var oldResourceMetrics = resourcesToDelete.Count;
+                if (resourcesToDelete.Any())
                 {
-                    var resourcesToDelete = await dbContext.ResourceUsageMetrics
-                        .Where(x => x.CreatedAt < cutoffDate)
-                        .GroupBy(x => x.CreatedAt.Date)
-                        .Where(g => g.Count() > 1)
-                        .SelectMany(g => g.OrderByDescending(x => x.CreatedAt).Skip(1))
-                        .ToListAsync();
-
                     dbContext.ResourceUsageMetrics.RemoveRange(resourcesToDelete);
                     await dbContext.SaveChangesAsync();
                 }
 
                 // Smaž staré uptime metrics (nech jen jeden záznam za hodinu pro historii)
-                var oldUptimeMetrics = await dbContext.UptimeMetrics
+                // Jeden dotaz místo dvou!
+                var uptimeToDelete = (await dbContext.UptimeMetrics
                     .Where(x => x.CreatedAt < cutoffDate)
+                    .ToListAsync())
                     .GroupBy(x => new { Date = x.CreatedAt.Date, Hour = x.CreatedAt.Hour })
                     .Where(g => g.Count() > 1)
                     .SelectMany(g => g.OrderByDescending(x => x.CreatedAt).Skip(1))
-                    .CountAsync();
+                    .ToList();
 
-                if (oldUptimeMetrics > 0)
+                var oldUptimeMetrics = uptimeToDelete.Count;
+                if (uptimeToDelete.Any())
                 {
-                    var uptimeToDelete = await dbContext.UptimeMetrics
-                        .Where(x => x.CreatedAt < cutoffDate)
-                        .GroupBy(x => new { Date = x.CreatedAt.Date, Hour = x.CreatedAt.Hour })
-                        .Where(g => g.Count() > 1)
-                        .SelectMany(g => g.OrderByDescending(x => x.CreatedAt).Skip(1))
-                        .ToListAsync();
-
                     dbContext.UptimeMetrics.RemoveRange(uptimeToDelete);
                     await dbContext.SaveChangesAsync();
                 }
