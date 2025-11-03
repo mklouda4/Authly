@@ -216,13 +216,19 @@ namespace Authly.Services
                 {
                     if (string.IsNullOrEmpty(request.CodeVerifier))
                     {
-                        return (false, null, "invalid_request", "Code verifier required");
+                        var oAuthClients = _context.OAuthClients.FirstOrDefault(c => c.ClientId == request.ClientId);
+                        if (oAuthClients?.RequirePkce == true)
+                        {
+                            return (false, null, "invalid_request", "Code verifier required");
+                        }
                     }
-
-                    var isValidPkce = ValidatePkce(authCode.CodeChallenge, authCode.CodeChallengeMethod, request.CodeVerifier);
-                    if (!isValidPkce)
+                    else
                     {
-                        return (false, null, "invalid_grant", "Invalid code verifier");
+                        var isValidPkce = ValidatePkce(authCode.CodeChallenge, authCode.CodeChallengeMethod, request.CodeVerifier);
+                        if (!isValidPkce)
+                        {
+                            return (false, null, "invalid_grant", "Invalid code verifier");
+                        }
                     }
                 }
 
