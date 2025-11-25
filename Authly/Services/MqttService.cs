@@ -146,11 +146,17 @@ namespace Authly.Services
             // Check if MQTT is enabled in configuration
             IsEnabled = mqttConfig.GetValue<bool>("Enabled", false);
 
+            if (!IsEnabled)
+            {
+                _logger.LogInfo(nameof(MqttService), "MQTT broker configuration is disabled.");
+                return;
+            }
+
             // Build client options with basic settings
             var clientOptionsBuilder = new MqttClientOptionsBuilder()
                 .WithClientId(mqttConfig["ClientId"] ?? nameof(Authly))
                 .WithCredentials(mqttConfig["Username"], mqttConfig["Password"])
-                .WithCleanSession()
+                .WithCleanSession(mqttConfig.GetValue<bool>("CleanSession", true))
                 .WithKeepAlivePeriod(TimeSpan.FromSeconds(mqttConfig.GetValue<int>("KeepAliveSeconds", 30)));
 
             // Configure WebSocket connection if URI is provided

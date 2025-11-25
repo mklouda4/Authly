@@ -575,6 +575,7 @@ namespace Authly
                 ["AUTHLY_MQTT_USERNAME"] = "Mqtt:Username",
                 ["AUTHLY_MQTT_PASSWORD"] = "Mqtt:Password",
                 ["AUTHLY_MQTT_KEEP_ALIVE_SECONDS"] = "Mqtt:KeepAliveSeconds",
+                ["AUTHLY_MQTT_CLEAN_SESSION"] = "Mqtt:CleanSession",
 
                 // OAuth settings - Google
                 ["GOOGLE_CLIENT_ID"] = "Authentication:Google:ClientId",
