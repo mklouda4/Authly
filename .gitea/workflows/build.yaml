@@ -28,8 +28,8 @@ jobs:
         
       - name: Build and push Docker image
         run: |
-          echo "${{ secrets.GITEATOKEN }}" \
-            | docker login ${{ vars.REGISTRY }} -u ${{ gitea.actor }} --password-stdin
+          echo "${{ vars.GITEATOKEN }}" \
+            | docker login ${{ env.REGISTRY }} -u ${{ gitea.actor }} --password-stdin
           TAG="${{ gitea.ref_name }}"
           REPO_LOWER=$(echo "${{ gitea.repository }}" | tr '[:upper:]' '[:lower:]')
           IMAGE_VERSION="${{ env.REGISTRY }}/${REPO_LOWER}:${TAG}"
