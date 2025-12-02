@@ -41,7 +41,30 @@ jobs:
           docker tag "${IMAGE_VERSION}" "${IMAGE_LATEST}"
           docker push "${IMAGE_LATEST}"
           echo "✅ Images pushed: ${IMAGE_VERSION} and ${IMAGE_LATEST}"
-                                        
+                                             
+      - name: Cleanup Docker images
+        if: always()
+        run: |
+          TAG="${{ gitea.ref_name }}"
+          REPO_LOWER=$(echo "${{ gitea.repository }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_VERSION="${{ env.REGISTRY }}/${REPO_LOWER}:${TAG}"
+          IMAGE_LATEST="${{ env.REGISTRY }}/${REPO_LOWER}:latest"
+          
+          echo "🧹 Cleaning up local Docker images..."
+          
+          # Smaž konkrétní images
+          docker rmi "${IMAGE_VERSION}" || true
+          docker rmi "${IMAGE_LATEST}" || true
+          
+          # Smaž dangling images (intermediate layers bez tagu)
+          docker image prune -f
+          
+          # Smaž build cache starší než 1h
+          docker builder prune -f --filter "until=1h"
+          
+          echo "✅ Cleanup completed"
+          docker system df
+          
       - name: Create Gitea Release with Notes
         run: |
           git fetch --tags          
