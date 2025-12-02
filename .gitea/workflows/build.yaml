@@ -35,7 +35,7 @@ jobs:
           IMAGE_VERSION="${{ env.REGISTRY }}/${REPO_LOWER}:${TAG}"
           IMAGE_LATEST="${{ env.REGISTRY }}/${REPO_LOWER}:latest"
           echo "Building image: ${IMAGE_VERSION}"
-          docker build --file ./Dockerfile --tag "${IMAGE_VERSION}" .
+          docker build --file ./Authly/Dockerfile --tag "${IMAGE_VERSION}" .
           docker push "${IMAGE_VERSION}"
           echo "Tagging image as latest: ${IMAGE_LATEST}"
           docker tag "${IMAGE_VERSION}" "${IMAGE_LATEST}"
