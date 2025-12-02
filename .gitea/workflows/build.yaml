@@ -58,11 +58,22 @@ jobs:
           # Získej předchozí tag pro diff
           PREVIOUS_TAG=$(git tag --sort=-v:refname | grep -v "^${TAG}$" | head -n 1)
           
+          # Získej commit messages od předchozího tagu
+          if [ -n "$PREVIOUS_TAG" ]; then
+            COMMIT_MESSAGES=$(git log --pretty=format:"- %s (%h)" ${PREVIOUS_TAG}..${TAG})
+          else
+            COMMIT_MESSAGES=$(git log --pretty=format:"- %s (%h)" ${TAG})
+          fi
+          
           # Vytvoř release body s přímo substituovanými proměnnými
           BODY=$(cat <<BODY_END
           ## 📝 Changes
           
-          $(if [ -n "$PREVIOUS_TAG" ]; then echo "[View changes since ${PREVIOUS_TAG}](${URL}/${GITEA_REPO}/compare/${PREVIOUS_TAG}...${TAG})"; else echo "Initial release"; fi)
+          $(if [ -n "$PREVIOUS_TAG" ]; then echo "[View full diff](${URL}/${GITEA_REPO}/compare/${PREVIOUS_TAG}...${TAG})"; else echo "Initial release"; fi)
+          
+          ### Commits
+          
+          ${COMMIT_MESSAGES}
 
           ## 🐳 Docker Image
           
