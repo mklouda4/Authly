@@ -73,6 +73,7 @@ namespace Authly.Services
             new OAuthScope { Name = "openid", DisplayName = "OpenID Connect", Description = "Access to user identity", Required = true },
             new OAuthScope { Name = "profile", DisplayName = "Profile", Description = "Access to user profile information" },
             new OAuthScope { Name = "email", DisplayName = "Email", Description = "Access to user email address" },
+            new OAuthScope { Name = "offline_access", DisplayName = "Offline Access", Description = "Issue a refresh token for long-lived access", Emphasize = true },
             new OAuthScope { Name = "read", DisplayName = "Read Access", Description = "Read access to user data" },
             new OAuthScope { Name = "write", DisplayName = "Write Access", Description = "Write access to user data", Emphasize = true },
             new OAuthScope { Name = "admin", DisplayName = "Admin Access", Description = "Administrative access", Emphasize = true }
