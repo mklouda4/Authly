@@ -33,6 +33,17 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
+LABEL org.opencontainers.image.created=${BUILDTIME}
+LABEL org.opencontainers.image.version=${VERSION}
+LABEL org.opencontainers.image.revision=${REVISION}
+LABEL org.opencontainers.image.title="Authly"
+LABEL org.opencontainers.image.description="Modern Authentication Server"
+LABEL org.opencontainers.image.source="https://git.mjhome.cz/mklouda/authly"
+LABEL org.opencontainers.image.url="https://git.mjhome.cz/mklouda/authly"
+LABEL org.opencontainers.image.documentation="https://git.mjhome.cz/mklouda/authly/src/branch/master/README.md"
+LABEL org.opencontainers.image.vendor="mklouda"
+LABEL org.opencontainers.image.licenses="MIT"
+
 # Create data directory for file storage
 RUN mkdir -p /app/data
 

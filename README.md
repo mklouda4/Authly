@@ -1930,7 +1930,6 @@ Additional security recommendations:
 
 **License**: MIT  
 **Author**: Built with ❤️ for secure authentication
-
 **Version**: 1.0.0  
 **ASP.NET Core**: 8.0  
 **Docker Image**: ghcr.io/mklouda4/authly:latest
