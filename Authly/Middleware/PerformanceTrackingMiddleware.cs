@@ -1,4 +1,5 @@
-﻿using Authly.Services;
+﻿using Authly.Extension;
+using Authly.Services;
 using Authly.Models;
 using Authly.Configuration;
 using Microsoft.Extensions.Options;
@@ -90,7 +91,7 @@ namespace Authly.Middleware
                     context,
                     operationType,
                     statusCode,
-                    isAuthenticated,
+                    context.User?.Identity?.IsAuthenticated == true,
                     ipAddress,
                     metricsService,
                     securityService);
@@ -155,13 +156,10 @@ namespace Authly.Middleware
                     return;
                 }
 
-                var isUnauthorizedAccess = !isAuthenticated && (
-                    isRedirectToLogin ||
-                    statusCode == 401 ||
-                    statusCode == 403 ||
-                    (operationType != "login" && RequiresAuthentication(path))
-                );
-                var isAuthorizedAccess = !isAuthenticated && statusCode == 200;
+                // Only explicit rejections count. Successful responses and redirects to the login page are part of
+                // normal OAuth / OIDC flows; forward-auth endpoints answer 401 to every logged-out visitor by design.
+                var isForwardAuth = path.StartsWith("/api/authz/", StringComparison.OrdinalIgnoreCase);
+                var isUnauthorizedAccess = !isAuthenticated && !isForwardAuth && (statusCode == 401 || statusCode == 403);
 
                 if (isUnauthorizedAccess)
                 {
@@ -170,7 +168,7 @@ namespace Authly.Middleware
                     if (shouldBan)
                     {
                         // Use SecurityService to ban the IP
-                        var banResult = securityService.ManualBanIpAddress(ipAddress, "DoS");
+                        var banResult = securityService.ManualBanIpAddress(ipAddress, "DoS", TimeSpan.FromMinutes(_ipRateLimitingOptions.BanDurationMinutes));
 
                         if (banResult)
                         {
@@ -213,27 +211,6 @@ namespace Authly.Middleware
             return false;
         }
 
-        /// <summary>
-        /// Determines if the path requires authentication
-        /// </summary>
-        private static bool RequiresAuthentication(string path)
-        {
-            // Protected paths that typically require authentication
-            var protectedPaths = new[]
-            {
-                "/dashboard",
-                "/admin",
-                "/profile",
-                "/settings",
-                "/oauth/authorize",
-                "/oauth/userinfo",
-                "/api/"
-            };
-
-            return protectedPaths.Any(protectedPath =>
-                path.StartsWith(protectedPath, StringComparison.OrdinalIgnoreCase));
-        }
-
         private static string? DetermineOperationType(string path, string method)
         {
             return path switch
@@ -267,7 +244,7 @@ namespace Authly.Middleware
         }
 
         private static string? GetIpAddress(HttpContext context)
-            => context?.Connection?.RemoteIpAddress?.ToString();
+            => context?.GetClientIpAddress();
 
         private static string? GetUserAgent(HttpContext context)
         {
