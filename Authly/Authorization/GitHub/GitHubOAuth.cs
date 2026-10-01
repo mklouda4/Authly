@@ -248,7 +248,7 @@ namespace Authly.Authorization.GitHub
                 await context.Session.CommitAsync();
 
                 // Construct GitHub OAuth authorization URL with PKCE
-                var redirectUri = Uri.EscapeDataString($"{context.Request.Scheme}://{context.Request.Host}{CallbackUri}");
+                var redirectUri = Uri.EscapeDataString($"{context.GetPublicBaseUrl()}{CallbackUri}");
                 var scopes = Uri.EscapeDataString("user:email read:user");
 
                 var githubUrl = $"https://github.com/login/oauth/authorize?" +
@@ -354,7 +354,7 @@ namespace Authly.Authorization.GitHub
                     ["client_id"] = _clientId!,
                     ["client_secret"] = _clientSecret!,
                     ["code"] = code,
-                    ["redirect_uri"] = $"{context.Request.Scheme}://{context.Request.Host}{CallbackUri}",
+                    ["redirect_uri"] = $"{context.GetPublicBaseUrl()}{CallbackUri}",
                     ["code_verifier"] = sessionCodeVerifier
                 };
 

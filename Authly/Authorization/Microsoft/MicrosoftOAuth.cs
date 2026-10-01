@@ -250,7 +250,7 @@ namespace Authly.Authorization.Microsoft
                 await context.Session.CommitAsync();
 
                 // Construct Microsoft OAuth authorization URL with PKCE
-                var redirectUri = Uri.EscapeDataString($"{context.Request.Scheme}://{context.Request.Host}{CallbackUri}");
+                var redirectUri = Uri.EscapeDataString($"{context.GetPublicBaseUrl()}{CallbackUri}");
                 var scopes = Uri.EscapeDataString("openid profile email");
 
                 var microsoftUrl = $"https://login.microsoftonline.com/{_tenantId}/oauth2/v2.0/authorize?" +
@@ -355,7 +355,7 @@ namespace Authly.Authorization.Microsoft
                     ["client_secret"] = _clientSecret!,
                     ["code"] = code,
                     ["grant_type"] = "authorization_code",
-                    ["redirect_uri"] = $"{context.Request.Scheme}://{context.Request.Host}{CallbackUri}",
+                    ["redirect_uri"] = $"{context.GetPublicBaseUrl()}{CallbackUri}",
                     ["code_verifier"] = sessionCodeVerifier
                 };
 

@@ -223,7 +223,7 @@ namespace Authly.Authorization.Facebook
                 await context.Session.CommitAsync();
 
                 // Construct Facebook OAuth authorization URL
-                var redirectUri = Uri.EscapeDataString($"{context.Request.Scheme}://{context.Request.Host}{CallbackUri}");
+                var redirectUri = Uri.EscapeDataString($"{context.GetPublicBaseUrl()}{CallbackUri}");
                 var scopes = Uri.EscapeDataString("email,public_profile");
 
                 var facebookUrl = $"https://www.facebook.com/v18.0/dialog/oauth?" +
@@ -330,7 +330,7 @@ namespace Authly.Authorization.Facebook
                               $"client_id={_appId}&" +
                               $"client_secret={_appSecret}&" +
                               $"code={code}&" +
-                              $"redirect_uri={Uri.EscapeDataString($"{context.Request.Scheme}://{context.Request.Host}{CallbackUri}")}";
+                              $"redirect_uri={Uri.EscapeDataString($"{context.GetPublicBaseUrl()}{CallbackUri}")}";
 
                 var tokenResponse = await httpClient.GetAsync(tokenUrl);
                 var tokenContent = await tokenResponse.Content.ReadAsStringAsync();

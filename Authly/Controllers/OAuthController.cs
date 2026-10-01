@@ -1,4 +1,4 @@
-using Authly.Extension;
+﻿using Authly.Extension;
 using Authly.Models;
 using Authly.Services;
 using Microsoft.AspNetCore.Authentication;
@@ -429,7 +429,7 @@ namespace Authly.Controllers
                 return Unauthorized(new { error = "ip_banned", error_description = $"IP address banned until {banEnd}" });
             }
 
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var baseUrl = HttpContext.GetPublicBaseUrl();
 
             var supportedAlgorithms = new List<string>();
             if (sharedKeys.RSAIsAvailable)

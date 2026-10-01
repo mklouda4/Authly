@@ -27,5 +27,33 @@ namespace Authly.Extension
 
             return (address.IsIPv4MappedToIPv6 ? address.MapToIPv4() : address).ToString();
         }
+
+        /// <summary>
+        /// Public base URL (scheme + host) of Authly as seen by browsers and clients.
+        /// Uses the configured OIDC issuer, then Application:BaseUrl, and only then the request itself -
+        /// behind a TLS-terminating proxy the request scheme is "http" unless X-Forwarded-Proto is trusted.
+        /// </summary>
+        public static string GetPublicBaseUrl(this HttpContext context)
+        {
+            var configuration = context.RequestServices.GetRequiredService<IConfiguration>();
+            return GetPublicBaseUrl(configuration["Oidc:Issuer"], configuration["Application:BaseUrl"], context.Request);
+        }
+
+        /// <summary>
+        /// Resolves the public base URL from configured candidates (first absolute http/https URL wins), falling back to the request
+        /// </summary>
+        public static string GetPublicBaseUrl(string? issuer, string? baseUrl, HttpRequest request)
+        {
+            foreach (var candidate in new[] { issuer, baseUrl })
+            {
+                if (Uri.TryCreate(candidate, UriKind.Absolute, out var uri) &&
+                    (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp))
+                {
+                    return uri.GetLeftPart(UriPartial.Authority);
+                }
+            }
+
+            return $"{request.Scheme}://{request.Host}";
+        }
     }
 }

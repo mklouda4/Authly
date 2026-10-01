@@ -248,7 +248,7 @@ namespace Authly.Authorization.Google
                 await context.Session.CommitAsync();
 
                 // Construct Google OAuth authorization URL with PKCE
-                var redirectUri = Uri.EscapeDataString($"{context.Request.Scheme}://{context.Request.Host}{CallbackUri}");
+                var redirectUri = Uri.EscapeDataString($"{context.GetPublicBaseUrl()}{CallbackUri}");
                 var scopes = Uri.EscapeDataString("openid profile email");
 
                 var googleUrl = $"https://accounts.google.com/o/oauth2/v2/auth?" +
@@ -355,7 +355,7 @@ namespace Authly.Authorization.Google
                     ["client_secret"] = _clientSecret!,
                     ["code"] = code,
                     ["grant_type"] = "authorization_code",
-                    ["redirect_uri"] = $"{context.Request.Scheme}://{context.Request.Host}{CallbackUri}",
+                    ["redirect_uri"] = $"{context.GetPublicBaseUrl()}{CallbackUri}",
                     ["code_verifier"] = sessionCodeVerifier
                 };
 

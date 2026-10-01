@@ -48,7 +48,8 @@ namespace Authly.Controllers
                     return Unauthorized(new { error = "ip_banned", error_description = $"IP address banned until {banEnd}" });
                 }
 
-                var baseUrl = $"{Request.Scheme}://{Request.Host}";
+                // Endpoints must share the issuer's origin; behind a TLS-terminating proxy Request.Scheme can be "http"
+                var baseUrl = HttpContext.GetPublicBaseUrl();
 
                 var supportedAlgorithms = new List<string>();
                 if (sharedKeys.RSAIsAvailable)
