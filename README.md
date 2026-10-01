@@ -60,11 +60,14 @@ docker-compose logs -f
 
 ### 5. Default Login
 
-> **Default Credentials**
-> - **Admin**: `admin` / `admin123`
-> - **User**: `user` / `user123`
-> 
-> ⚠️ **Security Notice**: Change default credentials immediately in production!
+> **Initial admin account**
+> On first start (no `users.json`) Authly creates a single `admin` account.
+> - Set its password with `AUTHLY_ADMIN_PASSWORD`, or
+> - leave it unset and Authly generates a random password and writes it once to the log (`Created initial admin account with generated password: ...`).
+>
+> Passwords are stored as salted PBKDF2 hashes; existing plaintext passwords are migrated automatically on startup.
+>
+> ⚠️ **Security Notice**: Change the initial password after the first login.
 
 ## ⚙️ Configuration
 
@@ -82,6 +85,8 @@ AUTHLY_DEBUG_LOGGING=false                    # Enable detailed debug logging
 AUTHLY_ENABLE_METRICS=true                    # Enable Prometheus metrics
 AUTHLY_ALLOW_REGISTRATION=false               # Allow permanent user registration
 AUTHLY_KEY_DIRECTORY=/app/keys                 # Directory for data protection keys
+AUTHLY_ADMIN_PASSWORD=                         # Password of the initial admin account (first start only; random if empty)
+AUTHLY_TRUSTED_PROXIES=192.168.50.0/24        # Reverse proxies allowed to set X-Forwarded-For/Proto (IPs or CIDRs; default: private ranges)
 
 # ===== External OAuth Enable/Disable =====
 AUTHLY_ENABLE_GOOGLE=true                     # Enable Google OAuth

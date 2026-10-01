@@ -80,7 +80,7 @@ namespace Authly.Authorization.Local
     {
         private readonly IApplicationLogger _appLogger;
         private readonly IUserStorage _userStorage;
-        private readonly SignInManager<User> _signInManager;
+        private readonly CustomSignInManager _signInManager;
         private readonly ISecurityService _securityService;
         private readonly IUrlValidator _urlValidator;
         private readonly IMetricsService _metricsService;
@@ -101,7 +101,7 @@ namespace Authly.Authorization.Local
             IConfiguration configuration, 
             IApplicationLogger appLogger,
             IUserStorage userStorage, 
-            SignInManager<User> signInManager,
+            CustomSignInManager signInManager,
             ISecurityService securityService,
             IUrlValidator urlValidator,
             IMetricsService metricsService,
@@ -233,7 +233,7 @@ namespace Authly.Authorization.Local
                 }
 
                 // Validate user credentials
-                var isValidCredentials = user != null && user.PasswordHash == password;
+                var isValidCredentials = user != null && PasswordHashing.Verify(user, password, out _);
 
                 if (!isValidCredentials)
                 {
@@ -341,11 +341,7 @@ namespace Authly.Authorization.Local
                 _securityService.UnbanIpAddress(ipAddress, "Auto");
                 _appLogger.Log("LocalAuth", $"IP ban cleared for {ipAddress} after successful authentication by user {username}");
 
-                await _signInManager.PasswordSignInAsync(
-                    user.UserName!,
-                    user.Password!,
-                    rememberMe,
-                    false);
+                await _signInManager.SignInUserAsync(user, rememberMe);
 
                 // Track the user session for metrics
                 _sessionTrackingService.AddSession(user.UserName!);

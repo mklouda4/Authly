@@ -15,6 +15,7 @@ namespace Authly.Authorization.UserStorage
         private readonly string _usersFilePath;
         private readonly IApplicationLogger _appLogger;
         private readonly IApplicationService _applicationService;
+        private readonly IConfiguration _configuration;
         private readonly JsonSerializerOptions _jsonSerializerOptions;
 
         /// <summary>
@@ -22,10 +23,11 @@ namespace Authly.Authorization.UserStorage
         /// </summary>
         /// <param name="environment">Web host environment for determining file paths</param>
         /// <param name="appLogger">Application logger for debugging and error tracking</param>
-        public InMemoryUserStorage(IWebHostEnvironment environment, IApplicationLogger appLogger, IApplicationService applicationService)
+        public InMemoryUserStorage(IWebHostEnvironment environment, IApplicationLogger appLogger, IApplicationService applicationService, IConfiguration configuration)
         {
             _appLogger = appLogger;
             _applicationService = applicationService;
+            _configuration = configuration;
             _usersFilePath = Path.Combine(environment.WebRootPath ?? environment.ContentRootPath, "data", "users.json");
 
             // Initialize JsonSerializerOptions once
@@ -60,6 +62,7 @@ namespace Authly.Authorization.UserStorage
                     var json = File.ReadAllText(_usersFilePath);
                     var users = JsonSerializer.Deserialize<List<User>>(json, _jsonSerializerOptions);
 
+                    var migrated = 0;
                     foreach (var user in users ?? [])
                     {
                         user.Id = user.UserName!.GetDeterministicStringFromString();
@@ -68,10 +71,27 @@ namespace Authly.Authorization.UserStorage
                         user.NormalizedEmail = user.Email?.ToUpper() ?? string.Empty;
                         user.SecurityStamp = $"{user.UserName}-security-stamp".ToLower();
                         user.EmailConfirmed = true;
+
+                        // Migrate legacy plaintext passwords: external users have no local password, local users get hashed
+                        if (user.IsExternal && !string.IsNullOrEmpty(user.PasswordHash))
+                        {
+                            user.PasswordHash = null;
+                            migrated++;
+                        }
+                        else if (!user.IsExternal && !string.IsNullOrEmpty(user.PasswordHash) && !PasswordHashing.IsHashed(user.PasswordHash))
+                        {
+                            user.PasswordHash = PasswordHashing.Hash(user, user.PasswordHash);
+                            migrated++;
+                        }
                     }
 
                     if (users != null && users.Count > 0)
                     {
+                        if (migrated > 0)
+                        {
+                            SaveUsersToFile(users);
+                            _appLogger.LogWarning("InMemoryUserStorage", $"Migrated {migrated} plaintext password(s) to hashed storage");
+                        }
                         return users;
                     }
                 }
@@ -81,39 +101,35 @@ namespace Authly.Authorization.UserStorage
                 _appLogger.LogError("InMemoryUserStorage", $"Failed to load users from file: {ex.Message}", ex);
             }
 
-            var defaultUsers = new List<User>
+            // First start: single admin account. Password comes from AUTHLY_ADMIN_PASSWORD, otherwise it is generated and logged once.
+            var configuredPassword = _configuration["Application:InitialAdminPassword"];
+            var adminPassword = string.IsNullOrEmpty(configuredPassword) ? PasswordHashing.GenerateRandomPassword() : configuredPassword;
+            var admin = new User
             {
-                new() {
-                    Id = "admin".GetDeterministicStringFromString(),
-                    UserName = "admin",
-                    NormalizedUserName = "ADMIN",
-                    PasswordHash = "admin123",
-                    Email = "admin@authly.com",
-                    NormalizedEmail = "ADMIN@AUTHLY.COM",
-                    FullName = "Administrator",
-                    HasTotp = false,
-                    TotpSecret = null,
-                    SecurityStamp = "admin-security-stamp",
-                    EmailConfirmed = true,
-                    Administrator = true
-                },
-                new() {
-                    Id = "user".GetDeterministicStringFromString(),
-                    UserName = "user",
-                    NormalizedUserName = "USER",
-                    PasswordHash = "user123",
-                    Email = "user@authly.com",
-                    NormalizedEmail = "USER@AUTHLY.COM",
-                    FullName = "Test User",
-                    HasTotp = false,
-                    SecurityStamp = "user-security-stamp",
-                    EmailConfirmed = true,
-                    Administrator = false
-                }
+                Id = "admin".GetDeterministicStringFromString(),
+                UserName = "admin",
+                NormalizedUserName = "ADMIN",
+                Email = "admin@authly.com",
+                NormalizedEmail = "ADMIN@AUTHLY.COM",
+                FullName = "Administrator",
+                HasTotp = false,
+                TotpSecret = null,
+                SecurityStamp = "admin-security-stamp",
+                EmailConfirmed = true,
+                Administrator = true
             };
+            admin.PasswordHash = PasswordHashing.Hash(admin, adminPassword);
 
+            var defaultUsers = new List<User> { admin };
             SaveUsersToFile(defaultUsers);
-            _appLogger.Log("InMemoryUserStorage", $"Created {defaultUsers.Count} default users");
+            if (string.IsNullOrEmpty(configuredPassword))
+            {
+                _appLogger.LogWarning("InMemoryUserStorage", $"Created initial admin account with generated password: {adminPassword} - change it after first login");
+            }
+            else
+            {
+                _appLogger.Log("InMemoryUserStorage", "Created initial admin account with password from configuration");
+            }
             return defaultUsers;
         }
 
@@ -167,7 +183,7 @@ namespace Authly.Authorization.UserStorage
         public override async Task<User?> FindUserByName(string username)
         {
             await Task.CompletedTask;
-            return _users.FirstOrDefault(x => 
+            return _users.FirstOrDefault(x =>
                 string.Equals(x.UserName, username, StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(x.NormalizedUserName, username.ToUpper(), StringComparison.OrdinalIgnoreCase));
         }
@@ -178,7 +194,7 @@ namespace Authly.Authorization.UserStorage
         public override async Task<User?> FindUserByEmail(string email)
         {
             await Task.CompletedTask;
-            return _users.FirstOrDefault(x => 
+            return _users.FirstOrDefault(x =>
                 string.Equals(x.Email, email, StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(x.NormalizedEmail, email.ToUpper(), StringComparison.OrdinalIgnoreCase));
         }
@@ -238,10 +254,22 @@ namespace Authly.Authorization.UserStorage
         {
             await Task.CompletedTask;
             
-            return _users.FirstOrDefault(x => 
-                (string.Equals(x.UserName, loginModel.Username, StringComparison.OrdinalIgnoreCase) ||
-                 string.Equals(x.Email, loginModel.Username, StringComparison.OrdinalIgnoreCase)) &&
-                x.PasswordHash == loginModel.Password);
+            var user = _users.FirstOrDefault(x =>
+                string.Equals(x.UserName, loginModel.Username, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(x.Email, loginModel.Username, StringComparison.OrdinalIgnoreCase));
+
+            if (user == null || user.IsExternal || !PasswordHashing.Verify(user, loginModel.Password, out var needsRehash))
+            {
+                return null;
+            }
+
+            if (needsRehash)
+            {
+                user.PasswordHash = PasswordHashing.Hash(user, loginModel.Password);
+                SaveUsersToFile(_users);
+            }
+
+            return user;
         }
 
         /// <summary>
@@ -276,7 +304,7 @@ namespace Authly.Authorization.UserStorage
                 }
 
                 // Validate password
-                if (user.PasswordHash != loginModel.Password)
+                if (user.IsExternal || !PasswordHashing.Verify(user, loginModel.Password, out _))
                 {
                     _appLogger.LogWarning("InMemoryUserStorage", $"Invalid password for user {loginModel.Username}");
                     return AuthenticationResult.FailedResult("Invalid username or password");

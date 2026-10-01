@@ -81,7 +81,7 @@ namespace Authly.Authorization.Facebook
         private readonly IApplicationService _applicationService;
         private readonly ITemporaryRegistrationService _temporaryRegistrationService;
         private readonly IUserStorage _userStorage;
-        private readonly SignInManager<User> _signInManager;
+        private readonly CustomSignInManager _signInManager;
         private readonly ISecurityService _securityService;
         private readonly IUrlValidator _urlValidator;
         private readonly IMetricsService _metricsService;
@@ -106,7 +106,7 @@ namespace Authly.Authorization.Facebook
             IApplicationService applicationService,
             ITemporaryRegistrationService temporaryRegistrationService,
             IUserStorage userStorage, 
-            SignInManager<User> signInManager,
+            CustomSignInManager signInManager,
             ISecurityService securityService,
             IUrlValidator urlValidator,
             IMetricsService metricsService,
@@ -408,7 +408,7 @@ namespace Authly.Authorization.Facebook
                         FullName = name ?? email,
                         EmailConfirmed = true, // Facebook verifies email addresses
                         SecurityStamp = Guid.NewGuid().ToString(),
-                        PasswordHash = email, // Placeholder password for external users (consistent with Google implementation)
+                        PasswordHash = null, // External users have no local password
                         Administrator = false,
                         HasTotp = false,
                         FailedLoginAttempts = 0,
@@ -427,7 +427,7 @@ namespace Authly.Authorization.Facebook
                 }
 
                 // Sign in the user
-                await _signInManager.PasswordSignInAsync($"{ProviderName}:{email}", email, true, false);
+                await _signInManager.SignInUserAsync(user, true);
 
                 // Track the user session for metrics
                 _sessionTrackingService.AddSession(user.UserName!);

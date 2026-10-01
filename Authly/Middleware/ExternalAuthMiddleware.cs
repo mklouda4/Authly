@@ -74,11 +74,9 @@ namespace Authly.Middleware
                     return;
                 }
 
-                var cookies = context.Request.Headers["Cookie"].ToString();
-                appLogger.Log("ExternalAuthMiddleware", $"Received cookies: {cookies}");
-
-                var authHeader = context.Request.Headers["Authorization"].ToString();
-                appLogger.Log("ExternalAuthMiddleware", $"Authorization header: {authHeader}");
+                // Never log cookie or Authorization values - they are live credentials
+                appLogger.Log("ExternalAuthMiddleware",
+                    $"Auth verification: cookies={context.Request.Cookies.Count}, authorization header={(context.Request.Headers.Authorization.Count > 0 ? "present" : "absent")}");
 
                 // Try token-based authentication first
                 var user = await TryTokenAuthenticationAsync(context, appLogger);

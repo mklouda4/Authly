@@ -245,6 +245,21 @@ namespace Authly.Authorization
         }
 
         /// <summary>
+        /// Signs in a user whose credentials were already verified (local password + TOTP, or an external provider)
+        /// </summary>
+        public async Task SignInUserAsync(User user, bool isPersistent)
+        {
+            var principal = await CreateUserPrincipalAsync(user);
+
+            await Context.SignInAsync(
+                scheme,
+                principal,
+                new AuthenticationProperties() { IsPersistent = isPersistent });
+
+            await PublishEvent("authly/signin", user);
+        }
+
+        /// <summary>
         /// Attempts to sign in a user with username and password
         /// </summary>
         public override async Task<SignInResult> PasswordSignInAsync(string userName, string password, bool isPersistent, bool lockoutOnFailure)

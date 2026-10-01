@@ -154,9 +154,7 @@ namespace Authly.Services
 
                 if (!string.IsNullOrEmpty(password))
                 {
-                    // In demo implementation we store password as plaintext
-                    // In production this should be hashed
-                    currentUser.PasswordHash = password;
+                    currentUser.PasswordHash = Authorization.PasswordHashing.Hash(currentUser, password);
                 }
 
                 if (hasTotp.HasValue)

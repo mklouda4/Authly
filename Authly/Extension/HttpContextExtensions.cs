@@ -17,22 +17,15 @@ namespace Authly.Extension
         /// <returns>The client IP address as a string</returns>
         public static string GetClientIpAddress(this HttpContext context)
         {
-            // Check for forwarded IP first (in case of proxy/load balancer)
-            var forwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-            if (!string.IsNullOrEmpty(forwardedFor))
+            // X-Forwarded-For is applied by ForwardedHeadersMiddleware only for trusted proxies (see AUTHLY_TRUSTED_PROXIES).
+            // Reading the header directly would let any client spoof its IP and bypass IP bans.
+            var address = context.Connection.RemoteIpAddress;
+            if (address == null)
             {
-                return forwardedFor.Split(',')[0].Trim();
+                return "unknown";
             }
 
-            // Check for real IP header
-            var realIp = context.Request.Headers["X-Real-IP"].FirstOrDefault();
-            if (!string.IsNullOrEmpty(realIp))
-            {
-                return realIp;
-            }
-
-            // Fall back to connection remote IP
-            return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            return (address.IsIPv4MappedToIPv6 ? address.MapToIPv4() : address).ToString();
         }
     }
 }

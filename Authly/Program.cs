@@ -7,12 +7,14 @@ using Authly.Authorization.Microsoft;
 using Authly.Authorization.UserStorage;
 using Authly.Components;
 using Authly.Configuration;
+using Authly.Extension;
 using Authly.Middleware;
 using Authly.Models;
 using Authly.Services;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
@@ -139,6 +141,21 @@ namespace Authly
             // HttpContextAccessor for accessing HttpContext in services
             _ = builder.Services.AddHttpContextAccessor();
 
+            // Trust X-Forwarded-For / X-Forwarded-Proto only from configured proxies (AUTHLY_TRUSTED_PROXIES, comma separated IPs or CIDRs)
+            _ = builder.Services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+                options.KnownProxies.Clear();
+                options.KnownIPNetworks.Clear();
+                foreach (var network in TrustedProxies.Parse(builder.Configuration["Application:TrustedProxies"]))
+                {
+                    options.KnownIPNetworks.Add(network);
+                }
+            });
+
+            // Secure cookies everywhere except local development over plain HTTP
+            var cookieSecurePolicy = builder.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
+
             // Add session support for temporary credential storage during TOTP validation
             _ = builder.Services.AddDistributedMemoryCache();
             _ = builder.Services.AddSession(options =>
@@ -146,7 +163,7 @@ namespace Authly
                 options.IdleTimeout = TimeSpan.FromMinutes(5); // Session timeout for security
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
-                options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+                options.Cookie.SecurePolicy = cookieSecurePolicy;
             });
 
             var keyDir = new DirectoryInfo(
@@ -229,7 +246,8 @@ namespace Authly
                 new InMemoryUserStorage(
                     sp.GetRequiredService<IWebHostEnvironment>(),
                     sp.GetRequiredService<IApplicationLogger>(),
-                    sp.GetRequiredService<IApplicationService>()
+                    sp.GetRequiredService<IApplicationService>(),
+                    sp.GetRequiredService<IConfiguration>()
                 ));
             _ = builder.Services.AddScoped<IUserStorage, InMemoryUserStorage>();
 
@@ -324,7 +342,7 @@ namespace Authly
                 if (!string.IsNullOrEmpty(applicationService.DomainName))
                     options.Cookie.Domain = $".{applicationService.DomainName}";
                 options.Cookie.HttpOnly = true;
-                options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+                options.Cookie.SecurePolicy = cookieSecurePolicy;
                 options.Cookie.SameSite = SameSiteMode.Lax;
                 options.ExpireTimeSpan = TimeSpan.FromDays(30); // 30 days validity
                 options.SlidingExpiration = true; // Renewal on activity
@@ -404,6 +422,9 @@ namespace Authly
                     }
                 }
             }
+
+            // Must run first: client IP and scheme from X-Forwarded-* of trusted proxies only (Traefik terminates TLS)
+            _ = app.UseForwardedHeaders();
 
             // Configure Prometheus metrics if enabled
             var appOptions = app.Services.GetRequiredService<IOptions<ApplicationOptions>>();
@@ -530,6 +551,8 @@ namespace Authly
                 ["AUTHLY_DEBUG_LOGGING"] = "Application:DebugLogging",
                 ["AUTHLY_ENABLE_METRICS"] = "Application:EnableMetrics",
                 ["AUTHLY_ALLOW_REGISTRATION"] = "Application:AllowRegistration",
+                ["AUTHLY_ADMIN_PASSWORD"] = "Application:InitialAdminPassword",
+                ["AUTHLY_TRUSTED_PROXIES"] = "Application:TrustedProxies",
 
                 // Data storage settings (NEW)
                 ["AUTHLY_DATA_STORAGE_TYPE"] = "DataStorage:Type",
