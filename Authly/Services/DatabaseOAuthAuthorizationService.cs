@@ -603,7 +603,7 @@ namespace Authly.Services
             if (scopes.Contains("email"))
             {
                 claims.Add(new("email", user.Email!));
-                claims.Add(new("email_verified", user.EmailConfirmed.ToString().ToLower()));
+                claims.Add(new("email_verified", user.EmailConfirmed ? "true" : "false", ClaimValueTypes.Boolean));
             }
 
             var tokenDescriptor = new SecurityTokenDescriptor
@@ -658,13 +658,13 @@ namespace Authly.Services
 
         private string CreateIdToken(OAuthClient client, User user, List<string> scopes, string? nonce)
         {
+            // iss, aud, iat, nbf and exp come from the token descriptor. Typed claims (ClaimValueTypes) are required:
+            // OIDC Core defines auth_time as a JSON number and email_verified as a boolean, and strict clients
+            // (e.g. Proxmox / openidconnect-rs) reject the whole token response otherwise.
             var claims = new List<Claim>
             {
                 new(JwtRegisteredClaimNames.Sub, user.Id!),
-                new(JwtRegisteredClaimNames.Aud, client.ClientId),
-                new(JwtRegisteredClaimNames.Iss, _oidcOptions.Value.Issuer!),
-                new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString()),
-                new(JwtRegisteredClaimNames.AuthTime, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString())
+                new(JwtRegisteredClaimNames.AuthTime, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
             };
 
             if (!string.IsNullOrEmpty(nonce))
@@ -682,7 +682,7 @@ namespace Authly.Services
             if (scopes.Contains("email"))
             {
                 claims.Add(new("email", user.Email!));
-                claims.Add(new("email_verified", user.EmailConfirmed.ToString().ToLower()));
+                claims.Add(new("email_verified", user.EmailConfirmed ? "true" : "false", ClaimValueTypes.Boolean));
             }
 
             var tokenDescriptor = new SecurityTokenDescriptor
