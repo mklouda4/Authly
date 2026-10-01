@@ -19,7 +19,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
-using Microsoft.OpenApi.Models;
 using Prometheus;
 
 namespace Authly
@@ -123,19 +122,9 @@ namespace Authly
                 });
 
                 // Global security requirement for Bearer tokens
-                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
                 {
-                    {
-                        new OpenApiSecurityScheme
-                        {
-                            Reference = new OpenApiReference
-                            {
-                                Type = ReferenceType.SecurityScheme,
-                                Id = "Bearer"
-                            }
-                        },
-                        Array.Empty<string>()
-                    }
+                    [new OpenApiSecuritySchemeReference("Bearer", document)] = []
                 });
 
                 // Configure XML documentation
@@ -478,6 +467,19 @@ namespace Authly
             }
 
             _ = app.UseHttpsRedirection();
+
+            // wwwroot/data (databáze, users.json) a wwwroot/keys (Data Protection klíče) se nikdy nesmí servírovat jako statické soubory
+            _ = app.Use(async (context, next) =>
+            {
+                if (context.Request.Path.StartsWithSegments("/data", StringComparison.OrdinalIgnoreCase) ||
+                    context.Request.Path.StartsWithSegments("/keys", StringComparison.OrdinalIgnoreCase))
+                {
+                    context.Response.StatusCode = StatusCodes.Status404NotFound;
+                    return;
+                }
+                await next();
+            });
+
             _ = app.UseStaticFiles();
             _ = app.UseRouting();
 
@@ -501,6 +503,9 @@ namespace Authly
             _ = app.MapControllers();
 
             _ = app.UseAntiforgery();
+
+            // Fingerprintované statické soubory (@Assets[...]) – po nasazení se nepoužije stará verze z cache
+            _ = app.MapStaticAssets();
 
             _ = app.MapRazorComponents<App>()
                 .AddInteractiveServerRenderMode();

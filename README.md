@@ -243,7 +243,7 @@ docker run -d \
 
 ### Image Information
 
-- **Base Image**: mcr.microsoft.com/dotnet/aspnet:8.0
+- **Base Image**: mcr.microsoft.com/dotnet/aspnet:10.0
 - **Architecture**: linux/amd64, linux/arm64
 - **Size**: ~200MB
 - **Registry**: GitHub Container Registry (ghcr.io)
@@ -1931,5 +1931,5 @@ Additional security recommendations:
 **License**: MIT  
 **Author**: Built with ❤️ for secure authentication
 **Version**: 1.0.0  
-**ASP.NET Core**: 8.0  
+**ASP.NET Core**: 10.0  
 **Docker Image**: ghcr.io/mklouda4/authly:latest

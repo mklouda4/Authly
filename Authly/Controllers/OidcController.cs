@@ -350,17 +350,21 @@ namespace Authly.Controllers
 
                 logger.Log(nameof(OidcConnectController), $"Token request: grant_type={request.GrantType}, client_id={request.ClientId}");
 
+                var clientAuth = await Request.AuthenticateClientAsync(request, clientService.ValidateClientCredentialsAsync);
+                if (!clientAuth.Succeeded)
+                {
+                    logger.LogWarning(nameof(OidcConnectController), $"Client authentication failed: method={clientAuth.MethodName}, client_id={request.ClientId}, error={clientAuth.Error} - {clientAuth.ErrorDescription}");
+                    return this.TokenError(clientAuth.Error!, clientAuth.ErrorDescription, clientAuth.Method);
+                }
+                logger.LogDebug(nameof(OidcConnectController), $"Client authentication: method={clientAuth.MethodName}, client_id={request.ClientId}");
+
                 if (request.GrantType == "authorization_code")
                 {
                     var (isValid, tokenResponse, error, errorDescription) = await authorizationService.ExchangeAuthorizationCodeAsync(request);
                     if (!isValid)
                     {
-                        logger.LogWarning(nameof(OidcConnectController),$"Authorization code exchange failed: {error} - {errorDescription}");
-                        return BadRequest(new OAuthErrorResponse
-                        {
-                            Error = error!,
-                            ErrorDescription = errorDescription
-                        });
+                        logger.LogWarning(nameof(OidcConnectController), $"Authorization code exchange failed: method={clientAuth.MethodName}, {error} - {errorDescription}");
+                        return this.TokenError(error!, errorDescription, clientAuth.Method);
                     }
 
                     logger.Log(nameof(OidcConnectController),$"Token issued for client {request.ClientId}");
@@ -371,12 +375,8 @@ namespace Authly.Controllers
                     var (isValid, tokenResponse, error, errorDescription) = await authorizationService.RefreshTokenAsync(request);
                     if (!isValid)
                     {
-                        logger.LogWarning(nameof(OidcConnectController),$"Token refresh failed: {error} - {errorDescription}");
-                        return BadRequest(new OAuthErrorResponse
-                        {
-                            Error = error!,
-                            ErrorDescription = errorDescription
-                        });
+                        logger.LogWarning(nameof(OidcConnectController), $"Token refresh failed: method={clientAuth.MethodName}, {error} - {errorDescription}");
+                        return this.TokenError(error!, errorDescription, clientAuth.Method);
                     }
 
                     logger.Log(nameof(OidcConnectController),$"Token refreshed for client {request.ClientId}");
