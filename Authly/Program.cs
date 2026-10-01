@@ -401,6 +401,12 @@ namespace Authly
                     try
                     {
                         // Use migrations instead of EnsureCreated for proper schema updates
+                        var baselined = Authly.Data.MigrationBaseline.Apply(context);
+                        if (baselined.Count > 0)
+                        {
+                            scope.ServiceProvider.GetRequiredService<IApplicationLogger>()
+                                .LogWarning("Program", $"Marked already applied schema changes as migrated: {string.Join(", ", baselined)}");
+                        }
                         context.Database.Migrate();
 
                         var logger = scope.ServiceProvider.GetRequiredService<IApplicationLogger>();

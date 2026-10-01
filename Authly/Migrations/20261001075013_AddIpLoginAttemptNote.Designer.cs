@@ -3,6 +3,7 @@ using System;
 using Authly.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Authly.Migrations
 {
     [DbContext(typeof(AuthlyDbContext))]
-    partial class AuthlyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261001075013_AddIpLoginAttemptNote")]
+    partial class AddIpLoginAttemptNote
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
