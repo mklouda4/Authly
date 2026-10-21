@@ -87,6 +87,7 @@ AUTHLY_ALLOW_REGISTRATION=false               # Allow permanent user registratio
 AUTHLY_KEY_DIRECTORY=/app/keys                 # Directory for data protection keys
 AUTHLY_ADMIN_PASSWORD=                         # Password of the initial admin account (first start only; random if empty)
 AUTHLY_TRUSTED_PROXIES=192.168.50.0/24        # Reverse proxies allowed to set X-Forwarded-For/Proto (IPs or CIDRs; default: private ranges)
+AUTHLY_FRAME_ANCESTORS=https://ha.example.com  # Origins allowed to embed the UI in an iframe (see "Embedding in an iframe")
 
 # ===== External OAuth Enable/Disable =====
 AUTHLY_ENABLE_GOOGLE=true                     # Enable Google OAuth
@@ -201,7 +202,8 @@ If you prefer configuration files over environment variables:
       "BanDurationMinutes": 60,
       "SlidingWindow": false,
       "WindowMinutes": 30
-    }
+    },
+    "FrameAncestors": []
   },
   "Mqtt": {
     "Enabled": false,
@@ -216,6 +218,52 @@ If you prefer configuration files over environment variables:
   }
 }
 ```
+
+### Embedding in an iframe
+
+By default the Authly UI (login, logout, error pages, ...) may only be framed by Authly itself:
+
+```
+Content-Security-Policy: frame-ancestors 'self'
+X-Frame-Options: SAMEORIGIN
+```
+
+This breaks a protected app that is shown inside another app's iframe, e.g. Frigate embedded in Home Assistant:
+the forward-auth redirect to `/login` happens inside the iframe and the browser blocks it (`net::ERR_BLOCKED_BY_RESPONSE`).
+List the embedding origins in `Security:FrameAncestors`:
+
+```json
+{
+  "Security": {
+    "FrameAncestors": [ "https://ha.example.com", "https://haos.example.com" ]
+  }
+}
+```
+
+or as an environment variable with a comma or space separated list (it overrides the appsettings array):
+
+```yaml
+services:
+  authly:
+    environment:
+      - AUTHLY_FRAME_ANCESTORS=https://ha.example.com,https://haos.example.com
+```
+
+The standard ASP.NET Core form `Security__FrameAncestors` works as well.
+
+With a non-empty list the UI pages are served with
+`Content-Security-Policy: frame-ancestors 'self' https://ha.example.com https://haos.example.com`
+and **without** `X-Frame-Options` (it cannot list origins, so it would still block the embedding).
+API, OIDC and forward-auth endpoints are not affected.
+
+Each entry must be an origin `scheme://host[:port]`: `https` only (`http` only for `localhost`), no path, query or fragment.
+Wildcard subdomains such as `https://*.example.com` are allowed. An invalid entry stops Authly at startup with an error
+naming the entry; the effective policy is logged at startup.
+
+> ⚠️ **Security Notice**: Every listed origin can display the Authly login page inside its own page, which enables
+> clickjacking if that origin is compromised. Only list origins you fully control and avoid broad wildcards.
+> The embedding page should be on the same site as Authly (e.g. `*.example.com`) – browsers do not send the
+> `SameSite=Lax`/`Strict` session cookies to a cross-site iframe, so the login would not stick.
 
 ## 🐳 Docker Image
 

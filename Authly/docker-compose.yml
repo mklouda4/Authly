@@ -18,6 +18,8 @@ services:
       - AUTHLY_VERSION=${AUTHLY_VERSION:-1.0.0}
       - AUTHLY_DEBUG_LOGGING=${AUTHLY_DEBUG_LOGGING:-false}
       - AUTHLY_ENABLE_METRICS=${AUTHLY_ENABLE_METRICS:-true}
+      # Origins allowed to embed the UI in an iframe, e.g. https://ha.example.com,https://haos.example.com
+      - AUTHLY_FRAME_ANCESTORS=${AUTHLY_FRAME_ANCESTORS:-}
       
       # External OAuth Configuration
       - AUTHLY_ENABLE_GOOGLE=${AUTHLY_ENABLE_GOOGLE:-false}

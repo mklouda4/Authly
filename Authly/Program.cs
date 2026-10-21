@@ -12,6 +12,7 @@ using Authly.Middleware;
 using Authly.Models;
 using Authly.Services;
 using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -49,6 +50,15 @@ namespace Authly
                 builder.Configuration.GetSection("Security:UserLockout"));
             _ = builder.Services.Configure<IpRateLimitingOptions>(
                 builder.Configuration.GetSection("Security:IpRateLimit"));
+            _ = builder.Services.AddOptions<FrameAncestorsOptions>()
+                .Configure<IConfiguration>((options, configuration) =>
+                    options.Origins = FrameAncestorsOptions.ReadEntries(configuration.GetSection(FrameAncestorsOptions.SectionName)))
+                .ValidateOnStart();
+            _ = builder.Services.AddSingleton<IValidateOptions<FrameAncestorsOptions>, FrameAncestorsOptionsValidator>();
+            // X-Frame-Options cannot list origins, so it would block embedding by the allowed ones – CSP frame-ancestors takes over
+            _ = builder.Services.AddOptions<AntiforgeryOptions>()
+                .Configure<IOptions<FrameAncestorsOptions>>((options, frameAncestors) =>
+                    options.SuppressXFrameOptionsHeader = frameAncestors.Value.AllowsExternalOrigins);
             // Database cleanup configuration
             _ = builder.Services.Configure<DataCleanupOptions>(
                 builder.Configuration.GetSection(DataCleanupOptions.SectionName));
@@ -392,6 +402,11 @@ namespace Authly
 
             var app = builder.Build();
 
+            // Resolving the options validates Security:FrameAncestors before anything else runs
+            var frameAncestors = app.Services.GetRequiredService<IOptions<FrameAncestorsOptions>>().Value;
+            app.Logger.LogInformation("UI pages are served with Content-Security-Policy: frame-ancestors {FrameAncestors}{XFrameOptions}",
+                frameAncestors.Policy, frameAncestors.AllowsExternalOrigins ? " (X-Frame-Options disabled)" : " and X-Frame-Options: SAMEORIGIN");
+
             // Apply database migrations automatically (UPDATED)
             using (var scope = app.Services.CreateScope())
             {
@@ -535,7 +550,7 @@ namespace Authly
             _ = app.MapStaticAssets();
 
             _ = app.MapRazorComponents<App>()
-                .AddInteractiveServerRenderMode();
+                .AddInteractiveServerRenderMode(options => options.ContentSecurityFrameAncestorsPolicy = frameAncestors.Policy);
 
             app.Run();
         }
@@ -590,6 +605,9 @@ namespace Authly
                 ["AUTHLY_IP_RATE_LIMIT_BAN_DURATION"] = "Security:IpRateLimit:BanDurationMinutes",
                 ["AUTHLY_IP_RATE_LIMIT_SLIDING_WINDOW"] = "Security:IpRateLimit:SlidingWindow",
                 ["AUTHLY_IP_RATE_LIMIT_WINDOW"] = "Security:IpRateLimit:WindowMinutes",
+
+                // Iframe embedding (comma or space separated origins)
+                ["AUTHLY_FRAME_ANCESTORS"] = "Security:FrameAncestors",
 
                 // Database cleanup settings (NEW)
                 ["AUTHLY_DB_CLEANUP_ENABLED"] = "DatabaseCleanup:Enabled",
