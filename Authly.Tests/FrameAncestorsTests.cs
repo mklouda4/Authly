@@ -1,6 +1,4 @@
 using Authly.Configuration;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Options;
 using Xunit;
 
@@ -69,7 +67,7 @@ namespace Authly.Tests
         [Fact]
         public async Task Login_AuthlyEnvironmentVariable_IsMappedToFrameAncestors()
         {
-            // Tests in one class run sequentially and no other test class starts the app, so the process-wide variable cannot leak
+            // Tests in one class run sequentially and no other test class reads frame-ancestors, so the process-wide variable cannot leak into an assertion
             Environment.SetEnvironmentVariable("AUTHLY_FRAME_ANCESTORS", "https://ha.mjhome.cz https://haos.mjhome.cz");
             try
             {
@@ -111,37 +109,6 @@ namespace Authly.Tests
                     {
                         yield return inner;
                     }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Runs the real app on an isolated web root so tests never touch the development database or keys
-        /// </summary>
-        private sealed class AuthlyFactory(params (string Key, string Value)[] settings) : WebApplicationFactory<Program>
-        {
-            private readonly string _webRoot = Directory.CreateTempSubdirectory("authly-tests-").FullName;
-
-            protected override void ConfigureWebHost(IWebHostBuilder builder)
-            {
-                _ = builder.UseEnvironment("Testing");
-                _ = builder.UseSetting(WebHostDefaults.WebRootKey, _webRoot);
-                foreach (var (key, value) in settings)
-                {
-                    _ = builder.UseSetting(key, value);
-                }
-            }
-
-            protected override void Dispose(bool disposing)
-            {
-                base.Dispose(disposing);
-                try
-                {
-                    Directory.Delete(_webRoot, recursive: true);
-                }
-                catch (IOException)
-                {
-                    // SQLite may still hold the file briefly; the temp folder is cleaned up by the OS
                 }
             }
         }

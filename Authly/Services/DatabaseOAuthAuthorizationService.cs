@@ -501,20 +501,17 @@ namespace Authly.Services
                 userInfo["email"] = user.Email!;
                 userInfo["email_verified"] = user.EmailConfirmed;
             }
-            var roles = new List<string>() { "user" };
-            if (user.Administrator)
-            {
-                userInfo["role"] = "admin";
-                roles.Insert(0, "admin");
-            }
-            else
-            {
-                userInfo["role"] = "user";
-            }
-            userInfo["roles"] = roles.ToArray();
+            var roles = GetOidcRoles(user);
+            userInfo["role"] = roles[0];
+            userInfo["roles"] = roles;
 
             return userInfo;
         }
+
+        /// <summary>
+        /// Roles shared by the ID token and userinfo; the first entry is the primary "role" claim
+        /// </summary>
+        private static string[] GetOidcRoles(User user) => user.Administrator ? ["admin", "user"] : ["user"];
 
         public async Task CleanupExpiredTokensAsync()
         {
@@ -685,11 +682,17 @@ namespace Authly.Services
                 claims.Add(new("email_verified", user.EmailConfirmed ? "true" : "false", ClaimValueTypes.Boolean));
             }
 
+            // Roles are issued regardless of scope, as in userinfo. "roles" goes through Claims rather than Subject,
+            // because a single claim would be serialized as a string and clients mapping groups expect an array.
+            var roles = GetOidcRoles(user);
+            claims.Add(new("role", roles[0]));
+
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Issuer = _oidcOptions.Value.Issuer,
                 Audience = client.ClientId,
                 Subject = new ClaimsIdentity(claims),
+                Claims = new Dictionary<string, object> { ["roles"] = roles },
                 Expires = DateTime.UtcNow.AddMinutes(_oidcOptions.Value.IdTokenLifetimeMinutes),
                 SigningCredentials = GetSigningCredentials()
             };
